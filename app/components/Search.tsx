@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useUser } from '../contexts/UserContext'
 import { 
+  MagnifyingGlassIcon,
   UserIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
