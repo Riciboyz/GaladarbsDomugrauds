@@ -2,12 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useUser } from '../contexts/UserContext'
-import { useThread } from '../contexts/ThreadContext'
-import ThreadCard from './ThreadCard'
 import { 
-  MagnifyingGlassIcon,
   UserIcon,
-  HashtagIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
 
@@ -16,28 +12,21 @@ interface SearchProps {
 }
 
 export default function Search({ onUserClick }: SearchProps) {
-  const { users, user, followUser, unfollowUser, isFollowing } = useUser()
-  const { searchThreads } = useThread()
+  const { user, followUser, unfollowUser, isFollowing } = useUser()
   const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
   const [userSearchResults, setUserSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  const [activeTab, setActiveTab] = useState('threads')
+  const [activeTab, setActiveTab] = useState('users')
   const [followLoading, setFollowLoading] = useState<string | null>(null)
 
   const handleSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
-      setSearchResults([])
       setUserSearchResults([])
       return
     }
 
     setIsSearching(true)
     try {
-      // Search threads
-      const threadResults = await searchThreads(searchQuery)
-      setSearchResults(threadResults)
-      
       // Search users
       const userResponse = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`)
       if (userResponse.ok) {
@@ -61,7 +50,7 @@ export default function Search({ onUserClick }: SearchProps) {
     return () => clearTimeout(timeoutId)
   }, [query])
 
-  // Use search results instead of filtering local users
+  // Filter out current user from search results
   const filteredUsers = userSearchResults.filter(u => u.id !== user?.id)
 
   const handleFollow = async (userId: string) => {
@@ -85,9 +74,7 @@ export default function Search({ onUserClick }: SearchProps) {
   }
 
   const tabs = [
-    { id: 'threads', name: 'Threads', count: searchResults.length },
-    { id: 'users', name: 'Users', count: filteredUsers.length },
-    { id: 'hashtags', name: 'Hashtags', count: 0 }
+    { id: 'users', name: 'Users', count: userSearchResults.length }
   ]
 
   return (
@@ -95,7 +82,7 @@ export default function Search({ onUserClick }: SearchProps) {
       {/* Ultra-Minimal Header */}
       <div className="mb-6">
         <h1 className="heading-1 text-gray-900">Search</h1>
-        <p className="body-regular text-gray-600 mt-1">Find threads, people, and topics</p>
+        <p className="body-regular text-gray-600 mt-1">Find people and connect with users</p>
       </div>
 
       {/* Search Input */}
@@ -103,7 +90,7 @@ export default function Search({ onUserClick }: SearchProps) {
         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
         <input
           type="text"
-          placeholder="Search threads, users, or hashtags..."
+          placeholder="Search for users..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="input pl-10 pr-10"
@@ -149,26 +136,7 @@ export default function Search({ onUserClick }: SearchProps) {
               <p className="body-regular text-gray-600">Searching...</p>
             </div>
           ) : (
-            <>
-              {/* Threads Tab */}
-              {activeTab === 'threads' && (
-                <div className="space-y-4">
-                  {searchResults.length === 0 ? (
-                    <div className="card p-12 text-center">
-                      <MagnifyingGlassIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="heading-3 text-gray-900 mb-2">No threads found</h3>
-                      <p className="body-regular text-gray-600">
-                        Try searching with different keywords
-                      </p>
-                    </div>
-                  ) : (
-                    searchResults.map((thread) => (
-                      <ThreadCard key={thread.id} thread={thread} onUserClick={onUserClick} />
-                    ))
-                  )}
-                </div>
-              )}
-
+            <div>
               {/* Users Tab */}
               {activeTab === 'users' && (
                 <div className="space-y-3">
@@ -234,26 +202,16 @@ export default function Search({ onUserClick }: SearchProps) {
                 </div>
               )}
 
-              {/* Hashtags Tab */}
-              {activeTab === 'hashtags' && (
-                <div className="card p-12 text-center">
-                  <HashtagIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="heading-3 text-gray-900 mb-2">Hashtag search coming soon</h3>
-                  <p className="body-regular text-gray-600">
-                    We're working on hashtag search functionality
-                  </p>
-                </div>
-              )}
-            </>
+            </div>
           )}
         </div>
       ) : (
         /* Empty State */
         <div className="card p-12 text-center">
-          <MagnifyingGlassIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="heading-3 text-gray-900 mb-2">Start searching</h3>
+          <UserIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="heading-3 text-gray-900 mb-2">Start searching for users</h3>
           <p className="body-regular text-gray-600">
-            Enter a search term to find threads, users, or hashtags
+            Enter a name or username to find people to connect with
           </p>
         </div>
       )}
