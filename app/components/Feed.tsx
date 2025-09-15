@@ -11,7 +11,6 @@ import SimpleCreateThread from './SimpleCreateThread'
 import LoadingState, { ThreadLoadingSkeleton } from './LoadingState'
 import Button from './Button'
 import { 
-  FunnelIcon,
   FireIcon,
   CalendarDaysIcon,
   UsersIcon,
@@ -20,7 +19,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline'
 
-type Filter = 'all' | 'following' | 'popular'
+type Filter = 'all' | 'following'
 
 interface FeedProps {
   onUserClick?: (userId: string) => void
@@ -101,7 +100,6 @@ export default function Feed({ onUserClick }: FeedProps) {
   const filters = [
     { id: 'all', label: 'All Threads', icon: UsersIcon },
     { id: 'following', label: 'Following', icon: FireIcon },
-    { id: 'popular', label: 'Popular', icon: FunnelIcon },
   ]
 
   // No need for client-side filtering since we're doing it on the server
