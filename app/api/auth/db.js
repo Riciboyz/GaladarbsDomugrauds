@@ -228,6 +228,27 @@ const deleteAllUserSessions = async (userId) => {
   }
 };
 
+const searchUsers = async (query, options = {}) => {
+  const { limit = 50, offset = 0 } = options;
+  
+  try {
+    const result = await db.query(`
+      SELECT 
+        id, username, display_name, email, avatar, bio, 
+        following, followers, created_at
+      FROM users
+      WHERE username LIKE ? OR display_name LIKE ? OR email LIKE ?
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `, [`%${query}%`, `%${query}%`, `%${query}%`, limit, offset]);
+    
+    return result.rows;
+  } catch (error) {
+    console.error('Error searching users:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   createUser,
   getUserByEmail,
@@ -242,5 +263,6 @@ module.exports = {
   createSession,
   getSession,
   deleteSession,
-  deleteAllUserSessions
+  deleteAllUserSessions,
+  searchUsers
 };

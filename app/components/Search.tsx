@@ -20,6 +20,7 @@ export default function Search({ onUserClick }: SearchProps) {
   const { searchThreads } = useThread()
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
+  const [userSearchResults, setUserSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [activeTab, setActiveTab] = useState('threads')
   const [followLoading, setFollowLoading] = useState<string | null>(null)
@@ -27,13 +28,24 @@ export default function Search({ onUserClick }: SearchProps) {
   const handleSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setSearchResults([])
+      setUserSearchResults([])
       return
     }
 
     setIsSearching(true)
     try {
-      const results = await searchThreads(searchQuery)
-      setSearchResults(results)
+      // Search threads
+      const threadResults = await searchThreads(searchQuery)
+      setSearchResults(threadResults)
+      
+      // Search users
+      const userResponse = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`)
+      if (userResponse.ok) {
+        const userData = await userResponse.json()
+        if (userData.success) {
+          setUserSearchResults(userData.users)
+        }
+      }
     } catch (error) {
       console.error('Error searching:', error)
     } finally {
@@ -49,13 +61,8 @@ export default function Search({ onUserClick }: SearchProps) {
     return () => clearTimeout(timeoutId)
   }, [query])
 
-  // Filter users to show only followers (people who follow the current user)
-  const filteredUsers = users.filter(u => 
-    u.id !== user?.id && // Don't show current user
-    user?.followers?.includes(u.id) && // Only show users who follow the current user
-    (u.displayName.toLowerCase().includes(query.toLowerCase()) ||
-     u.username.toLowerCase().includes(query.toLowerCase()))
-  )
+  // Use search results instead of filtering local users
+  const filteredUsers = userSearchResults.filter(u => u.id !== user?.id)
 
   const handleFollow = async (userId: string) => {
     if (!user) return
