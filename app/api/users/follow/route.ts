@@ -84,6 +84,25 @@ export async function POST(request: NextRequest) {
     const updatedCurrentUser = await authDb.getUserById(decoded.id);
     const updatedTargetUser = await authDb.getUserById(userId);
 
+    // Send WebSocket notification for real-time updates
+    try {
+      const ws = new WebSocket('ws://localhost:3001')
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          type: 'follow_updated',
+          data: {
+            userId: userId,
+            followerId: decoded.id,
+            action: action,
+            timestamp: new Date().toISOString()
+          }
+        }))
+        ws.close()
+      }
+    } catch (wsError) {
+      console.log('WebSocket notification failed (non-critical):', wsError)
+    }
+
     return NextResponse.json({
       success: true,
       currentUser: {

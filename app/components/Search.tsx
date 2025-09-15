@@ -11,7 +11,11 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline'
 
-export default function Search() {
+interface SearchProps {
+  onUserClick?: (userId: string) => void
+}
+
+export default function Search({ onUserClick }: SearchProps) {
   const { users, user, followUser, unfollowUser, isFollowing } = useUser()
   const { searchThreads } = useThread()
   const [query, setQuery] = useState('')
@@ -152,7 +156,7 @@ export default function Search() {
                     </div>
                   ) : (
                     searchResults.map((thread) => (
-                      <ThreadCard key={thread.id} thread={thread} />
+                      <ThreadCard key={thread.id} thread={thread} onUserClick={onUserClick} />
                     ))
                   )}
                 </div>
@@ -174,21 +178,26 @@ export default function Search() {
                       <div key={user.id} className="card-elevated">
                         <div className="p-4">
                           <div className="flex items-center space-x-3">
-                            <img
-                              src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=3b82f6&color=fff`}
-                              alt={user.displayName}
-                              className="w-10 h-10 rounded-lg object-cover"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 truncate">
-                                {user.displayName}
-                              </h3>
-                              <p className="text-sm text-gray-500">@{user.username}</p>
-                              {user.bio && (
-                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                  {user.bio}
-                                </p>
-                              )}
+                            <div 
+                              className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
+                              onClick={() => onUserClick?.(user.id)}
+                            >
+                              <img
+                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=3b82f6&color=fff`}
+                                alt={user.displayName}
+                                className="w-10 h-10 rounded-lg object-cover"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 truncate hover:text-blue-600">
+                                  {user.displayName}
+                                </h3>
+                                <p className="text-sm text-gray-500">@{user.username}</p>
+                                {user.bio && (
+                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                    {user.bio}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <button 
                               onClick={() => handleFollow(user.id)}

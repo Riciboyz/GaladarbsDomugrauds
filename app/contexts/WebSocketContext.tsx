@@ -5,7 +5,7 @@ import { useToast } from './ToastContext'
 import { useUser } from './UserContext'
 
 interface WebSocketMessage {
-  type: 'thread_created' | 'thread_updated' | 'thread_deleted' | 'user_joined' | 'user_left' | 'notification_received' | 'authenticate'
+  type: 'thread_created' | 'thread_updated' | 'thread_deleted' | 'user_joined' | 'user_left' | 'notification_received' | 'follow_updated' | 'authenticate'
   data: any
 }
 

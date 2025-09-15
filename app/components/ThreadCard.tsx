@@ -21,9 +21,10 @@ import SimpleCreateThread from './SimpleCreateThread'
 interface ThreadCardProps {
   thread: any
   isReply?: boolean
+  onUserClick?: (userId: string) => void
 }
 
-export default function ThreadCard({ thread, isReply = false }: ThreadCardProps) {
+export default function ThreadCard({ thread, isReply = false, onUserClick }: ThreadCardProps) {
   const { user, users, updateUser } = useUser()
   const { updateThread, deleteThread } = useThread()
   const { addNotification } = useNotification()
@@ -381,11 +382,17 @@ export default function ThreadCard({ thread, isReply = false }: ThreadCardProps)
             <img
               src={author.avatar || `https://ui-avatars.com/api/?name=${author.displayName}&background=3b82f6&color=fff`}
               alt={author.displayName}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => onUserClick?.(author.id)}
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-gray-900 truncate text-sm">{author.displayName}</h3>
+                <h3 
+                  className="font-semibold text-gray-900 truncate text-sm cursor-pointer hover:text-blue-600"
+                  onClick={() => onUserClick?.(author.id)}
+                >
+                  {author.displayName}
+                </h3>
                 <span className="text-sm text-gray-500">@{author.username}</span>
                 <span className="text-sm text-gray-400">·</span>
                 <span className="text-sm text-gray-500">

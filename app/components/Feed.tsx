@@ -22,7 +22,11 @@ import {
 
 type Filter = 'all' | 'following' | 'popular'
 
-export default function Feed() {
+interface FeedProps {
+  onUserClick?: (userId: string) => void
+}
+
+export default function Feed({ onUserClick }: FeedProps) {
   const { threads, setThreads, loadThreadsFromAPI, addThread } = useThread()
   const { users, user } = useUser()
   const { success, error: showError } = useToast()
@@ -202,7 +206,7 @@ export default function Feed() {
         ) : (
           filteredThreads.map((thread) => {
             console.log('Rendering thread:', thread.id, thread.content)
-            return <ThreadCard key={thread.id} thread={thread} />
+            return <ThreadCard key={thread.id} thread={thread} onUserClick={onUserClick} />
           })
         )}
       </div>

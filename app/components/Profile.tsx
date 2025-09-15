@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import React from 'react'
 import { useUser } from '../contexts/UserContext'
 import { useThread } from '../contexts/ThreadContext'
 import { useToast } from '../contexts/ToastContext'
+import { useWebSocket } from '../contexts/WebSocketContext'
 import ThreadCard from './ThreadCard'
 import { 
   UserIcon,
@@ -22,11 +24,13 @@ import {
 
 interface ProfileProps {
   userId?: string
+  onBack?: () => void
 }
 
-export default function Profile({ userId }: ProfileProps) {
+export default function Profile({ userId, onBack }: ProfileProps) {
   const { user, users, updateUser } = useUser()
   const { threads } = useThread()
+  const { lastMessage } = useWebSocket()
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({
     displayName: '',
@@ -38,6 +42,10 @@ export default function Profile({ userId }: ProfileProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [showFollowers, setShowFollowers] = useState(false)
   const [showFollowing, setShowFollowing] = useState(false)
+  const [followers, setFollowers] = useState<any[]>([])
+  const [following, setFollowing] = useState<any[]>([])
+  const [loadingFollowers, setLoadingFollowers] = useState(false)
+  const [loadingFollowing, setLoadingFollowing] = useState(false)
 
   const profileUser = userId ? users.find(u => u.id === userId) : user
   const isOwnProfile = user && profileUser && user.id === profileUser.id
@@ -46,6 +54,14 @@ export default function Profile({ userId }: ProfileProps) {
   const userThreads = threads.filter(thread => thread.authorId === profileUser?.id)
   const totalLikes = userThreads.reduce((sum, thread) => sum + thread.likes.length, 0)
   const totalComments = userThreads.reduce((sum, thread) => sum + thread.comments.length, 0)
+
+  // Load initial data when profile user changes
+  useEffect(() => {
+    if (profileUser) {
+      loadFollowers()
+      loadFollowing()
+    }
+  }, [profileUser?.id])
 
   const handleEdit = () => {
     if (profileUser) {
@@ -143,6 +159,109 @@ export default function Profile({ userId }: ProfileProps) {
     setEditData(prev => ({ ...prev, avatar: '' }))
   }
 
+  const loadFollowers = async () => {
+    if (!profileUser) return
+    
+    setLoadingFollowers(true)
+    try {
+      const response = await fetch(`/api/users/followers?userId=${profileUser.id}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setFollowers(data.followers)
+      } else {
+        console.error('Error loading followers:', data.error)
+      }
+    } catch (error) {
+      console.error('Error loading followers:', error)
+    } finally {
+      setLoadingFollowers(false)
+    }
+  }
+
+  const loadFollowing = async () => {
+    if (!profileUser) return
+    
+    setLoadingFollowing(true)
+    try {
+      const response = await fetch(`/api/users/following?userId=${profileUser.id}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setFollowing(data.following)
+      } else {
+        console.error('Error loading following:', data.error)
+      }
+    } catch (error) {
+      console.error('Error loading following:', error)
+    } finally {
+      setLoadingFollowing(false)
+    }
+  }
+
+  // Listen for WebSocket follow updates
+  useEffect(() => {
+    if (!lastMessage) return
+
+    if (lastMessage.type === 'follow_updated') {
+      const { userId, followerId, action } = lastMessage.data
+      
+      // If this update affects the current profile user
+      if (userId === profileUser?.id || followerId === profileUser?.id) {
+        console.log('🔄 Real-time follow update received, refreshing lists...')
+        // Refresh both lists
+        loadFollowers()
+        loadFollowing()
+        
+        // Also update the profile user data in context
+        if (userId === profileUser?.id) {
+          // Someone followed/unfollowed this profile user
+          const updatedProfileUser = {
+            ...profileUser,
+            followers: action === 'follow' 
+              ? [...(profileUser.followers || []), followerId]
+              : (profileUser.followers || []).filter(id => id !== followerId)
+          }
+          updateUser(updatedProfileUser)
+        }
+      }
+    }
+  }, [lastMessage, profileUser, updateUser])
+
+  const handleShowFollowers = () => {
+    setShowFollowers(true)
+    if (followers.length === 0) {
+      loadFollowers()
+    }
+  }
+
+  const handleShowFollowing = () => {
+    setShowFollowing(true)
+    if (following.length === 0) {
+      loadFollowing()
+    }
+  }
+
+  // Listen for WebSocket messages to refresh data
+  React.useEffect(() => {
+    if (lastMessage?.type === 'follow_updated' && profileUser) {
+      const { userId: updatedUserId, followerId } = lastMessage.data
+      if (updatedUserId === profileUser.id || followerId === profileUser.id) {
+        // Refresh followers/following data when follow status changes
+        if (showFollowers) {
+          loadFollowers()
+        }
+        if (showFollowing) {
+          loadFollowing()
+        }
+        
+        // Also refresh counts even when modals are closed
+        loadFollowers()
+        loadFollowing()
+      }
+    }
+  }, [lastMessage, profileUser, showFollowers, showFollowing])
+
   const handleFollow = async () => {
     if (!user || !profileUser) return
 
@@ -165,6 +284,14 @@ export default function Profile({ userId }: ProfileProps) {
         )
         // Update both current user and users list
         updateUser(data.currentUser, updatedUsers)
+        
+        // Refresh followers/following data if modals are open
+        if (showFollowers) {
+          loadFollowers()
+        }
+        if (showFollowing) {
+          loadFollowing()
+        }
       } else {
         console.error('Follow API error:', data)
         alert(data.error || 'Failed to follow user')
@@ -189,6 +316,21 @@ export default function Profile({ userId }: ProfileProps) {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {/* Back button for viewing other user's profile */}
+      {onBack && (
+        <div className="mb-4">
+          <button
+            onClick={onBack}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back</span>
+          </button>
+        </div>
+      )}
+      
       {/* Ultra-Minimal Profile Header */}
       <div className="card-elevated mb-6">
         <div className="p-6">
@@ -276,17 +418,17 @@ export default function Profile({ userId }: ProfileProps) {
           {/* Stats */}
           <div className="flex items-center space-x-6 pt-4 border-t border-gray-100">
             <button
-              onClick={() => setShowFollowers(true)}
+              onClick={handleShowFollowers}
               className="flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200"
             >
-              <span className="heading-4 text-gray-900">{profileUser.followers?.length || 0}</span>
+              <span className="heading-4 text-gray-900">{followers.length || profileUser.followers?.length || 0}</span>
               <span className="body-regular text-gray-600">Followers</span>
             </button>
             <button
-              onClick={() => setShowFollowing(true)}
+              onClick={handleShowFollowing}
               className="flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200"
             >
-              <span className="heading-4 text-gray-900">{profileUser.following?.length || 0}</span>
+              <span className="heading-4 text-gray-900">{following.length || profileUser.following?.length || 0}</span>
               <span className="body-regular text-gray-600">Following</span>
             </button>
             <div className="flex items-center space-x-2">
@@ -448,23 +590,80 @@ export default function Profile({ userId }: ProfileProps) {
               </button>
             </div>
             <div className="overflow-y-auto max-h-80">
-              {profileUser.followers?.map((followerId: string) => {
-                const follower = users.find(u => u.id === followerId)
-                if (!follower) return null
-                return (
-                  <div key={followerId} className="flex items-center space-x-3 p-4 hover:bg-gray-50 transition-colors duration-200">
-                    <img
-                      src={follower.avatar || `https://ui-avatars.com/api/?name=${follower.displayName}&background=3b82f6&color=fff`}
-                      alt={follower.displayName}
-                      className="w-8 h-8 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate text-sm">{follower.displayName}</p>
-                      <p className="text-xs text-gray-500">@{follower.username}</p>
+              {loadingFollowers ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-gray-600">Loading followers...</span>
+                </div>
+              ) : followers.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p>No followers yet</p>
+                </div>
+              ) : (
+                followers.map((follower) => {
+                  const isFollowingFollower = user && user.following.includes(follower.id)
+                  return (
+                    <div key={follower.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200">
+                      <div 
+                        className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
+                        onClick={() => {
+                          // Close modal first
+                          setShowFollowers(false)
+                          // Navigate to user profile
+                          if (typeof window !== 'undefined' && (window as any).navigateToUser) {
+                            (window as any).navigateToUser(follower.id)
+                          }
+                        }}
+                      >
+                        <img
+                          src={follower.avatar || `https://ui-avatars.com/api/?name=${follower.displayName}&background=3b82f6&color=fff`}
+                          alt={follower.displayName}
+                          className="w-8 h-8 rounded-lg object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate text-sm hover:text-blue-600">{follower.displayName}</p>
+                          <p className="text-xs text-gray-500">@{follower.username}</p>
+                        </div>
+                      </div>
+                      {!isOwnProfile && user && follower.id !== user.id && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const action = isFollowingFollower ? 'unfollow' : 'follow'
+                              const response = await fetch('/api/users/follow', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                  userId: follower.id, 
+                                  action: action
+                                }),
+                              })
+                              
+                              if (response.ok) {
+                                const data = await response.json()
+                                updateUser(data.currentUser)
+                                // Refresh the lists
+                                loadFollowers()
+                                loadFollowing()
+                              }
+                            } catch (error) {
+                              console.error('Error following user:', error)
+                            }
+                          }}
+                          className={`px-3 py-1 text-xs rounded-full font-medium transition-colors duration-200 ${
+                            isFollowingFollower
+                              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          {isFollowingFollower ? 'Following' : 'Follow'}
+                        </button>
+                      )}
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })
+              )}
             </div>
           </div>
         </div>
@@ -484,23 +683,43 @@ export default function Profile({ userId }: ProfileProps) {
               </button>
             </div>
             <div className="overflow-y-auto max-h-80">
-              {profileUser.following?.map((followingId: string) => {
-                const following = users.find(u => u.id === followingId)
-                if (!following) return null
-                return (
-                  <div key={followingId} className="flex items-center space-x-3 p-4 hover:bg-gray-50 transition-colors duration-200">
-                    <img
-                      src={following.avatar || `https://ui-avatars.com/api/?name=${following.displayName}&background=3b82f6&color=fff`}
-                      alt={following.displayName}
-                      className="w-8 h-8 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate text-sm">{following.displayName}</p>
-                      <p className="text-xs text-gray-500">@{following.username}</p>
+              {loadingFollowing ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-gray-600">Loading following...</span>
+                </div>
+              ) : following.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p>Not following anyone yet</p>
+                </div>
+              ) : (
+                following.map((followingUser) => (
+                  <div key={followingUser.id} className="flex items-center space-x-3 p-4 hover:bg-gray-50 transition-colors duration-200">
+                    <div 
+                      className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => {
+                        // Close modal first
+                        setShowFollowing(false)
+                        // Navigate to user profile
+                        if (typeof window !== 'undefined' && (window as any).navigateToUser) {
+                          (window as any).navigateToUser(followingUser.id)
+                        }
+                      }}
+                    >
+                      <img
+                        src={followingUser.avatar || `https://ui-avatars.com/api/?name=${followingUser.displayName}&background=3b82f6&color=fff`}
+                        alt={followingUser.displayName}
+                        className="w-8 h-8 rounded-lg object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate text-sm hover:text-blue-600">{followingUser.displayName}</p>
+                        <p className="text-xs text-gray-500">@{followingUser.username}</p>
+                      </div>
                     </div>
                   </div>
-                )
-              })}
+                ))
+              )}
             </div>
           </div>
         </div>

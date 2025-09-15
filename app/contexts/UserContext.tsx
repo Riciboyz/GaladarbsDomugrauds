@@ -134,6 +134,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
             return prev
           })
+          // Load all users from API
+          loadUsersFromAPI()
           return
         }
         }
@@ -171,6 +173,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
               }
               return prev
             })
+            // Load all users from API
+            loadUsersFromAPI()
           } catch (parseError) {
             localStorage.removeItem('user')
           }
@@ -179,6 +183,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
     
     checkSession()
+  }, [])
+
+  // Load users from API on component mount
+  useEffect(() => {
+    loadUsersFromAPI()
   }, [])
 
   // Save user to localStorage when it changes

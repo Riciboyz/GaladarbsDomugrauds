@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUser } from '../contexts/UserContext'
 import { useThread } from '../contexts/ThreadContext'
 import { useGroup } from '../contexts/GroupContext'
@@ -23,7 +23,7 @@ import {
   // Cog6ToothIcon // Temporarily disabled
 } from '@heroicons/react/24/outline'
 
-type Tab = 'home' | 'profile' | 'notifications' | 'search' // | 'settings' // Temporarily disabled
+type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'user-profile' // | 'settings' // Temporarily disabled
 
 export default function MainApp() {
   const { user } = useUser()
@@ -36,6 +36,19 @@ export default function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateThread, setShowCreateThread] = useState(false)
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null)
+
+  const handleUserClick = (userId: string) => {
+    setViewingUserId(userId)
+    setActiveTab('user-profile')
+  }
+
+  // Make handleUserClick available globally for modals
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).navigateToUser = handleUserClick
+    }
+  }, [])
 
   const tabs = [
     { id: 'home', label: 'Home', icon: HomeIcon },
@@ -48,17 +61,19 @@ export default function MainApp() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <Feed />
+        return <Feed onUserClick={handleUserClick} />
       case 'profile':
         return <Profile />
       case 'notifications':
         return <Notifications />
       case 'search':
-        return <Search />
+        return <Search onUserClick={handleUserClick} />
+      case 'user-profile':
+        return viewingUserId ? <Profile userId={viewingUserId} onBack={() => setActiveTab('home')} /> : <Feed />
       // case 'settings':
       //   return <Settings />
       default:
-        return <Feed />
+        return <Feed onUserClick={handleUserClick} />
     }
   }
 
