@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 
 interface ModalProps {

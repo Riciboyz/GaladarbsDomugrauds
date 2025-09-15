@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { 
   PlayIcon,
   PauseIcon,
-  VolumeUpIcon,
-  VolumeOffIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon
 } from '@heroicons/react/24/outline'
@@ -216,9 +216,9 @@ export default function VideoPlayer({
                   className="text-white hover:text-primary-400 transition-colors"
                 >
                   {isMuted ? (
-                    <VolumeOffIcon className="h-5 w-5" />
+                    <SpeakerXMarkIcon className="h-5 w-5" />
                   ) : (
-                    <VolumeUpIcon className="h-5 w-5" />
+                    <SpeakerWaveIcon className="h-5 w-5" />
                   )}
                 </button>
                 <input

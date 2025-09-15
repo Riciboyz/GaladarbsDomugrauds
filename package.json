@@ -1,46 +1,43 @@
 {
   "name": "threads-app-beet",
   "version": "1.0.0",
-  "description": "Threads App clone with Beet functionality - social media platform with threads, topic days, and group messaging",
-  "main": "index.js",
+  "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:ws": "node websocket-server.js",
+    "dev:full": "concurrently \"npm run dev\" \"npm run dev:ws\"",
+    "start:realtime": "node start-realtime.js",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:init": "node database/init.js",
+    "db:reset": "rm -f threads_app.db && npm run db:init"
   },
   "dependencies": {
-    "next": "^14.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "tailwindcss": "^3.3.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "@headlessui/react": "^1.7.0",
-    "@heroicons/react": "^2.0.0",
-    "framer-motion": "^10.16.0",
-    "lucide-react": "^0.292.0",
+    "@heroicons/react": "^2.0.18",
+    "bcryptjs": "^2.4.3",
     "date-fns": "^2.30.0",
-    "clsx": "^2.0.0",
-    "uuid": "^9.0.0",
-    "@types/uuid": "^9.0.0"
+    "jsonwebtoken": "^9.0.2",
+    "next": "14.2.32",
+    "react": "^18",
+    "react-dom": "^18",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "sqlite3": "^5.1.6",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
-    "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0"
-  },
-  "keywords": [
-    "social-media",
-    "threads",
-    "messaging",
-    "react",
-    "nextjs",
-    "typescript"
-  ],
-  "author": "Your Name",
-  "license": "MIT"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "concurrently": "^8.2.2",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.32",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
+  }
 }

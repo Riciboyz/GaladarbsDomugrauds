@@ -1,0 +1,741 @@
+'use client'
+
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import ToastContainer, { useToast, Toast } from './components/Toast'
+
+// Types
+export interface User {
+  id: string
+  username: string
+  displayName: string
+  email: string
+  avatar?: string
+  bio?: string
+  followers: string[]
+  following: string[]
+  createdAt: Date
+}
+
+export interface Thread {
+  id: string
+  authorId: string
+  content: string
+  createdAt: Date
+  likes: string[]
+  dislikes: string[]
+  comments: Comment[]
+  replies: Thread[]
+  parentId?: string
+  visibility: 'public' | 'followers'
+  topicDayId?: string
+  groupId?: string
+  attachments?: string[]
+}
+
+export interface Comment {
+  id: string
+  authorId: string
+  content: string
+  createdAt: Date
+  likes: string[]
+  dislikes: string[]
+}
+
+export interface TopicDay {
+  id: string
+  title: string
+  description: string
+  date: Date
+  threads: string[]
+}
+
+export interface Group {
+  id: string
+  name: string
+  description?: string
+  avatar?: string
+  members: string[]
+  admins: string[]
+  isPublic: boolean
+  createdAt: Date
+  threads: string[]
+}
+
+export interface Notification {
+  id: string
+  userId: string
+  type: 'like' | 'comment' | 'follow' | 'topic_day' | 'group_invite'
+  message: string
+  read: boolean
+  createdAt: Date
+  relatedId?: string
+}
+
+// Context
+interface AppContextType {
+  user: User | null
+  setUser: (user: User | null) => void
+  threads: Thread[]
+  setThreads: (threads: Thread[]) => void
+  users: User[]
+  setUsers: (users: User[]) => void
+  topicDays: TopicDay[]
+  setTopicDays: (topicDays: TopicDay[]) => void
+  groups: Group[]
+  setGroups: (groups: Group[]) => void
+  notifications: Notification[]
+  setNotifications: (notifications: Notification[]) => void
+  addThread: (thread: Thread) => void
+  updateThread: (threadId: string, updates: Partial<Thread>) => void
+  deleteThread: (threadId: string) => void
+  addUser: (user: User) => void
+  updateUser: (user: User, users?: User[]) => void
+  addTopicDay: (topicDay: TopicDay) => void
+  addGroup: (group: Group) => void
+  createGroup: (groupData: any) => Promise<void>
+  updateGroup: (groupId: string, updates: Partial<Group>) => void
+  deleteGroup: (groupId: string) => void
+  addNotification: (notification: Notification) => void
+  markNotificationAsRead: (notificationId: string) => void
+  markAllAsRead: () => void
+  createTopicDay: (topicDayData: any) => Promise<void>
+  searchThreads: (query: string) => Promise<Thread[]>
+  loadThreadsFromAPI: () => Promise<void>
+  loadUsersFromAPI: () => Promise<void>
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined)
+
+export function useApp() {
+  const context = useContext(AppContext)
+  if (context === undefined) {
+    throw new Error('useApp must be used within a Providers')
+  }
+  return context
+}
+
+// Mock data
+const mockUsers: User[] = [
+  {
+    id: '1',
+    username: 'john_doe',
+    displayName: 'John Doe',
+    email: 'john@example.com',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    bio: 'Software developer and coffee enthusiast ☕ | Building amazing things with code',
+    followers: ['2', '3', '4', '5'],
+    following: ['2', '3', '4'],
+    createdAt: new Date('2023-01-01'),
+  },
+  {
+    id: '2',
+    username: 'jane_smith',
+    displayName: 'Jane Smith',
+    email: 'jane@example.com',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    bio: 'UI/UX Designer 🎨 | Creating beautiful digital experiences',
+    followers: ['1', '3', '5', '6'],
+    following: ['1', '3'],
+    createdAt: new Date('2023-01-02'),
+  },
+  {
+    id: '3',
+    username: 'mike_wilson',
+    displayName: 'Mike Wilson',
+    email: 'mike@example.com',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    bio: 'Photographer 📸 | Capturing moments around the world',
+    followers: ['1', '2', '4', '6'],
+    following: ['1', '2', '4'],
+    createdAt: new Date('2023-01-03'),
+  },
+  {
+    id: '4',
+    username: 'sarah_jones',
+    displayName: 'Sarah Jones',
+    email: 'sarah@example.com',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    bio: 'Content Creator ✍️ | Sharing stories and insights',
+    followers: ['1', '3', '5'],
+    following: ['1', '2', '3'],
+    createdAt: new Date('2023-01-04'),
+  },
+  {
+    id: '5',
+    username: 'alex_chen',
+    displayName: 'Alex Chen',
+    email: 'alex@example.com',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+    bio: 'Tech Entrepreneur 🚀 | Building the future',
+    followers: ['1', '2', '4', '6'],
+    following: ['1', '2'],
+    createdAt: new Date('2023-01-05'),
+  },
+  {
+    id: '6',
+    username: 'emma_brown',
+    displayName: 'Emma Brown',
+    email: 'emma@example.com',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+    bio: 'Marketing Specialist 📈 | Helping brands grow',
+    followers: ['2', '3', '5'],
+    following: ['2', '3', '4', '5'],
+    createdAt: new Date('2023-01-06'),
+  },
+]
+
+// Function to generate real threads for all users
+const generateThreadsForUsers = (users: User[]): Thread[] => {
+  const threads: Thread[] = []
+  let threadId = 1
+  let commentId = 1
+
+  // Sample thread content templates
+  const threadTemplates = [
+    'Just had an amazing day working on my latest project! The progress is incredible 🚀',
+    'Coffee and coding - the perfect combination ☕️ What\'s everyone working on today?',
+    'Beautiful sunset today! Sometimes you need to step away from the screen 🌅',
+    'Learning something new every day. Today\'s focus: improving my skills 📚',
+    'Great meeting with the team today. Excited about what we\'re building together!',
+    'Weekend vibes! Time to relax and recharge for the week ahead 😌',
+    'Just finished reading an amazing book. Highly recommend it to everyone!',
+    'Working on some exciting new features. Can\'t wait to share them with you all!',
+    'Grateful for all the amazing people in my life. Thank you for being awesome! 🙏',
+    'New week, new opportunities! Let\'s make it count 💪',
+    'Sometimes the best ideas come when you least expect them 💡',
+    'Collaboration is key! Working together makes everything better 🤝',
+    'Taking a break to enjoy the little things in life 🌸',
+    'Progress over perfection. Every step forward counts!',
+    'Sharing knowledge and learning from others - that\'s what it\'s all about!',
+    'Innovation starts with curiosity. Keep asking questions!',
+    'Building something meaningful takes time, but it\'s worth it 🏗️',
+    'The best part of my day is connecting with amazing people like you!',
+    'Challenges make us stronger. Embrace them and grow! 💪',
+    'Small wins deserve celebration too! 🎉'
+  ]
+
+  // Generate threads for each user
+  users.forEach((user, userIndex) => {
+    // Each user gets 2-4 threads
+    const threadCount = Math.floor(Math.random() * 3) + 2
+    
+    for (let i = 0; i < threadCount; i++) {
+      const template = threadTemplates[Math.floor(Math.random() * threadTemplates.length)]
+      const createdAt = new Date()
+      createdAt.setDate(createdAt.getDate() - Math.floor(Math.random() * 30)) // Random date within last 30 days
+      createdAt.setHours(Math.floor(Math.random() * 24))
+      createdAt.setMinutes(Math.floor(Math.random() * 60))
+
+      // Generate random likes from other users
+      const allUserIds = users.map(u => u.id)
+      const otherUserIds = allUserIds.filter(id => id !== user.id)
+      const likeCount = Math.floor(Math.random() * Math.min(otherUserIds.length, 8)) + 1
+      const shuffled = [...otherUserIds].sort(() => 0.5 - Math.random())
+      const likes = shuffled.slice(0, likeCount)
+
+      // Sometimes add comments
+      const comments: Comment[] = []
+      if (Math.random() > 0.6) { // 40% chance of having comments
+        const commentCount = Math.floor(Math.random() * 3) + 1
+        for (let j = 0; j < commentCount; j++) {
+          const commentAuthor = otherUserIds[Math.floor(Math.random() * otherUserIds.length)]
+          const commentTemplates = [
+            'Great post! Thanks for sharing! 👏',
+            'I totally agree with this!',
+            'This is so inspiring!',
+            'Love this perspective!',
+            'Thanks for the insight!',
+            'This made my day! 😊',
+            'Couldn\'t have said it better!',
+            'So true! Thanks for sharing!'
+          ]
+          const commentContent = commentTemplates[Math.floor(Math.random() * commentTemplates.length)]
+          const commentCreatedAt = new Date(createdAt.getTime() + Math.random() * 86400000) // Within 24 hours
+
+          comments.push({
+            id: commentId.toString(),
+            authorId: commentAuthor,
+            content: commentContent,
+            createdAt: commentCreatedAt,
+            likes: Math.random() > 0.7 ? [user.id] : [], // Sometimes the original author likes the comment
+            dislikes: []
+          })
+          commentId++
+        }
+      }
+
+      threads.push({
+        id: threadId.toString(),
+        authorId: user.id,
+        content: template,
+        createdAt,
+        likes,
+        dislikes: [],
+        comments,
+        replies: [],
+        visibility: 'public',
+      })
+      threadId++
+    }
+  })
+
+  // Sort threads by creation date (newest first)
+  return threads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+}
+
+const mockTopicDays: TopicDay[] = [
+  {
+    id: '1',
+    title: 'Show your pet',
+    description: 'Share a photo or story about your beloved pet!',
+    date: new Date('2023-12-01'),
+    threads: [],
+  },
+  {
+    id: '2',
+    title: 'Favorite food',
+    description: 'What\'s your favorite dish? Share your culinary preferences!',
+    date: new Date('2023-12-02'),
+    threads: [],
+  },
+]
+
+const mockGroups: Group[] = [
+  {
+    id: '1',
+    name: 'Tech Enthusiasts',
+    description: 'Discussion about latest technology trends and innovations',
+    avatar: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=150&h=150&fit=crop',
+    members: ['1', '2', '3', '5'],
+    admins: ['1'],
+    isPublic: true,
+    createdAt: new Date('2023-01-01'),
+    threads: [],
+  },
+  {
+    id: '2',
+    name: 'Design Community',
+    description: 'Share your designs and get feedback from fellow designers',
+    avatar: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=150&h=150&fit=crop',
+    members: ['2', '4', '6'],
+    admins: ['2'],
+    isPublic: true,
+    createdAt: new Date('2023-01-02'),
+    threads: [],
+  },
+  {
+    id: '3',
+    name: 'Photography Lovers',
+    description: 'Showcase your photography and learn from others',
+    avatar: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=150&h=150&fit=crop',
+    members: ['3', '1', '4'],
+    admins: ['3'],
+    isPublic: true,
+    createdAt: new Date('2023-01-03'),
+    threads: [],
+  },
+  {
+    id: '4',
+    name: 'Startup Founders',
+    description: 'Private group for startup founders to share experiences',
+    avatar: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=150&h=150&fit=crop',
+    members: ['5', '1'],
+    admins: ['5'],
+    isPublic: false,
+    createdAt: new Date('2023-01-04'),
+    threads: [],
+  },
+]
+
+export function Providers({ children }: { children: ReactNode }) {
+  const { toasts, removeToast, success, error } = useToast()
+  const [user, setUser] = useState<User | null>(null)
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [users, setUsers] = useState<User[]>(mockUsers)
+  const [topicDays, setTopicDays] = useState<TopicDay[]>(mockTopicDays)
+  const [groups, setGroups] = useState<Group[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedGroups = localStorage.getItem('threads-groups')
+      if (savedGroups) {
+        try {
+          return JSON.parse(savedGroups).map((group: any) => ({
+            ...group,
+            createdAt: new Date(group.createdAt)
+          }))
+        } catch (error) {
+          console.error('Error parsing saved groups:', error)
+        }
+      }
+    }
+    return mockGroups
+  })
+  // Load threads and users from API on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          loadThreadsFromAPI(),
+          loadUsersFromAPI()
+        ])
+      } catch (error) {
+        console.error('Error loading initial data:', error)
+      }
+    }
+    
+    loadData()
+  }, [])
+
+  const loadThreadsFromAPI = async () => {
+    try {
+      console.log('🔄 Loading threads from API in providers...')
+      const response = await fetch('/api/threads')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Convert string dates back to Date objects
+        const threadsWithDates = data.threads.map((thread: any) => ({
+          ...thread,
+          createdAt: new Date(thread.createdAt)
+        }))
+        setThreads(threadsWithDates)
+        console.log('✅ Loaded threads in providers:', threadsWithDates.length, 'threads')
+      } else {
+        console.error('❌ Failed to load threads in providers:', data.error)
+      }
+    } catch (error) {
+      console.error('❌ Error loading threads in providers:', error)
+      // Don't crash the app, just log the error
+    }
+  }
+
+  const loadUsersFromAPI = async () => {
+    try {
+      console.log('🔄 Loading users from API in providers...')
+      const response = await fetch('/api/users')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Convert string dates back to Date objects
+        const usersWithDates = data.users.map((user: any) => ({
+          ...user,
+          createdAt: new Date(user.createdAt)
+        }))
+        setUsers(usersWithDates)
+        console.log('✅ Loaded users in providers:', usersWithDates.length, 'users')
+      } else {
+        console.error('❌ Failed to load users in providers:', data.error)
+      }
+    } catch (error) {
+      console.error('❌ Error loading users in providers:', error)
+      // Don't crash the app, just log the error
+    }
+  }
+
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: '1',
+      userId: '1',
+      type: 'like',
+      message: 'Jane Smith liked your thread',
+      read: false,
+      createdAt: new Date('2023-12-01T10:30:00'),
+      relatedId: '1'
+    },
+    {
+      id: '2',
+      userId: '1',
+      type: 'follow',
+      message: 'Sarah Jones started following you',
+      read: false,
+      createdAt: new Date('2023-12-01T11:00:00')
+    },
+    {
+      id: '3',
+      userId: '1',
+      type: 'comment',
+      message: 'Mike Wilson commented on your thread',
+      read: true,
+      createdAt: new Date('2023-12-01T12:00:00'),
+      relatedId: '1'
+    },
+    {
+      id: '4',
+      userId: '1',
+      type: 'topic_day',
+      message: 'New topic day: "Show your pet" is now live!',
+      read: false,
+      createdAt: new Date('2023-12-01T09:00:00'),
+      relatedId: '1'
+    },
+    {
+      id: '5',
+      userId: '1',
+      type: 'group_invite',
+      message: 'You\'ve been invited to join "Design Community"',
+      read: false,
+      createdAt: new Date('2023-12-01T08:00:00'),
+      relatedId: '2'
+    }
+  ])
+
+  // Load user from session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // Check if user is logged in via session
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.user) {
+            setUser(data.user)
+            return
+          }
+        }
+        
+        // Fallback to localStorage
+        const savedUser = localStorage.getItem('user')
+        if (savedUser) {
+          try {
+            const userData = JSON.parse(savedUser)
+            setUser(userData)
+          } catch (parseError) {
+            localStorage.removeItem('user')
+          }
+        }
+      } catch (error) {
+        // Fallback to localStorage
+        const savedUser = localStorage.getItem('user')
+        if (savedUser) {
+          try {
+            const userData = JSON.parse(savedUser)
+            setUser(userData)
+          } catch (parseError) {
+            localStorage.removeItem('user')
+          }
+        }
+      }
+    }
+    
+    checkSession()
+  }, [])
+
+  // Save user to localStorage when it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('user')
+    }
+  }, [user])
+
+  const addThread = (thread: Thread) => {
+    console.log('addThread called with:', thread)
+    if (thread.parentId) {
+      // This is a reply, add it to the parent thread's replies
+      setThreads(prev => {
+        const updated = prev.map(t => 
+          t.id === thread.parentId 
+            ? { ...t, replies: [...t.replies, thread] }
+            : t
+        )
+        console.log('Updated threads for reply:', updated)
+        return updated
+      })
+      success('Reply posted!', 'Your reply has been posted successfully.')
+    } else {
+      // This is a new thread
+      setThreads(prev => {
+        const updated = [thread, ...prev]
+        console.log('Updated threads for new thread:', updated)
+        return updated
+      })
+      success('Thread posted!', 'Your thread has been shared successfully.')
+    }
+  }
+
+  const updateThread = (threadId: string, updates: Partial<Thread>) => {
+    setThreads(prev => prev.map(thread => 
+      thread.id === threadId ? { ...thread, ...updates } : thread
+    ))
+  }
+
+  const deleteThread = (threadId: string) => {
+    setThreads(prev => prev.filter(thread => thread.id !== threadId))
+  }
+
+  const addUser = (user: User) => {
+    setUsers(prev => [...prev, user])
+    success('Welcome!', 'Your account has been created successfully.')
+  }
+
+  const updateUser = (updatedUser: User, updatedUsers?: User[]) => {
+    console.log('updateUser called:', { updatedUser, updatedUsers })
+    
+    // Update current user state
+    setUser(updatedUser)
+    
+    // Update users list if provided
+    if (updatedUsers) {
+      setUsers(updatedUsers)
+    } else {
+      // Update single user in the list
+      setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u))
+    }
+  }
+
+  const addTopicDay = (topicDay: TopicDay) => {
+    setTopicDays(prev => [...prev, topicDay])
+  }
+
+  const addGroup = (group: Group) => {
+    setGroups(prev => {
+      const newGroups = [...prev, group]
+      localStorage.setItem('threads-groups', JSON.stringify(newGroups))
+      return newGroups
+    })
+    success('Group created!', 'Your group has been created successfully.')
+  }
+
+  const updateGroup = (groupId: string, updates: Partial<Group>) => {
+    setGroups(prev => {
+      const updatedGroups = prev.map(group => 
+        group.id === groupId ? { ...group, ...updates } : group
+      )
+      localStorage.setItem('threads-groups', JSON.stringify(updatedGroups))
+      return updatedGroups
+    })
+  }
+
+  const deleteGroup = (groupId: string) => {
+    setGroups(prev => {
+      const filteredGroups = prev.filter(group => group.id !== groupId)
+      localStorage.setItem('threads-groups', JSON.stringify(filteredGroups))
+      return filteredGroups
+    })
+    // Also delete all threads in this group
+    setThreads(prev => prev.filter(thread => thread.groupId !== groupId))
+    success('Group deleted!', 'The group has been deleted successfully.')
+  }
+
+  const addNotification = (notification: Notification) => {
+    setNotifications(prev => [notification, ...prev])
+  }
+
+  const markNotificationAsRead = (notificationId: string) => {
+    setNotifications(prev => prev.map(notification => 
+      notification.id === notificationId ? { ...notification, read: true } : notification
+    ))
+  }
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })))
+  }
+
+  const createGroup = async (groupData: any) => {
+    try {
+      const response = await fetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(groupData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        addGroup(data.group)
+      } else {
+        throw new Error('Failed to create group')
+      }
+    } catch (err) {
+      console.error('Error creating group:', err)
+      error('Error', 'Failed to create group. Please try again.')
+    }
+  }
+
+  const createTopicDay = async (topicDayData: any) => {
+    try {
+      const response = await fetch('/api/topic-days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(topicDayData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        addTopicDay(data.topicDay)
+      } else {
+        throw new Error('Failed to create topic day')
+      }
+    } catch (err) {
+      console.error('Error creating topic day:', err)
+      error('Error', 'Failed to create topic day. Please try again.')
+    }
+  }
+
+  const searchThreads = async (query: string): Promise<Thread[]> => {
+    try {
+      const response = await fetch(`/api/threads/search?q=${encodeURIComponent(query)}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        return data.threads || []
+      } else {
+        throw new Error('Search failed')
+      }
+    } catch (error) {
+      console.error('Error searching threads:', error)
+      return []
+    }
+  }
+
+  const value: AppContextType = {
+    user,
+    setUser,
+    threads,
+    setThreads,
+    users,
+    setUsers,
+    topicDays,
+    setTopicDays,
+    groups,
+    setGroups,
+    notifications,
+    setNotifications,
+    addThread,
+    updateThread,
+    deleteThread,
+    addUser,
+    updateUser,
+    addTopicDay,
+    addGroup,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    addNotification,
+    markNotificationAsRead,
+    markAllAsRead,
+    createTopicDay,
+    searchThreads,
+    loadThreadsFromAPI,
+    loadUsersFromAPI,
+  }
+
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </AppContext.Provider>
+  )
+}

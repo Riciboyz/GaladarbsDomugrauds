@@ -6,7 +6,7 @@ import {
   CommandLineIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  EnterIcon
+  ArrowRightOnRectangleIcon as EnterIcon
 } from '@heroicons/react/24/outline'
 
 interface CommandItem {

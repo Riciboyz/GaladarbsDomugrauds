@@ -5,7 +5,7 @@ import {
   ChevronLeftIcon, 
   ChevronRightIcon,
   XMarkIcon,
-  DownloadIcon,
+  ArrowDownTrayIcon as DownloadIcon,
   ShareIcon
 } from '@heroicons/react/24/outline'
 

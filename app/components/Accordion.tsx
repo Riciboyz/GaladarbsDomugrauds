@@ -124,8 +124,8 @@ export function useAccordion(initialItems: string[] = []) {
     setOpenItems(prev => prev.filter(id => id !== itemId))
   }
 
-  const openAll = () => {
-    setOpenItems(prev => [...new Set([...prev, ...items])])
+  const openAll = (allItems: string[]) => {
+    setOpenItems(prev => [...new Set([...prev, ...allItems])])
   }
 
   const closeAll = () => {

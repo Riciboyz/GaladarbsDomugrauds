@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { ChevronRightIcon, HomeIcon } from '@heroicons/react/24/outline'
 
 interface BreadcrumbItem {
@@ -63,7 +64,7 @@ export default function Breadcrumb({
                 <button
                   onClick={() => handleItemClick(item, index)}
                   className={`flex items-center text-sm font-medium transition-colors ${
-                    item.current || isLast
+                    (item as BreadcrumbItem).current || isLast
                       ? 'text-secondary-900'
                       : 'text-secondary-500 hover:text-secondary-700'
                   }`}
@@ -76,7 +77,7 @@ export default function Breadcrumb({
               ) : (
                 <span
                   className={`flex items-center text-sm font-medium ${
-                    item.current || isLast
+                    (item as BreadcrumbItem).current || isLast
                       ? 'text-secondary-900'
                       : 'text-secondary-500'
                   }`}
@@ -117,7 +118,7 @@ export function useBreadcrumb(initialItems: BreadcrumbItem[] = []) {
     setItems([])
   }
 
-  const setItems = (newItems: BreadcrumbItem[]) => {
+  const setBreadcrumbItems = (newItems: BreadcrumbItem[]) => {
     setItems(newItems)
   }
 
@@ -127,6 +128,6 @@ export function useBreadcrumb(initialItems: BreadcrumbItem[] = []) {
     removeItem,
     updateItem,
     clearItems,
-    setItems
+    setItems: setBreadcrumbItems
   }
 }

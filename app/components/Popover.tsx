@@ -91,12 +91,12 @@ export default function Popover({
 
         // Check if popover fits on the right
         if (triggerRect.right + popoverRect.width > viewportWidth) {
-          newPosition = 'left'
+          newPosition = 'auto'
         }
 
         // Check if popover fits on the bottom
         if (triggerRect.bottom + popoverRect.height > viewportHeight) {
-          newPosition = 'top'
+          newPosition = 'auto'
         }
 
         setPopoverPosition(newPosition)

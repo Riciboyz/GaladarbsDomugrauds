@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threads Test</title>
+</head>
+<body>
+    <h1>Threads Frontend Test</h1>
+    <div id="status"></div>
+    <div id="threads"></div>
+    
+    <script>
+        async function testFrontend() {
+            const statusDiv = document.getElementById('status');
+            const threadsDiv = document.getElementById('threads');
+            
+            try {
+                // Test 1: Check if API is working
+                statusDiv.innerHTML = 'Testing API...';
+                const response = await fetch('/api/threads');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `✅ API working! Found ${data.threads.length} threads`;
+                    
+                    // Display threads
+                    threadsDiv.innerHTML = '<h2>Threads:</h2>';
+                    data.threads.forEach((thread, index) => {
+                        threadsDiv.innerHTML += `
+                            <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                                <strong>Thread ${index + 1}:</strong><br>
+                                <strong>ID:</strong> ${thread.id}<br>
+                                <strong>Author:</strong> ${thread.authorId}<br>
+                                <strong>Content:</strong> ${thread.content}<br>
+                                <strong>Created:</strong> ${thread.createdAt}<br>
+                                <strong>Visibility:</strong> ${thread.visibility}
+                            </div>
+                        `;
+                    });
+                } else {
+                    statusDiv.innerHTML = `❌ API error: ${data.error}`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        // Run test when page loads
+        testFrontend();
+    </script>
+</body>
+</html>

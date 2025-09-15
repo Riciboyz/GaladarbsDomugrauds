@@ -1,16 +1,16 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useApp } from '../providers'
+import { useUser } from '../contexts/UserContext'
+import { useToast } from '../contexts/ToastContext'
 
 interface KeyboardShortcutsProps {
   onNewThread: () => void
   onSearch: () => void
   onHome: () => void
   onProfile: () => void
-  onGroups: () => void
   onNotifications: () => void
-  onTopicDays: () => void
+  onGroups: () => void
   onSettings: () => void
 }
 
@@ -19,12 +19,12 @@ export default function KeyboardShortcuts({
   onSearch,
   onHome,
   onProfile,
-  onGroups,
   onNotifications,
-  onTopicDays,
+  onGroups,
   onSettings
 }: KeyboardShortcutsProps) {
-  const { user } = useApp()
+  const { user } = useUser()
+  const { success, error: showError } = useToast()
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -61,15 +61,19 @@ export default function KeyboardShortcuts({
             break
           case '3':
             event.preventDefault()
-            onGroups()
+            onNotifications()
             break
           case '4':
             event.preventDefault()
-            onNotifications()
+            onSearch()
             break
           case '5':
             event.preventDefault()
-            onTopicDays()
+            if (onGroups) onGroups()
+            break
+          case '6':
+            event.preventDefault()
+            onSettings()
             break
           case ',':
             event.preventDefault()
@@ -79,7 +83,7 @@ export default function KeyboardShortcuts({
       }
 
       // Number shortcuts (without modifier)
-      if (!isCtrlOrCmd && !isShift && event.key >= '1' && event.key <= '5') {
+      if (!isCtrlOrCmd && !isShift && event.key >= '1' && event.key <= '6') {
         event.preventDefault()
         switch (event.key) {
           case '1':
@@ -89,13 +93,16 @@ export default function KeyboardShortcuts({
             onProfile()
             break
           case '3':
-            onGroups()
-            break
-          case '4':
             onNotifications()
             break
+          case '4':
+            onSearch()
+            break
           case '5':
-            onTopicDays()
+            if (onGroups) onGroups()
+            break
+          case '6':
+            onSettings()
             break
         }
       }
@@ -116,7 +123,7 @@ export default function KeyboardShortcuts({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [user, onNewThread, onSearch, onHome, onProfile, onGroups, onNotifications, onTopicDays, onSettings])
+  }, [user, onNewThread, onSearch, onHome, onProfile, onNotifications, onSettings])
 
   return null
 }

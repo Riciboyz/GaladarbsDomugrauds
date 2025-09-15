@@ -6,7 +6,7 @@ import {
   ItalicIcon,
   UnderlineIcon,
   ListBulletIcon,
-  ListNumberedIcon,
+  ListBulletIcon as ListNumberedIcon,
   LinkIcon,
   PhotoIcon,
   CodeBracketIcon

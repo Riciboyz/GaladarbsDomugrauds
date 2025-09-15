@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notifications</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; white-space: pre-wrap; }
+        .notification { background: #e7f3ff; padding: 10px; margin: 5px 0; border-left: 4px solid #007bff; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Notification System Test</h1>
+    
+    <div class="test-section">
+        <h2>WebSocket Connection</h2>
+        <button onclick="connectWebSocket()">Connect WebSocket</button>
+        <button onclick="disconnectWebSocket()">Disconnect WebSocket</button>
+        <div id="ws-status" class="log">Not connected</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Notifications</h2>
+        <button onclick="testLikeNotification()">Test Like Notification</button>
+        <button onclick="testFollowNotification()">Test Follow Notification</button>
+        <button onclick="testCommentNotification()">Test Comment Notification</button>
+        <button onclick="clearNotifications()">Clear All</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Notifications</h2>
+        <div id="notifications"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Debug Log</h2>
+        <div id="debug-log" class="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let notificationCount = 0;
+
+        function log(message) {
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.textContent += `[${timestamp}] ${message}\n`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        function connectWebSocket() {
+            if (ws) {
+                log('WebSocket already connected');
+                return;
+            }
+
+            try {
+                ws = new WebSocket('ws://localhost:3001');
+                
+                ws.onopen = () => {
+                    log('🔌 WebSocket connected');
+                    document.getElementById('ws-status').textContent = 'Connected';
+                    
+                    // Authenticate as test user
+                    ws.send(JSON.stringify({
+                        type: 'authenticate',
+                        data: { userId: 'test-user-123' }
+                    }));
+                    log('🔐 WebSocket authenticated as test-user-123');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        log(`📨 WebSocket message received: ${JSON.stringify(message, null, 2)}`);
+                        
+                        if (message.type === 'notification_received') {
+                            addNotification(message.data);
+                        }
+                    } catch (err) {
+                        log(`Error parsing WebSocket message: ${err.message}`);
+                    }
+                };
+
+                ws.onclose = () => {
+                    log('🔌 WebSocket disconnected');
+                    document.getElementById('ws-status').textContent = 'Disconnected';
+                    ws = null;
+                };
+
+                ws.onerror = (error) => {
+                    log(`WebSocket error: ${error}`);
+                };
+
+            } catch (err) {
+                log(`Failed to create WebSocket: ${err.message}`);
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function addNotification(notification) {
+            const container = document.getElementById('notifications');
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'notification';
+            notificationDiv.innerHTML = `
+                <strong>${notification.type.toUpperCase()}</strong><br>
+                ${notification.message}<br>
+                <small>${new Date(notification.createdAt).toLocaleString()}</small>
+            `;
+            container.insertBefore(notificationDiv, container.firstChild);
+            notificationCount++;
+            log(`🔔 Notification added: ${notification.message}`);
+        }
+
+        function testLikeNotification() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected');
+                return;
+            }
+
+            const notification = {
+                id: `test-${Date.now()}`,
+                type: 'like',
+                message: 'Test User liked your thread!',
+                userId: 'test-user-123',
+                read: false,
+                createdAt: new Date().toISOString()
+            };
+
+            // Send via WebSocket
+            ws.send(JSON.stringify({
+                type: 'notification',
+                data: {
+                    userId: 'test-user-123',
+                    notification: notification
+                }
+            }));
+
+            log(`📤 Sent like notification via WebSocket`);
+        }
+
+        function testFollowNotification() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected');
+                return;
+            }
+
+            const notification = {
+                id: `test-${Date.now()}`,
+                type: 'follow',
+                message: 'Test User started following you!',
+                userId: 'test-user-123',
+                read: false,
+                createdAt: new Date().toISOString()
+            };
+
+            ws.send(JSON.stringify({
+                type: 'notification',
+                data: {
+                    userId: 'test-user-123',
+                    notification: notification
+                }
+            }));
+
+            log(`📤 Sent follow notification via WebSocket`);
+        }
+
+        function testCommentNotification() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected');
+                return;
+            }
+
+            const notification = {
+                id: `test-${Date.now()}`,
+                type: 'comment',
+                message: 'Test User commented on your thread!',
+                userId: 'test-user-123',
+                read: false,
+                createdAt: new Date().toISOString()
+            };
+
+            ws.send(JSON.stringify({
+                type: 'notification',
+                data: {
+                    userId: 'test-user-123',
+                    notification: notification
+                }
+            }));
+
+            log(`📤 Sent comment notification via WebSocket`);
+        }
+
+        function clearNotifications() {
+            document.getElementById('notifications').innerHTML = '';
+            notificationCount = 0;
+            log('🧹 Cleared all notifications');
+        }
+
+        // Auto-connect on page load
+        window.onload = () => {
+            log('🚀 Test page loaded');
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>

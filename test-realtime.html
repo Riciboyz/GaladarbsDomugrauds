@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Notifications Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .notification {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            animation: slideIn 0.3s ease-out;
+        }
+        .notification.like {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+        .notification.comment {
+            background: #f0fdf4;
+            border-color: #22c55e;
+        }
+        .notification.follow {
+            background: #fefce8;
+            border-color: #eab308;
+        }
+        .notification.group_invite {
+            background: #f3e8ff;
+            border-color: #a855f7;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin: 8px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 8px 0;
+        }
+        .status.connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status.disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔔 Real-time Notifications Test</h1>
+        <p>This page tests the real-time notification system. Open the main app in another tab to see notifications appear here.</p>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <div>
+            <button class="test-button" onclick="testNotification('like')">Test Like Notification</button>
+            <button class="test-button" onclick="testNotification('comment')">Test Comment Notification</button>
+            <button class="test-button" onclick="testNotification('follow')">Test Follow Notification</button>
+            <button class="test-button" onclick="testNotification('group_invite')">Test Group Invite</button>
+        </div>
+        
+        <div>
+            <button class="test-button" onclick="clearNotifications()">Clear All</button>
+            <button class="test-button" onclick="startPolling()">Start Polling</button>
+            <button class="test-button" onclick="stopPolling()">Stop Polling</button>
+        </div>
+        
+        <h3>Live Notifications:</h3>
+        <div id="notifications"></div>
+    </div>
+
+    <script>
+        let pollingInterval = null;
+        let notificationCount = 0;
+
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            status.textContent = connected ? 'Connected' : 'Disconnected';
+            status.className = `status ${connected ? 'connected' : 'disconnected'}`;
+        }
+
+        function addNotification(type, message) {
+            const container = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <strong>${type.toUpperCase()}</strong><br>
+                ${message}<br>
+                <small>${new Date().toLocaleTimeString()}</small>
+            `;
+            container.insertBefore(notification, container.firstChild);
+            notificationCount++;
+        }
+
+        function testNotification(type) {
+            const messages = {
+                like: 'Someone liked your thread! ❤️',
+                comment: 'Someone commented on your thread! 💬',
+                follow: 'Someone started following you! 👥',
+                group_invite: 'You\'ve been invited to join a group! 🎉'
+            };
+            addNotification(type, messages[type]);
+        }
+
+        function clearNotifications() {
+            document.getElementById('notifications').innerHTML = '';
+            notificationCount = 0;
+        }
+
+        async function pollNotifications() {
+            try {
+                const response = await fetch('/api/notifications?userId=1');
+                const data = await response.json();
+                
+                if (data.success && data.notifications) {
+                    updateStatus(true);
+                    
+                    // Check for new notifications
+                    data.notifications.forEach(notification => {
+                        if (!notification.read) {
+                            addNotification(notification.type, notification.message);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error polling notifications:', error);
+                updateStatus(false);
+            }
+        }
+
+        function startPolling() {
+            if (pollingInterval) return;
+            
+            pollingInterval = setInterval(pollNotifications, 2000);
+            console.log('Started polling notifications every 2 seconds');
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                updateStatus(false);
+                console.log('Stopped polling notifications');
+            }
+        }
+
+        // Start polling automatically
+        startPolling();
+
+        // Simulate random notifications for demo
+        setInterval(() => {
+            if (Math.random() > 0.95) { // 5% chance every 3 seconds
+                const types = ['like', 'comment', 'follow', 'group_invite'];
+                const randomType = types[Math.floor(Math.random() * types.length)];
+                testNotification(randomType);
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

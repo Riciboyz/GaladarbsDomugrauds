@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { 
+import {
   PlayIcon,
   PauseIcon,
-  VolumeUpIcon,
-  VolumeOffIcon,
+  SpeakerWaveIcon as VolumeUpIcon,
+  SpeakerXMarkIcon as VolumeOffIcon,
   ForwardIcon,
   BackwardIcon
 } from '@heroicons/react/24/outline'

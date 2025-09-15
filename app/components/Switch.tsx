@@ -2,7 +2,7 @@
 
 import { forwardRef } from 'react'
 
-interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
   label?: string
   error?: string
   helperText?: string

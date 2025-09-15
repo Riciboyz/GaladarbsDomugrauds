@@ -9,7 +9,7 @@ interface HashtagInputProps {
   maxLength?: number
 }
 
-export default function HashtagInput({ value, onChange, placeholder = "What's on your mind?", maxLength = 500 }: HashtagInputProps) {
+export default function HashtagInput({ value = '', onChange, placeholder = "What's on your mind?", maxLength = 500 }: HashtagInputProps) {
   const [cursorPosition, setCursorPosition] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -42,6 +42,7 @@ export default function HashtagInput({ value, onChange, placeholder = "What's on
   }
 
   const renderTextWithHashtags = (text: string) => {
+    if (!text || typeof text !== 'string') return ''
     const parts = text.split(/(#\w+)/g)
     return parts.map((part, index) => {
       if (part.startsWith('#')) {
@@ -56,6 +57,7 @@ export default function HashtagInput({ value, onChange, placeholder = "What's on
   }
 
   const getHashtags = (text: string) => {
+    if (!text || typeof text !== 'string') return []
     const hashtagRegex = /#\w+/g
     return text.match(hashtagRegex) || []
   }
@@ -64,32 +66,25 @@ export default function HashtagInput({ value, onChange, placeholder = "What's on
 
   return (
     <div className="relative">
-      <div className="relative">
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
-          placeholder={placeholder}
-          maxLength={maxLength}
-          className="w-full p-4 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none bg-transparent text-secondary-900 placeholder-secondary-500"
-          rows={6}
-        />
-        
-        {/* Hashtag overlay for display */}
-        <div className="absolute inset-0 p-4 pointer-events-none whitespace-pre-wrap break-words text-secondary-900">
-          {renderTextWithHashtags(value)}
-        </div>
-      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className="w-full p-4 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white text-gray-900 placeholder-gray-500 text-base leading-relaxed"
+        rows={6}
+      />
 
       {/* Hashtag suggestions */}
       {hashtags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {hashtags.map((hashtag, index) => (
             <span
               key={index}
-              className="inline-flex items-center px-2 py-1 bg-primary-100 text-primary-700 text-sm rounded-full"
+              className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-medium"
             >
               {hashtag}
             </span>
@@ -98,12 +93,12 @@ export default function HashtagInput({ value, onChange, placeholder = "What's on
       )}
 
       {/* Character count */}
-      <div className="flex justify-between items-center mt-2">
-        <div className="text-sm text-secondary-500">
+      <div className="flex justify-between items-center mt-3">
+        <div className="text-sm text-gray-500">
           {value.length}/{maxLength} characters
         </div>
         {hashtags.length > 0 && (
-          <div className="text-sm text-primary-600">
+          <div className="text-sm text-blue-600 font-medium">
             {hashtags.length} hashtag{hashtags.length !== 1 ? 's' : ''}
           </div>
         )}

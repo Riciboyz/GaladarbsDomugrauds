@@ -149,7 +149,8 @@ export default function Chart({
                 d={pathData}
                 fill={getColor(index, item.color)}
                 className="transition-all duration-300 hover:opacity-80"
-                title={`${item.label}: ${item.value} (${percentage.toFixed(1)}%)`}
+                role="img"
+                aria-label={`${item.label}: ${item.value} (${percentage.toFixed(1)}%)`}
               />
             )
           })}
@@ -205,7 +206,8 @@ export default function Chart({
                 d={pathData}
                 fill={getColor(index, item.color)}
                 className="transition-all duration-300 hover:opacity-80"
-                title={`${item.label}: ${item.value} (${percentage.toFixed(1)}%)`}
+                role="img"
+                aria-label={`${item.label}: ${item.value} (${percentage.toFixed(1)}%)`}
               />
             )
           })}
