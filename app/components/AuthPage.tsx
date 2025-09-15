@@ -140,8 +140,8 @@ export default function AuthPage() {
             <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-4">
               <ChatBubbleLeftRightIcon className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Threads</h1>
-            <p className="text-gray-600">Share your thoughts, connect with others</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">DomuGrauds</h1>
+            <p className="text-gray-600">Dalies ar savām domām, sazinies ar citiem</p>
           </div>
 
           {/* Ultra-Clean Auth Form */}

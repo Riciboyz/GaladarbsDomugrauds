@@ -98,8 +98,8 @@ export default function Feed({ onUserClick }: FeedProps) {
   }
 
   const filters = [
-    { id: 'all', label: 'All Threads', icon: UsersIcon },
-    { id: 'following', label: 'Following', icon: FireIcon },
+    { id: 'all', label: 'Visas Domas', icon: UsersIcon },
+    { id: 'following', label: 'Seko', icon: FireIcon },
   ]
 
   // No need for client-side filtering since we're doing it on the server
@@ -115,7 +115,7 @@ export default function Feed({ onUserClick }: FeedProps) {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Threads App Style Header */}
+      {/* DomuGrauds App Style Header */}
       <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 z-10">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ export default function Feed({ onUserClick }: FeedProps) {
         </div>
       </div>
 
-      {/* Threads List */}
+      {/* Domas List */}
       <div className="divide-y divide-gray-200">
         {loading ? (
           <ThreadLoadingSkeleton count={3} />

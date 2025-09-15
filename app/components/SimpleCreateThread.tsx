@@ -189,7 +189,7 @@ export default function SimpleCreateThread({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h3 className="heading-3 text-gray-900">
-            {parentId ? 'Reply to Thread' : 'Create New Thread'}
+            {parentId ? 'Atbildēt uz Domu' : 'Izveidot Jaunu Domu'}
           </h3>
           <Button
             onClick={onClose}

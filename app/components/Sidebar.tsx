@@ -62,7 +62,7 @@ export default function Sidebar({ activeTab, onTabChange, tabs }: SidebarProps) 
             <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center">
               <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">Threads</span>
+            <span className="text-xl font-bold text-gray-900">DomuGrauds</span>
           </div>
         </div>
 

@@ -6,8 +6,8 @@ import { Providers } from './providers-new'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Threads App - Beet',
-  description: 'Social media platform with threads, topic days, and group messaging',
+  title: 'DomuGrauds - Beet',
+  description: 'Sociālā platforma ar domām, tēmu dienām un grupu ziņojumiem',
 }
 
 export default function RootLayout({
