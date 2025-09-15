@@ -7,7 +7,7 @@ import { useNotification } from '../contexts/NotificationContext'
 import { useToast } from '../contexts/ToastContext'
 import Button from './Button'
 import Input from './Input'
-import { XMarkIcon, PhotoIcon, LinkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, PhotoIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
 import EmojiPicker from './EmojiPicker'
 import HashtagInput from './HashtagInput'
 
@@ -30,8 +30,6 @@ export default function CreateThread({ onClose, parentId, groupId, topicDayId, o
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [attachments, setAttachments] = useState<string[]>([])
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [showLinkInput, setShowLinkInput] = useState(false)
-  const [linkUrl, setLinkUrl] = useState('')
 
   // Close emoji picker when clicking outside
   useEffect(() => {
@@ -107,7 +105,6 @@ export default function CreateThread({ onClose, parentId, groupId, topicDayId, o
         
         setContent('')
         setAttachments([])
-        setLinkUrl('')
         onClose()
         
         if (onThreadCreated) {
@@ -160,13 +157,6 @@ export default function CreateThread({ onClose, parentId, groupId, topicDayId, o
     }
   }
 
-  const handleLinkAdd = () => {
-    if (linkUrl.trim()) {
-      setContent(prev => prev + ` ${linkUrl}`)
-      setLinkUrl('')
-      setShowLinkInput(false)
-    }
-  }
 
   if (!user) return null
 
@@ -252,27 +242,6 @@ export default function CreateThread({ onClose, parentId, groupId, topicDayId, o
               </div>
             )}
 
-            {/* Ultra-Clean Link Input */}
-            {showLinkInput && (
-              <div className="mb-6 p-3 bg-gray-50 rounded-lg">
-                <div className="flex space-x-2">
-                  <Input
-                    type="url"
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    placeholder="Paste your link here..."
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleLinkAdd}
-                    size="sm"
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Ultra-Minimal Hashtag Input */}
             <div className="mb-6">
@@ -299,15 +268,6 @@ export default function CreateThread({ onClose, parentId, groupId, topicDayId, o
                   />
                 </label>
 
-                {/* Link */}
-                <Button
-                  type="button"
-                  onClick={() => setShowLinkInput(!showLinkInput)}
-                  variant="ghost"
-                  size="sm"
-                >
-                  <LinkIcon className="w-4 h-4" />
-                </Button>
 
                 {/* Emoji */}
                 <button

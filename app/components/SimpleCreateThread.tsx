@@ -11,7 +11,6 @@ import EmojiPicker from './EmojiPicker'
 import { 
   XMarkIcon, 
   PhotoIcon, 
-  LinkIcon, 
   PaperAirplaneIcon,
   XCircleIcon
 } from '@heroicons/react/24/outline'
@@ -40,8 +39,6 @@ export default function SimpleCreateThread({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [attachments, setAttachments] = useState<string[]>([])
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [showLinkInput, setShowLinkInput] = useState(false)
-  const [linkUrl, setLinkUrl] = useState('')
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -153,13 +150,6 @@ export default function SimpleCreateThread({
     setAttachments(prev => prev.filter((_, i) => i !== index))
   }
 
-  const handleLinkAdd = () => {
-    if (linkUrl.trim()) {
-      setContent(prev => prev + ` ${linkUrl}`)
-      setLinkUrl('')
-      setShowLinkInput(false)
-    }
-  }
 
   const formatUrl = (url: string) => {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -265,27 +255,6 @@ export default function SimpleCreateThread({
               </div>
             )}
 
-            {/* Link Input */}
-            {showLinkInput && (
-              <div className="mb-6 p-3 bg-gray-50 rounded-lg">
-                <div className="flex space-x-2">
-                  <Input
-                    type="url"
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    placeholder="Paste your link here..."
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleLinkAdd}
-                    size="sm"
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Content Preview */}
             {content && (
@@ -320,15 +289,6 @@ export default function SimpleCreateThread({
                   className="hidden"
                 />
 
-                {/* Link */}
-                <Button
-                  type="button"
-                  onClick={() => setShowLinkInput(!showLinkInput)}
-                  variant="ghost"
-                  size="sm"
-                >
-                  <LinkIcon className="w-4 h-4" />
-                </Button>
 
                 {/* Emoji */}
                 <Button
