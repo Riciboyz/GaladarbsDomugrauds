@@ -123,7 +123,7 @@ export default function KeyboardShortcuts({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [user, onNewThread, onSearch, onHome, onProfile, onNotifications, onSettings])
+  }, [user, onNewThread, onSearch, onHome, onProfile, onNotifications, onGroups, onSettings])
 
   return null
 }
@@ -134,9 +134,9 @@ export function KeyboardShortcutsHelp() {
     { keys: ['Ctrl', 'N'], description: 'New Thread' },
     { keys: ['Ctrl', '1'], description: 'Home' },
     { keys: ['Ctrl', '2'], description: 'Profile' },
-    { keys: ['Ctrl', '3'], description: 'Groups' },
-    { keys: ['Ctrl', '4'], description: 'Notifications' },
-    { keys: ['Ctrl', '5'], description: 'Topic Days' },
+    { keys: ['Ctrl', '3'], description: 'Notifications' },
+    { keys: ['Ctrl', '4'], description: 'Search' },
+    { keys: ['Ctrl', '5'], description: 'Groups' },
     { keys: ['Ctrl', ','], description: 'Settings' },
     { keys: ['1-5'], description: 'Quick navigation' },
     { keys: ['?'], description: 'Show this help' },

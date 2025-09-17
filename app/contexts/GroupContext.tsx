@@ -33,6 +33,7 @@ interface GroupContextType {
   updateGroup: (groupId: string, updates: Partial<Group>) => void
   deleteGroup: (groupId: string) => void
   createGroup: (groupData: any) => Promise<void>
+  loadGroups: () => Promise<void>
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined)
@@ -188,6 +189,7 @@ export function GroupProvider({ children }: { children: ReactNode }) {
     updateGroup,
     deleteGroup,
     createGroup,
+    loadGroups,
   }
 
   return (

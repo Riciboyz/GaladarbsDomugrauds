@@ -40,10 +40,12 @@ CREATE TABLE IF NOT EXISTS groups (
     name TEXT NOT NULL,
     description TEXT,
     avatar TEXT,
+    is_private BOOLEAN DEFAULT 0,
     created_by TEXT NOT NULL,
     members TEXT DEFAULT '[]',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT 0,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 

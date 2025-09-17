@@ -38,7 +38,8 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
   const [isLiking, setIsLiking] = useState(false)
   const [isFollowingUser, setIsFollowingUser] = useState(false)
 
-  let author = users.find(u => u.id === thread.authorId)
+  // Prefer author embedded on the thread from API; fall back to users list
+  let author = thread.author || users.find(u => u.id === thread.authorId)
   const isLiked = user && thread.likes && thread.likes.includes(user.id)
   const isDisliked = user && thread.dislikes && thread.dislikes.includes(user.id)
   const isFollowing = user && author && user.following && user.following.includes(author.id)
@@ -179,6 +180,64 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
       const data = await response.json()
       if (response.ok) {
         updateThread(thread.id, data.thread)
+        
+        // Send notification if someone disliked the thread (only for new dislikes)
+        if (action === 'dislike' && author.id !== user.id) {
+          // Create notification in database
+          try {
+            const notificationResponse = await fetch('/api/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: author.id,
+                type: 'dislike',
+                message: `${user.displayName} disliked your thread`,
+                relatedId: thread.id
+              })
+            })
+            
+            if (notificationResponse.ok) {
+              const notificationData = await notificationResponse.json()
+              
+              // Add to local state
+              addNotification({
+                id: notificationData.notification.id,
+                type: 'dislike',
+                message: `${user.displayName} disliked your thread`,
+                userId: author.id,
+                read: false,
+                createdAt: new Date(notificationData.notification.createdAt)
+              })
+              
+              // Send real-time notification via WebSocket
+              sendMessage({
+                type: 'notification',
+                data: {
+                  userId: author.id,
+                  notification: {
+                    id: notificationData.notification.id,
+                    type: 'dislike',
+                    message: `${user.displayName} disliked your thread`,
+                    userId: author.id,
+                    read: false,
+                    createdAt: notificationData.notification.createdAt
+                  }
+                }
+              })
+            }
+          } catch (notificationError) {
+            console.error('Error creating notification:', notificationError)
+            // Fallback to local notification
+            addNotification({
+              id: Date.now().toString(),
+              type: 'dislike',
+              message: `${user.displayName} disliked your thread`,
+              userId: author.id,
+              read: false,
+              createdAt: new Date()
+            })
+          }
+        }
       } else {
         throw new Error(data.error || 'Failed to dislike thread')
       }
@@ -339,14 +398,60 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         
         // Send notification to the original author
         if (author && author.id !== user.id) {
-          addNotification({
-            id: Date.now().toString(),
-            type: 'comment',
-            message: `${user.displayName} commented on your thread`,
-            userId: author.id,
-            read: false,
-            createdAt: new Date()
-          })
+          // Create notification in database
+          try {
+            const notificationResponse = await fetch('/api/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: author.id,
+                type: 'comment',
+                message: `${user.displayName} commented on your thread`,
+                relatedId: thread.id
+              })
+            })
+            
+            if (notificationResponse.ok) {
+              const notificationData = await notificationResponse.json()
+              
+              // Add to local state
+              addNotification({
+                id: notificationData.notification.id,
+                type: 'comment',
+                message: `${user.displayName} commented on your thread`,
+                userId: author.id,
+                read: false,
+                createdAt: new Date(notificationData.notification.createdAt)
+              })
+              
+              // Send real-time notification via WebSocket
+              sendMessage({
+                type: 'notification',
+                data: {
+                  userId: author.id,
+                  notification: {
+                    id: notificationData.notification.id,
+                    type: 'comment',
+                    message: `${user.displayName} commented on your thread`,
+                    userId: author.id,
+                    read: false,
+                    createdAt: notificationData.notification.createdAt
+                  }
+                }
+              })
+            }
+          } catch (notificationError) {
+            console.error('Error creating notification:', notificationError)
+            // Fallback to local notification
+            addNotification({
+              id: Date.now().toString(),
+              type: 'comment',
+              message: `${user.displayName} commented on your thread`,
+              userId: author.id,
+              read: false,
+              createdAt: new Date()
+            })
+          }
         }
       }
     } catch (error) {

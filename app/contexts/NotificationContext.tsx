@@ -1,12 +1,13 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useUser } from './UserContext'
 
 // Types
 export interface Notification {
   id: string
   userId: string
-  type: 'like' | 'comment' | 'follow' | 'topic_day' | 'group_invite'
+  type: 'like' | 'dislike' | 'comment' | 'follow' | 'topic_day' | 'group_invite'
   message: string
   read: boolean
   createdAt: Date
@@ -20,6 +21,7 @@ interface NotificationContextType {
   addNotification: (notification: Notification) => void
   markNotificationAsRead: (notificationId: string) => void
   markAllAsRead: () => void
+  loadNotificationsFromAPI: () => Promise<void>
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -81,7 +83,51 @@ const mockNotifications: Notification[] = [
 ]
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const { user } = useUser()
+
+  // Load notifications from API when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadNotificationsFromAPI()
+    } else {
+      // Clear notifications when user logs out
+      setNotifications([])
+    }
+  }, [user])
+
+  const loadNotificationsFromAPI = async () => {
+    try {
+      console.log('🔄 Loading notifications from API...')
+      const response = await fetch('/api/notifications', {
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Convert string dates back to Date objects
+        const notificationsWithDates = data.notifications.map((notification: any) => ({
+          ...notification,
+          createdAt: new Date(notification.createdAt)
+        }))
+        setNotifications(notificationsWithDates)
+        console.log('✅ Loaded notifications:', notificationsWithDates.length, 'notifications')
+      } else {
+        console.error('❌ Failed to load notifications:', data.error)
+        // Fallback to mock data if API fails
+        setNotifications(mockNotifications)
+      }
+    } catch (error) {
+      console.error('❌ Error loading notifications:', error)
+      // Fallback to mock data if API fails
+      setNotifications(mockNotifications)
+    }
+  }
 
   const addNotification = (notification: Notification) => {
     console.log('🔔 Adding notification:', notification)
@@ -104,6 +150,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     addNotification,
     markNotificationAsRead,
     markAllAsRead,
+    loadNotificationsFromAPI,
   }
 
   return (

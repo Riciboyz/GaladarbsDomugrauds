@@ -13,6 +13,7 @@ import Profile from './Profile'
 import Notifications from './Notifications'
 // import Settings from './Settings' // Temporarily disabled
 import Search from './Search'
+import Groups from './Groups'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import SimpleCreateThread from './SimpleCreateThread'
 import { 
@@ -20,10 +21,11 @@ import {
   UserIcon, 
   BellIcon,
   MagnifyingGlassIcon,
+  UserGroupIcon,
   // Cog6ToothIcon // Temporarily disabled
 } from '@heroicons/react/24/outline'
 
-type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'user-profile' // | 'settings' // Temporarily disabled
+type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-profile' // | 'settings' // Temporarily disabled
 
 export default function MainApp() {
   const { user } = useUser()
@@ -55,6 +57,7 @@ export default function MainApp() {
     { id: 'profile', label: 'Profile', icon: UserIcon },
     { id: 'notifications', label: 'Notifications', icon: BellIcon },
     { id: 'search', label: 'Search', icon: MagnifyingGlassIcon },
+    { id: 'groups', label: 'Groups', icon: UserGroupIcon },
     // { id: 'settings', label: 'Settings', icon: Cog6ToothIcon }, // Temporarily disabled
   ]
 
@@ -68,6 +71,8 @@ export default function MainApp() {
         return <Notifications />
       case 'search':
         return <Search onUserClick={handleUserClick} />
+      case 'groups':
+        return <Groups />
       case 'user-profile':
         return viewingUserId ? <Profile userId={viewingUserId} onBack={() => setActiveTab('home')} /> : <Feed />
       // case 'settings':
@@ -85,6 +90,7 @@ export default function MainApp() {
         onHome={() => setActiveTab('home')}
         onProfile={() => setActiveTab('profile')}
         onNotifications={() => setActiveTab('notifications')}
+        onGroups={() => setActiveTab('groups')}
         // onSettings={() => setActiveTab('settings')} // Temporarily disabled
       />
       

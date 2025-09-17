@@ -84,9 +84,9 @@ CREATE TABLE thread_likes (
 CREATE TABLE notifications (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
-    type ENUM('like', 'comment', 'follow', 'thread', 'reply') NOT NULL,
+    type ENUM('like', 'dislike', 'comment', 'follow', 'thread', 'reply', 'group_invite', 'group_message', 'group_join', 'group_leave') NOT NULL,
     message TEXT NOT NULL,
-    related_id VARCHAR(36) NULL, -- ID of related thread, user, etc.
+    related_id VARCHAR(36) NULL, -- ID of related thread, user, group, etc.
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -102,14 +102,15 @@ CREATE TABLE `groups` (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     avatar VARCHAR(500),
-    is_public BOOLEAN DEFAULT TRUE,
+    is_private BOOLEAN DEFAULT FALSE,
     created_by VARCHAR(36) NOT NULL,
+    members TEXT DEFAULT '[]', -- JSON array of member IDs
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_created_by (created_by),
-    INDEX idx_public (is_public),
+    INDEX idx_private (is_private),
     INDEX idx_deleted (is_deleted)
 );
 
@@ -145,6 +146,25 @@ CREATE TABLE group_invitations (
     INDEX idx_inviter (inviter_id),
     INDEX idx_invitee (invitee_id),
     INDEX idx_status (status)
+);
+
+-- Group chat messages
+CREATE TABLE group_messages (
+    id VARCHAR(36) PRIMARY KEY,
+    group_id VARCHAR(36) NOT NULL,
+    sender_id VARCHAR(36) NOT NULL,
+    content TEXT NOT NULL,
+    message_type ENUM('text', 'image', 'file', 'system') DEFAULT 'text',
+    attachment_url VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_group (group_id),
+    INDEX idx_sender (sender_id),
+    INDEX idx_created_at (created_at),
+    INDEX idx_deleted (is_deleted)
 );
 
 -- Topic days table

@@ -94,7 +94,14 @@ export default function SimpleCreateThread({
           visibility: data.thread.visibility || 'public',
           topicDayId: data.thread.topic_day_id || data.thread.topicDayId,
           groupId: data.thread.group_id || data.thread.groupId,
-          attachments: data.thread.attachments || []
+          attachments: data.thread.attachments || [],
+          // Provide embedded author to avoid "Unknown User" while user list is loading
+          author: data.thread.author || {
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            avatar: user.avatar
+          }
         }
         
         console.log('Adding new thread to state:', newThread)
@@ -117,8 +124,6 @@ export default function SimpleCreateThread({
         // Reset form
         setContent('')
         setAttachments([])
-        setLinkUrl('')
-        setShowLinkInput(false)
         
         onThreadCreated?.()
         onClose()
