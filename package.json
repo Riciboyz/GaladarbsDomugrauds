@@ -24,6 +24,7 @@
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
     "sqlite3": "^5.1.6",
+    "uuid": "^13.0.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {
@@ -32,6 +33,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.0.1",
     "concurrently": "^8.2.2",
     "eslint": "^8",

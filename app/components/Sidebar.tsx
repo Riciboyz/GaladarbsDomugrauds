@@ -121,6 +121,19 @@ export default function Sidebar({ activeTab, onTabChange, tabs }: SidebarProps) 
 
           {/* Settings and Logout */}
           <div className="space-y-2">
+            {/* Admin Panel Link */}
+            {user?.role === 'admin' && (
+              <a
+                href="/admin"
+                className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-purple-600 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0l1.403 5.777c.194.8.8 1.4 1.6 1.4h4.5c1.756 0 2.5 1.244 1.6 2.5l-3.6 2.6c-.8.6-1.2 1.6-1.2 2.6v4.5c0 1.756-1.244 2.5-2.5 1.6l-2.6-3.6c-.6-.8-1.6-1.2-2.6-1.2h-4.5c-1.756 0-2.5-1.244-1.6-2.5l2.6-3.6c.6-.8.6-1.8 0-2.6l-2.6-3.6c-.9-1.256-.156-2.5 1.6-2.5h4.5c.8 0 1.406-.6 1.6-1.4l1.403-5.777z" />
+                </svg>
+                <span className="font-medium">Admin Panel</span>
+              </a>
+            )}
+            
             {/* Settings button temporarily disabled */}
             {/* <button
               onClick={() => onTabChange('settings')}

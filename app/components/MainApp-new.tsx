@@ -16,6 +16,8 @@ import Search from './Search'
 import Groups from './Groups'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import SimpleCreateThread from './SimpleCreateThread'
+import DailyTopicBanner from './DailyTopicBanner'
+import TopicSubmission from './TopicSubmission'
 import { 
   HomeIcon, 
   UserIcon, 
@@ -25,7 +27,7 @@ import {
   // Cog6ToothIcon // Temporarily disabled
 } from '@heroicons/react/24/outline'
 
-type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-profile' // | 'settings' // Temporarily disabled
+type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-profile' | 'topic-submission' // | 'settings' // Temporarily disabled
 
 export default function MainApp() {
   const { user } = useUser()
@@ -39,6 +41,7 @@ export default function MainApp() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateThread, setShowCreateThread] = useState(false)
   const [viewingUserId, setViewingUserId] = useState<string | null>(null)
+  const [currentTopicId, setCurrentTopicId] = useState<string | null>(null)
 
   const handleUserClick = (userId: string) => {
     setViewingUserId(userId)
@@ -64,7 +67,15 @@ export default function MainApp() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <Feed onUserClick={handleUserClick} />
+        return (
+          <div>
+            <DailyTopicBanner onTopicClick={(topicId) => {
+              setCurrentTopicId(topicId)
+              setActiveTab('topic-submission')
+            }} />
+            <Feed onUserClick={handleUserClick} />
+          </div>
+        )
       case 'profile':
         return <Profile />
       case 'notifications':
@@ -75,10 +86,22 @@ export default function MainApp() {
         return <Groups />
       case 'user-profile':
         return viewingUserId ? <Profile userId={viewingUserId} onBack={() => setActiveTab('home')} /> : <Feed />
+      case 'topic-submission':
+        return currentTopicId ? (
+          <TopicSubmission 
+            topicId={currentTopicId} 
+            onBack={() => setActiveTab('home')} 
+          />
+        ) : <Feed onUserClick={handleUserClick} />
       // case 'settings':
       //   return <Settings />
       default:
-        return <Feed onUserClick={handleUserClick} />
+        return (
+          <div>
+            <DailyTopicBanner />
+            <Feed onUserClick={handleUserClick} />
+          </div>
+        )
     }
   }
 

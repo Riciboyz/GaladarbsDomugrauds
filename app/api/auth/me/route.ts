@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
         email: user.email,
         avatar: user.avatar,
         bio: user.bio,
+        role: user.role || 'user',
         following: JSON.parse(user.following || '[]'),
         followers: JSON.parse(user.followers || '[]'),
         createdAt: user.created_at
