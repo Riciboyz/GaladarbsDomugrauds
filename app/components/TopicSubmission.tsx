@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useWebSocket } from '../contexts/WebSocketContext'
 import { useUser } from '../contexts/UserContext'
 import { useToast } from '../contexts/ToastContext'
 import { 
@@ -52,6 +53,32 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
     loadTopic()
     loadSubmissions()
   }, [topicId])
+
+  // Real-time updates for submissions
+  const { lastMessage } = useWebSocket()
+  useEffect(() => {
+    if (!lastMessage) return
+    if (lastMessage.type === 'topic_submission_created') {
+      const s: any = lastMessage.data
+      if (s.topic_id === topicId) {
+        setSubmissions(prev => {
+          if (prev.some(p => p.id === s.id)) return prev
+          return [
+            {
+              id: s.id,
+              content: s.content,
+              image_url: s.image_url,
+              created_at: s.created_at,
+              username: s.username,
+              display_name: s.display_name,
+              avatar: s.avatar
+            },
+            ...prev
+          ]
+        })
+      }
+    }
+  }, [lastMessage, topicId])
 
   const loadTopic = async () => {
     try {

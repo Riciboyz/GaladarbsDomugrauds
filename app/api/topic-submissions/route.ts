@@ -82,15 +82,44 @@ export async function POST(request: NextRequest) {
     }
 
     const submissionId = uuidv4();
+    const createdAt = new Date().toISOString();
     await db.query(`
-      INSERT INTO topic_submissions (id, topic_id, user_id, content, image_url)
-      VALUES (?, ?, ?, ?, ?)
-    `, [submissionId, topicId, decoded.id, content?.trim() || '', imageUrl || '']);
+      INSERT INTO topic_submissions (id, topic_id, user_id, content, image_url, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [submissionId, topicId, decoded.id, content?.trim() || '', imageUrl || '', createdAt]);
+
+    // Build payload with basic user info for immediate rendering
+    const author = await authDb.getUserById(decoded.id);
+    const submissionPayload = {
+      id: submissionId,
+      topic_id: topicId,
+      user_id: decoded.id,
+      content: content?.trim() || '',
+      image_url: imageUrl || '',
+      created_at: createdAt,
+      username: author?.username,
+      display_name: author?.displayName || author?.display_name,
+      avatar: author?.avatar || null
+    };
+
+    // Broadcast via WS HTTP endpoint
+    try {
+      await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'topic_submission_created',
+          data: submissionPayload
+        })
+      });
+    } catch (wsError) {
+      console.log('WS broadcast for topic submission failed (non-critical):', (wsError as any).message || wsError);
+    }
 
     return NextResponse.json({ 
       success: true, 
       message: 'Submission created successfully',
-      submission: { id: submissionId, topicId, content, imageUrl }
+      submission: submissionPayload
     });
   } catch (error) {
     console.error('Error creating topic submission:', error);

@@ -41,24 +41,15 @@ export default function Feed({ onUserClick }: FeedProps) {
     loadThreads()
   }, [])
 
-  // Handle real-time WebSocket messages
+  // Thread events are handled in ThreadContext. Avoid duplicating here.
   useEffect(() => {
-    if (lastMessage) {
-      switch (lastMessage.type) {
-        case 'thread_created':
-          const newThread = lastMessage.data
-          addThread(newThread)
-          success('New Thread', 'A new thread was posted!')
-          break
-        case 'thread_updated':
-          // Handle thread updates if needed
-          break
-        case 'thread_deleted':
-          // Handle thread deletion if needed
-          break
+    if (lastMessage?.type) {
+      if (lastMessage.type === 'thread_created' || lastMessage.type === 'new_thread') {
+        // No-op: handled centrally in ThreadContext to prevent duplicates
+        return
       }
     }
-  }, [lastMessage, addThread, success])
+  }, [lastMessage])
 
   const loadThreads = async (feedType: Filter = 'all') => {
     await execute(async () => {
@@ -102,8 +93,10 @@ export default function Feed({ onUserClick }: FeedProps) {
     { id: 'following', label: 'Seko', icon: FireIcon },
   ]
 
-  // No need for client-side filtering since we're doing it on the server
-  const filteredThreads = threads
+  // Apply client-side filtering for 'following' to ensure correctness and realtime
+  const filteredThreads = filter === 'following' && user
+    ? threads.filter(t => (user.following || []).includes(t.authorId) && t.authorId !== user.id)
+    : threads
   
   // Debug logging
   console.log('Feed render - threads:', threads.length, 'filteredThreads:', filteredThreads.length)

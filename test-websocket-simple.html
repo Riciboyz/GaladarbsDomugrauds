@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <div id="status">Disconnected</div>
+    <div id="messages"></div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="sendMessage()">Send Test Message</button>
+
+    <script>
+        let ws = null;
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
+
+        function connect() {
+            if (ws) return;
+            
+            ws = new WebSocket('ws://localhost:3001');
+            
+            ws.onopen = () => {
+                status.textContent = 'Connected';
+                status.style.color = 'green';
+                addMessage('Connected to WebSocket');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                addMessage('Received: ' + JSON.stringify(data));
+            };
+            
+            ws.onclose = () => {
+                status.textContent = 'Disconnected';
+                status.style.color = 'red';
+                addMessage('Disconnected from WebSocket');
+                ws = null;
+            };
+            
+            ws.onerror = (error) => {
+                addMessage('Error: ' + error);
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+
+        function sendMessage() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'ping',
+                    data: { timestamp: Date.now() }
+                }));
+                addMessage('Sent ping message');
+            } else {
+                addMessage('WebSocket not connected');
+            }
+        }
+
+        function addMessage(message) {
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            messages.appendChild(div);
+        }
+
+        // Auto-connect on page load
+        window.onload = () => {
+            connect();
+        };
+    </script>
+</body>
+</html>

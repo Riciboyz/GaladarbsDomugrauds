@@ -104,14 +104,11 @@ export default function SimpleCreateThread({
           }
         }
         
-        console.log('Adding new thread to state:', newThread)
+        console.log('Adding new thread to state (optimistic):', newThread)
+        // Optimistic add is OK, ThreadContext de-duplicates if WS echoes the same id
         addThread(newThread)
         
-        // Send WebSocket message for real-time updates
-        sendMessage({
-          type: 'thread_created',
-          data: newThread
-        })
+        // Do not send WS here; API already broadcasts to WS server to avoid duplicates
         
         success('Success', 'Thread posted successfully!')
         

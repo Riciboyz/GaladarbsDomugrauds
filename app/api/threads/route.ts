@@ -9,11 +9,23 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
     const userId = searchParams.get('userId');
+    const feedType = searchParams.get('feedType');
+
+    // If requesting following feed, identify current user from cookie
+    let followingOnlyForUserId: string | null = null;
+    if (feedType === 'following') {
+      const authToken = request.cookies.get('auth-token')?.value;
+      if (authToken) {
+        const decoded = authDb.verifyToken(authToken);
+        if (decoded) followingOnlyForUserId = decoded.id;
+      }
+    }
 
     const threads = await threadsDb.getAllThreads({
       limit,
       offset,
-      userId: userId || null
+      userId: userId || null,
+      followingOnlyForUserId
     });
 
     return NextResponse.json({
@@ -78,6 +90,20 @@ export async function POST(request: NextRequest) {
       groupId: groupId || null,
       topicDayId: topicDayId || null
     });
+
+    // Broadcast new thread via WebSocket
+    try {
+      const wsResponse = await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new_thread',
+          data: newThread
+        })
+      });
+    } catch (wsError) {
+      console.log('WebSocket broadcast failed (server might not be running):', wsError.message);
+    }
 
     return NextResponse.json({
       success: true,
@@ -145,6 +171,20 @@ export async function PUT(request: NextRequest) {
         );
     }
 
+    // Broadcast thread update via WebSocket
+    try {
+      const wsResponse = await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'thread_updated',
+          data: result
+        })
+      });
+    } catch (wsError) {
+      console.log('WebSocket broadcast failed (server might not be running):', wsError.message);
+    }
+
     return NextResponse.json({
       success: true,
       thread: result,
@@ -207,6 +247,20 @@ export async function DELETE(request: NextRequest) {
     }
 
     await threadsDb.deleteThread(threadId);
+
+    // Broadcast thread deletion via WebSocket
+    try {
+      const wsResponse = await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'thread_deleted',
+          data: { threadId }
+        })
+      });
+    } catch (wsError) {
+      console.log('WebSocket broadcast failed (server might not be running):', wsError.message);
+    }
 
     return NextResponse.json({
       success: true,

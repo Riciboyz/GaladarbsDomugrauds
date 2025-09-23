@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final Real-time Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .message { background-color: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; font-size: 12px; }
+        .thread { background-color: #e9ecef; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        h2 { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h1>Final Real-time Test</h1>
+    <div id="status" class="status disconnected">Disconnected</div>
+    
+    <h2>WebSocket Messages</h2>
+    <div id="messages" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+    
+    <h2>Threads</h2>
+    <div id="threads"></div>
+    
+    <h2>Controls</h2>
+    <button onclick="testRealTime()">🚀 Test Real-time</button>
+    <button onclick="clearLogs()">🧹 Clear Logs</button>
+
+    <script>
+        let ws = null;
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
+        const threads = document.getElementById('threads');
+
+        function connect() {
+            if (ws) return;
+            
+            addMessage('🔌 Connecting to WebSocket...');
+            ws = new WebSocket('ws://localhost:3001');
+            
+            ws.onopen = () => {
+                status.textContent = '✅ Connected';
+                status.className = 'status connected';
+                addMessage('✅ WebSocket connected successfully');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                addMessage('📨 Received: ' + data.type + ' - ' + JSON.stringify(data.data));
+                
+                // Handle thread messages
+                if (data.type === 'new_thread') {
+                    addThread(data.data);
+                    addMessage('🎯 NEW THREAD RECEIVED AND DISPLAYED!');
+                }
+            };
+            
+            ws.onclose = (event) => {
+                status.textContent = '❌ Disconnected';
+                status.className = 'status disconnected';
+                addMessage('❌ Disconnected: ' + event.code + ' ' + event.reason);
+                ws = null;
+                
+                // Auto-reconnect
+                setTimeout(() => {
+                    addMessage('🔄 Attempting to reconnect...');
+                    connect();
+                }, 2000);
+            };
+            
+            ws.onerror = (error) => {
+                addMessage('❌ WebSocket Error: ' + error);
+            };
+        }
+
+        function testRealTime() {
+            addMessage('🚀 Testing real-time functionality...');
+            
+            // Send test message via API
+            fetch('http://localhost:3001', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'new_thread',
+                    data: {
+                        id: 'test-' + Date.now(),
+                        content: 'Real-time test at ' + new Date().toLocaleTimeString(),
+                        authorId: 'test-user',
+                        createdAt: new Date().toISOString(),
+                        likes: [],
+                        dislikes: [],
+                        comments: [],
+                        replies: [],
+                        visibility: 'public'
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage('📡 API Response: ' + JSON.stringify(data));
+            })
+            .catch(error => {
+                addMessage('❌ API Error: ' + error);
+            });
+        }
+
+        function addMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + ':</strong> ' + message;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addThread(thread) {
+            const div = document.createElement('div');
+            div.className = 'thread';
+            div.innerHTML = '<strong>🎯 REAL-TIME THREAD:</strong> ' + thread.content + '<br><small>ID: ' + thread.id + ' | Time: ' + new Date().toLocaleTimeString() + '</small>';
+            threads.insertBefore(div, threads.firstChild);
+        }
+
+        function clearLogs() {
+            messages.innerHTML = '';
+            threads.innerHTML = '';
+        }
+
+        // Auto-connect on page load
+        window.onload = () => {
+            addMessage('🚀 Page loaded, connecting to WebSocket...');
+            connect();
+        };
+    </script>
+</body>
+</html>

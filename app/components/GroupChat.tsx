@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useUser } from '../contexts/UserContext'
 import { useToast } from '../contexts/ToastContext'
+import { useWebSocket } from '../contexts/WebSocketContext'
 import { 
   PaperAirplaneIcon,
   PhotoIcon,
@@ -38,8 +39,51 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
   const [showOptions, setShowOptions] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [typingUsers, setTypingUsers] = useState<string[]>([])
+  const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // WebSocket connection
+  const { 
+    isConnected, 
+    lastMessage,
+    sendGroupMessage, 
+    joinGroup, 
+    leaveGroup, 
+    sendTyping, 
+    sendStopTyping
+  } = useWebSocket()
+
+  // Join group when WebSocket connects
+  useEffect(() => {
+    if (isConnected && group.id) {
+      console.log('👥 Joining group:', group.id)
+      joinGroup(group.id)
+    }
+    
+    return () => {
+      if (group.id) {
+        console.log('👋 Leaving group:', group.id)
+        leaveGroup(group.id)
+      }
+    }
+  }, [isConnected, group.id, joinGroup, leaveGroup])
+  // React to site-wide websocket messages relevant to this group
+  useEffect(() => {
+    if (!lastMessage) return
+    const { type, data } = lastMessage
+    if (type === 'group_message' && data.groupId === group.id) {
+      setMessages(prev => [...prev, data.message])
+    }
+    if (type === 'user_typing' && data.groupId === group.id) {
+      setTypingUsers(prev => Array.from(new Set([...prev, data.userId])))
+    }
+    if (type === 'user_stopped_typing' && data.groupId === group.id) {
+      setTypingUsers(prev => prev.filter(id => id !== data.userId))
+    }
+  }, [lastMessage, group.id])
 
   useEffect(() => {
     loadMessages()
@@ -49,17 +93,14 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
     scrollToBottom()
   }, [messages])
 
-  // Real-time updates - poll for new messages every 5 seconds (less aggressive)
+  // Cleanup typing timeout on unmount
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Only poll if not currently loading
-      if (!isLoading) {
-        loadMessages(true) // Silent loading for polling
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
       }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [group.id, isLoading])
+    }
+  }, [])
 
   // Close image modal with Escape key
   useEffect(() => {
@@ -119,45 +160,84 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
     e.preventDefault()
     if (!newMessage.trim() || !user) return
 
-    try {
-      const response = await fetch('/api/groups/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId: group.id,
-          content: newMessage.trim(),
-          messageType: 'text'
-        })
-      })
-
-      const data = await response.json()
-      
-      if (response.ok) {
+    const messageContent = newMessage.trim()
+    
+    // Send via WebSocket if connected, otherwise fallback to API
+    if (isConnected) {
+      const success = sendGroupMessage(group.id, messageContent, 'text')
+      if (success) {
         setNewMessage('')
-        // Add the new message to the list
-        const newMsg: Message = {
-          id: data.messageId,
-          group_id: group.id,
-          sender_id: user.id,
-          content: newMessage.trim(),
-          message_type: 'text',
-          created_at: new Date().toISOString(),
-          username: user.username,
-          display_name: user.displayName,
-          avatar: user.avatar
-        }
-        setMessages(prev => [...prev, newMsg])
+        // Stop typing indicator
+        sendStopTyping(group.id)
+        setIsTyping(false)
       } else {
-        throw new Error(data.error || 'Failed to send message')
+        showError('Send Message', 'Failed to send message via WebSocket')
       }
-    } catch (error) {
-      console.error('Error sending message:', error)
-      showError('Send Message', 'Failed to send message')
+    } else {
+      // Fallback to API
+      try {
+        const response = await fetch('/api/groups/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupId: group.id,
+            content: messageContent,
+            messageType: 'text'
+          })
+        })
+
+        const data = await response.json()
+        
+        if (response.ok) {
+          setNewMessage('')
+          // Add the new message to the list
+          const newMsg: Message = {
+            id: data.messageId,
+            group_id: group.id,
+            sender_id: user.id,
+            content: messageContent,
+            message_type: 'text',
+            created_at: new Date().toISOString(),
+            username: user.username,
+            display_name: user.displayName,
+            avatar: user.avatar
+          }
+          setMessages(prev => [...prev, newMsg])
+        } else {
+          throw new Error(data.error || 'Failed to send message')
+        }
+      } catch (error) {
+        console.error('Error sending message:', error)
+        showError('Send Message', 'Failed to send message')
+      }
     }
   }
 
   const handleImageButtonClick = () => {
     fileInputRef.current?.click()
+  }
+
+  // Handle typing indicators
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value)
+    
+    if (isConnected && !isTyping) {
+      sendTyping(group.id)
+      setIsTyping(true)
+    }
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    
+    // Set new timeout to stop typing
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isConnected) {
+        sendStopTyping(group.id)
+        setIsTyping(false)
+      }
+    }, 1000)
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,9 +358,15 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
                 )}
               </div>
               <div>
-                <h3 className="heading-4 text-gray-900">{group.name}</h3>
+                <div className="flex items-center space-x-2">
+                  <h3 className="heading-4 text-gray-900">{group.name}</h3>
+                  <div className={`w-2 h-2 rounded-full ${
+                    isConnected ? 'bg-green-500' : 'bg-red-500'
+                  }`} title={isConnected ? 'Connected' : 'Disconnected'}></div>
+                </div>
                 <p className="text-sm text-gray-500">
                   {group.memberCount || group.members?.length || 0} members
+                  {isConnected && ' • Real-time enabled'}
                 </p>
               </div>
             </div>
@@ -338,70 +424,89 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
                 <p className="text-gray-500">No messages yet. Start the conversation!</p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${isOwnMessage(message) ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`flex space-x-2 max-w-xs lg:max-w-md ${isOwnMessage(message) ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    {!isOwnMessage(message) && (
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                        {message.avatar ? (
-                          <img src={message.avatar} alt={message.username} className="w-8 h-8 rounded-full object-cover" />
-                        ) : (
-                          <span className="text-sm font-medium text-gray-600">
-                            {message.username?.charAt(0) || 'U'}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    
-                    <div className={`px-4 py-2 rounded-lg ${
-                      isOwnMessage(message)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}>
+              <>
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${isOwnMessage(message) ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`flex space-x-2 max-w-xs lg:max-w-md ${isOwnMessage(message) ? 'flex-row-reverse space-x-reverse' : ''}`}>
                       {!isOwnMessage(message) && (
-                        <p className="text-xs font-medium mb-1 opacity-75">
-                          @{message.username}
-                        </p>
-                      )}
-                      <p className="text-sm">{message.content}</p>
-                      {message.message_type === 'image' && message.attachment_url && (
-                        <div className="mt-2">
-                          <img 
-                            src={message.attachment_url} 
-                            alt="Chat image"
-                            className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => setSelectedImage(message.attachment_url || '')}
-                          />
-                        </div>
-                      )}
-                      {message.message_type === 'file' && message.attachment_url && (
-                        <div className="mt-2">
-                          <a
-                            href={message.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                          >
-                            <PaperClipIcon className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-700">
-                              {message.content.replace(/^[^\s]+ /, '')} {/* Remove emoji and space */}
+                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                          {message.avatar ? (
+                            <img src={message.avatar} alt={message.username} className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <span className="text-sm font-medium text-gray-600">
+                              {message.username?.charAt(0) || 'U'}
                             </span>
-                            <span className="text-xs text-gray-500">Download</span>
-                          </a>
+                          )}
                         </div>
                       )}
-                      <p className={`text-xs mt-1 ${
-                        isOwnMessage(message) ? 'text-blue-100' : 'text-gray-500'
+                      
+                      <div className={`px-4 py-2 rounded-lg ${
+                        isOwnMessage(message)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-900'
                       }`}>
-                        {formatTime(message.created_at)}
-                      </p>
+                        {!isOwnMessage(message) && (
+                          <p className="text-xs font-medium mb-1 opacity-75">
+                            @{message.username}
+                          </p>
+                        )}
+                        <p className="text-sm">{message.content}</p>
+                        {message.message_type === 'image' && message.attachment_url && (
+                          <div className="mt-2">
+                            <img 
+                              src={message.attachment_url} 
+                              alt="Chat image"
+                              className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setSelectedImage(message.attachment_url || '')}
+                            />
+                          </div>
+                        )}
+                        {message.message_type === 'file' && message.attachment_url && (
+                          <div className="mt-2">
+                            <a
+                              href={message.attachment_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                              <PaperClipIcon className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm font-medium text-gray-700">
+                                {message.content.replace(/^[^\s]+ /, '')} {/* Remove emoji and space */}
+                              </span>
+                              <span className="text-xs text-gray-500">Download</span>
+                            </a>
+                          </div>
+                        )}
+                        <p className={`text-xs mt-1 ${
+                          isOwnMessage(message) ? 'text-blue-100' : 'text-gray-500'
+                        }`}>
+                          {formatTime(message.created_at)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+                
+                {/* Typing indicators */}
+                {typingUsers.length > 0 && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-500 italic">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span>
+                      {typingUsers.length === 1 
+                        ? `${typingUsers[0]} is typing...`
+                        : `${typingUsers.join(', ')} are typing...`
+                      }
+                    </span>
+                  </div>
+                )}
+              </>
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -413,7 +518,7 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
                 <input
                   type="text"
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={handleInputChange}
                   placeholder="Type a message..."
                   className="input pr-12"
                   disabled={!user}

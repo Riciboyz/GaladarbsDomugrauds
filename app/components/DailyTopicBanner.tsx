@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useWebSocket } from '../contexts/WebSocketContext'
 import { useRouter } from 'next/navigation'
 import { CalendarIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 
@@ -26,6 +27,20 @@ export default function DailyTopicBanner({ onTopicClick }: DailyTopicBannerProps
   useEffect(() => {
     loadActiveTopic()
   }, [])
+
+  // Listen for real-time topic updates
+  const { lastMessage } = useWebSocket()
+  useEffect(() => {
+    if (!lastMessage) return
+    const { type, data } = lastMessage
+    if (type === 'daily_topic_active_set') {
+      setTopic(data)
+    } else if (type === 'daily_topic_updated' && topic && data.id === topic.id) {
+      setTopic({ ...topic, ...data })
+    } else if (type === 'daily_topic_deleted' && topic && data.id === topic.id) {
+      setTopic(null)
+    }
+  }, [lastMessage, topic])
 
   const loadActiveTopic = async () => {
     try {

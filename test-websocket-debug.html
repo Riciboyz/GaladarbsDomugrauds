@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .message { background-color: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .thread { background-color: #e9ecef; padding: 10px; margin: 5px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Debug Test</h1>
+    <div id="status" class="status disconnected">Disconnected</div>
+    <div id="messages"></div>
+    <div id="threads"></div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="sendThread()">Send Thread</button>
+    <button onclick="testAPI()">Test API</button>
+
+    <script>
+        let ws = null;
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
+        const threads = document.getElementById('threads');
+
+        function connect() {
+            if (ws) return;
+            
+            addMessage('Connecting to WebSocket...');
+            ws = new WebSocket('ws://localhost:3001');
+            
+            ws.onopen = () => {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+                addMessage('✅ Connected to WebSocket');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                addMessage('📨 Received: ' + JSON.stringify(data, null, 2));
+                
+                // Handle thread messages
+                if (data.type === 'new_thread') {
+                    addThread(data.data);
+                } else if (data.type === 'thread_updated') {
+                    updateThread(data.data);
+                } else if (data.type === 'thread_deleted') {
+                    removeThread(data.data.threadId);
+                }
+            };
+            
+            ws.onclose = (event) => {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+                addMessage('❌ Disconnected: ' + event.code + ' ' + event.reason);
+                ws = null;
+            };
+            
+            ws.onerror = (error) => {
+                addMessage('❌ Error: ' + error);
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+
+        function sendThread() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const thread = {
+                    id: 'test-' + Date.now(),
+                    content: 'Test thread from WebSocket',
+                    authorId: 'user-123',
+                    createdAt: new Date().toISOString(),
+                    likes: [],
+                    dislikes: [],
+                    comments: [],
+                    replies: [],
+                    visibility: 'public'
+                };
+                
+                ws.send(JSON.stringify({
+                    type: 'new_thread',
+                    data: thread
+                }));
+                addMessage('📝 Sent new thread');
+            } else {
+                addMessage('❌ WebSocket not connected');
+            }
+        }
+
+        function testAPI() {
+            fetch('http://localhost:3001', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'new_thread',
+                    data: {
+                        id: 'api-test-' + Date.now(),
+                        content: 'Test thread from API',
+                        authorId: 'user-123',
+                        createdAt: new Date().toISOString(),
+                        likes: [],
+                        dislikes: [],
+                        comments: [],
+                        replies: [],
+                        visibility: 'public'
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage('📡 API Response: ' + JSON.stringify(data));
+            })
+            .catch(error => {
+                addMessage('❌ API Error: ' + error);
+            });
+        }
+
+        function addMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + ':</strong> ' + message;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addThread(thread) {
+            const div = document.createElement('div');
+            div.className = 'thread';
+            div.id = 'thread-' + thread.id;
+            div.innerHTML = '<strong>Thread:</strong> ' + thread.content + ' <small>(' + thread.id + ')</small>';
+            threads.appendChild(div);
+        }
+
+        function updateThread(thread) {
+            const div = document.getElementById('thread-' + thread.id);
+            if (div) {
+                div.innerHTML = '<strong>Thread (Updated):</strong> ' + thread.content + ' <small>(' + thread.id + ')</small>';
+            }
+        }
+
+        function removeThread(threadId) {
+            const div = document.getElementById('thread-' + threadId);
+            if (div) {
+                div.remove();
+            }
+        }
+
+        // Auto-connect on page load
+        window.onload = () => {
+            addMessage('🚀 Page loaded, ready to test WebSocket');
+            connect();
+        };
+    </script>
+</body>
+</html>

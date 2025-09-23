@@ -81,6 +81,30 @@ export async function POST(request: NextRequest) {
       decoded.id
     ]);
 
+    // Broadcast create and possibly new active topic
+    try {
+      const payload = {
+        id: topicId,
+        title: title.trim(),
+        description: description?.trim() || '',
+        is_active: !!is_active,
+        scheduled_date: scheduled_date ? String(scheduled_date).slice(0,10) : null,
+        created_by: decoded.id
+      }
+      await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'daily_topic_created', data: payload })
+      })
+      if (is_active) {
+        await fetch('http://localhost:3001', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'daily_topic_active_set', data: payload })
+        })
+      }
+    } catch {}
+
     return NextResponse.json({ 
       success: true, 
       message: 'Daily topic created successfully',
@@ -136,6 +160,29 @@ export async function PUT(request: NextRequest) {
       id
     ]);
 
+    // Broadcast update (and active change if applicable)
+    try {
+      const payload = {
+        id,
+        title: title.trim(),
+        description: description?.trim() || '',
+        is_active: !!is_active,
+        scheduled_date: scheduled_date ? String(scheduled_date).slice(0,10) : null
+      }
+      await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'daily_topic_updated', data: payload })
+      })
+      if (is_active) {
+        await fetch('http://localhost:3001', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'daily_topic_active_set', data: payload })
+        })
+      }
+    } catch {}
+
     return NextResponse.json({ 
       success: true, 
       message: 'Daily topic updated successfully' 
@@ -179,6 +226,15 @@ export async function DELETE(request: NextRequest) {
     
     // Delete the topic
     await db.query('DELETE FROM daily_topics WHERE id = ?', [topicId]);
+
+    // Broadcast deletion
+    try {
+      await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'daily_topic_deleted', data: { id: topicId } })
+      })
+    } catch {}
 
     return NextResponse.json({ 
       success: true, 

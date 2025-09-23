@@ -5,13 +5,18 @@
   "scripts": {
     "dev": "next dev",
     "dev:ws": "node websocket-server.js",
+    "dev:ws-enhanced": "node websocket-server-enhanced.js",
     "dev:full": "concurrently \"npm run dev\" \"npm run dev:ws\"",
+    "dev:full-enhanced": "concurrently \"npm run dev\" \"npm run dev:ws-enhanced\"",
+    "start:enhanced": "node start-enhanced.js",
     "start:realtime": "node start-realtime.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "db:init": "node database/init.js",
-    "db:reset": "rm -f threads_app.db && npm run db:init"
+    "db:init-enhanced": "node database/init-enhanced.js",
+    "db:reset": "rm -f threads_app.db && npm run db:init",
+    "db:reset-enhanced": "rm -f threads_app.db && npm run db:init-enhanced"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",

@@ -65,7 +65,7 @@ const getThreadById = async (id) => {
 };
 
 const getAllThreads = async (options = {}) => {
-  const { limit = 50, offset = 0, userId = null } = options;
+  const { limit = 50, offset = 0, userId = null, followingOnlyForUserId = null } = options;
   
   try {
     let query = `
@@ -83,6 +83,18 @@ const getAllThreads = async (options = {}) => {
     if (userId) {
       query += ' AND t.author_id = ?';
       params.push(userId);
+    }
+
+    // If followingOnlyForUserId is provided, only include threads from users that this user follows
+    if (followingOnlyForUserId) {
+      const user = await db.get('SELECT following FROM users WHERE id = ?', [followingOnlyForUserId]);
+      const following = JSON.parse((user.rows?.[0]?.following) || '[]');
+      if (following.length === 0) {
+        return [];
+      }
+      const placeholders = following.map(() => '?').join(',');
+      query += ` AND t.author_id IN (${placeholders})`;
+      params.push(...following);
     }
     
     query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?';
