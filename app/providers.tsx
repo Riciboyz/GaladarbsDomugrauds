@@ -18,8 +18,8 @@ function ToastWrapper() {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
-      <WebSocketProvider>
-        <UserProvider>
+      <UserProvider>
+        <WebSocketProvider>
           <ThreadProvider>
             <GroupProvider>
               <NotificationProvider>
@@ -30,8 +30,8 @@ export function Providers({ children }: { children: ReactNode }) {
               </NotificationProvider>
             </GroupProvider>
           </ThreadProvider>
-        </UserProvider>
-      </WebSocketProvider>
+        </WebSocketProvider>
+      </UserProvider>
     </ToastProvider>
   )
 }

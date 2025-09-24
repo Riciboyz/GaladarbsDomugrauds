@@ -4,29 +4,31 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useWebSocket } from './WebSocketContext'
 
 // Types
+// Viena komentāra datu modelis (stingri tipi, TS izcels kļūdas, ja padod nepareizu tipu)
 export interface Comment {
-  id: string
-  authorId: string
-  content: string
-  createdAt: Date
-  likes: string[]
-  dislikes: string[]
+  id: string // komentāra unikāls identifikators
+  authorId: string // lietotāja ID, kurš uzrakstīja komentāru
+  content: string // komentāra teksts
+  createdAt: Date // izveides datums/Laiks (Date objekts)
+  likes: string[] // lietotāju ID saraksts, kas ieliko "patīk"
+  dislikes: string[] // lietotāju ID saraksts, kas ieliko "nepatīk"
 }
 
+// Galvenā "Thread" (ieraksta/domas) datu struktūra
 export interface Thread {
-  id: string
-  authorId: string
-  content: string
-  createdAt: Date
-  likes: string[]
-  dislikes: string[]
-  comments: Comment[]
-  replies: Thread[]
-  parentId?: string
-  visibility: 'public' | 'followers'
-  topicDayId?: string
-  groupId?: string
-  attachments?: string[]
+  id: string // ieraksta unikāls identifikators
+  authorId: string // autora lietotāja ID
+  content: string // ieraksta saturs (teksts)
+  createdAt: Date // izveides laiks (Date)
+  likes: string[] // lietotāju ID, kuri ielikuši "patīk"
+  dislikes: string[] // lietotāju ID, kuri ielikuši "nepatīk"
+  comments: Comment[] // komentāru saraksts pie ieraksta
+  replies: Thread[] // atbilžu (child thread) saraksts
+  parentId?: string // ja šis ir atbildes ieraksts, te glabājas vecāka ID
+  visibility: 'public' | 'followers' // redzamība: publisks vai tikai sekotājiem
+  topicDayId?: string // saistība ar "Daily Topic" (ja ir)
+  groupId?: string // saistība ar grupu (ja ieraksts pieder grupai)
+  attachments?: string[] // pielikumu (failu/attēlu URL) saraksts
 }
 
 // Context

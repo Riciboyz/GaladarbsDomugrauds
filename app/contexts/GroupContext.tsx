@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useWebSocket } from './WebSocketContext'
 
 // Types
 export interface Group {
@@ -23,6 +24,10 @@ export interface Group {
     displayName: string
     avatar?: string
   }
+  // Real-time properties
+  onlineMembers?: string[]
+  typingUsers?: string[]
+  lastActivity?: Date | string
 }
 
 // Context
@@ -34,6 +39,12 @@ interface GroupContextType {
   deleteGroup: (groupId: string) => void
   createGroup: (groupData: any) => Promise<void>
   loadGroups: () => Promise<void>
+  // Real-time functions
+  joinGroupRealtime: (groupId: string) => void
+  leaveGroupRealtime: (groupId: string) => void
+  sendGroupMessage: (groupId: string, content: string, messageType?: string, attachmentUrl?: string) => void
+  sendTyping: (groupId: string) => void
+  sendStopTyping: (groupId: string) => void
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined)
@@ -95,6 +106,8 @@ const mockGroups: Group[] = [
 ]
 
 export function GroupProvider({ children }: { children: ReactNode }) {
+  const { isConnected, sendGroupMessage: wsSendGroupMessage, joinGroup: wsJoinGroup, leaveGroup: wsLeaveGroup, sendTyping: wsSendTyping, sendStopTyping: wsSendStopTyping } = useWebSocket()
+  
   const [groups, setGroups] = useState<Group[]>(() => {
     if (typeof window !== 'undefined') {
       const savedGroups = localStorage.getItem('threads-groups')
@@ -102,14 +115,22 @@ export function GroupProvider({ children }: { children: ReactNode }) {
         try {
           return JSON.parse(savedGroups).map((group: any) => ({
             ...group,
-            createdAt: new Date(group.createdAt)
+            createdAt: new Date(group.createdAt),
+            onlineMembers: [],
+            typingUsers: [],
+            lastActivity: new Date()
           }))
         } catch (error) {
           console.error('Error parsing saved groups:', error)
         }
       }
     }
-    return mockGroups
+    return mockGroups.map(group => ({
+      ...group,
+      onlineMembers: [],
+      typingUsers: [],
+      lastActivity: new Date()
+    }))
   })
 
   const addGroup = (group: Group) => {
@@ -140,7 +161,9 @@ export function GroupProvider({ children }: { children: ReactNode }) {
 
   const loadGroups = async () => {
     try {
-      const response = await fetch('/api/groups')
+      const response = await fetch('/api/groups', {
+        credentials: 'include'
+      })
       const data = await response.json()
       
       if (data.success) {
@@ -177,6 +200,130 @@ export function GroupProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Real-time WebSocket message handlers
+  useEffect(() => {
+    const handleWebSocketMessage = (event: CustomEvent) => {
+      try {
+        const message = JSON.parse(event.detail)
+        
+        switch (message.type) {
+          case 'group_created':
+            console.log('🆕 Group created:', message.data)
+            addGroup(message.data.group)
+            break
+            
+          case 'group_updated':
+            console.log('🔄 Group updated:', message.data)
+            updateGroup(message.data.groupId, message.data.updates)
+            break
+            
+          case 'group_deleted':
+            console.log('🗑️ Group deleted:', message.data)
+            deleteGroup(message.data.groupId)
+            break
+            
+          case 'group_member_joined':
+            console.log('👋 Member joined group:', message.data)
+            updateGroup(message.data.groupId, {
+              members: [...(groups.find(g => g.id === message.data.groupId)?.members || []), message.data.userId]
+            })
+            break
+            
+          case 'group_member_left':
+            console.log('👋 Member left group:', message.data)
+            updateGroup(message.data.groupId, {
+              members: (groups.find(g => g.id === message.data.groupId)?.members || []).filter(id => id !== message.data.userId)
+            })
+            break
+            
+          case 'group_message':
+            console.log('💬 Group message received:', message.data)
+            updateGroup(message.data.groupId, {
+              lastActivity: new Date()
+            })
+            break
+            
+          case 'user_typing':
+            console.log('⌨️ User typing in group:', message.data)
+            updateGroup(message.data.groupId, {
+              typingUsers: [...(groups.find(g => g.id === message.data.groupId)?.typingUsers || []).filter(id => id !== message.data.userId), message.data.userId]
+            })
+            break
+            
+          case 'user_stopped_typing':
+            console.log('⌨️ User stopped typing in group:', message.data)
+            updateGroup(message.data.groupId, {
+              typingUsers: (groups.find(g => g.id === message.data.groupId)?.typingUsers || []).filter(id => id !== message.data.userId)
+            })
+            break
+            
+          case 'user_online':
+            console.log('🟢 User came online:', message.data)
+            // Update online members for all groups this user is in
+            setGroups(prev => prev.map(group => 
+              group.members.includes(message.data.userId)
+                ? { ...group, onlineMembers: [...(group.onlineMembers || []).filter(id => id !== message.data.userId), message.data.userId] }
+                : group
+            ))
+            break
+            
+          case 'user_offline':
+            console.log('🔴 User went offline:', message.data)
+            // Remove from online members for all groups
+            setGroups(prev => prev.map(group => 
+              group.members.includes(message.data.userId)
+                ? { ...group, onlineMembers: (group.onlineMembers || []).filter(id => id !== message.data.userId) }
+                : group
+            ))
+            break
+        }
+      } catch (error) {
+        console.error('Error handling WebSocket message:', error)
+      }
+    }
+
+    // Listen for WebSocket messages
+    window.addEventListener('websocket-message', handleWebSocketMessage as EventListener)
+    
+    return () => {
+      window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener)
+    }
+  }, [groups])
+
+  // Real-time functions
+  const joinGroupRealtime = (groupId: string) => {
+    if (isConnected) {
+      wsJoinGroup(groupId)
+      console.log('🔌 Joining group real-time:', groupId)
+    }
+  }
+
+  const leaveGroupRealtime = (groupId: string) => {
+    if (isConnected) {
+      wsLeaveGroup(groupId)
+      console.log('🔌 Leaving group real-time:', groupId)
+    }
+  }
+
+  const sendGroupMessage = (groupId: string, content: string, messageType: string = 'text', attachmentUrl?: string) => {
+    if (isConnected) {
+      wsSendGroupMessage(groupId, content, messageType, attachmentUrl)
+      console.log('💬 Sending group message:', { groupId, content, messageType })
+    }
+  }
+
+  const sendTyping = (groupId: string) => {
+    if (isConnected) {
+      wsSendTyping(groupId)
+    }
+  }
+
+  const sendStopTyping = (groupId: string) => {
+    if (isConnected) {
+      wsSendStopTyping(groupId)
+    }
+  }
+
   // Load groups on mount
   useEffect(() => {
     loadGroups()
@@ -190,6 +337,12 @@ export function GroupProvider({ children }: { children: ReactNode }) {
     deleteGroup,
     createGroup,
     loadGroups,
+    // Real-time functions
+    joinGroupRealtime,
+    leaveGroupRealtime,
+    sendGroupMessage,
+    sendTyping,
+    sendStopTyping,
   }
 
   return (

@@ -68,14 +68,14 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Send group chat message
-export async function POST(request: NextRequest) {
-  try {
+export async function POST(request: NextRequest) { // POST maršruts ziņas nosūtīšanai grupas čatā
+  try { // drošai kļūdu apstrādei izmantojam try/catch
     // Check authentication
-    const authToken = request.cookies.get('auth-token')?.value;
-    if (!authToken) {
+    const authToken = request.cookies.get('auth-token')?.value; // nolasām autentifikācijas tokenu no sīkdatnes
+    if (!authToken) { // ja tokena nav, lietotājs nav autentificēts
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: 'Authentication required' }, // paziņojam, ka vajag autorizēties
+        { status: 401 } // 401 Unauthorized
       );
     }
 
@@ -131,6 +131,30 @@ export async function POST(request: NextRequest) {
       messageType,
       attachmentUrl
     });
+
+    // Broadcast to WebSocket server so other members see it in real-time
+    try {
+      const author = await authDb.getUserById(decoded.id);
+      const wsPayload = {
+        id: messageId,
+        group_id: groupId,
+        sender_id: decoded.id,
+        content: content.trim(),
+        message_type: messageType,
+        attachment_url: attachmentUrl,
+        created_at: new Date().toISOString(),
+        username: author?.username,
+        display_name: author?.displayName || author?.display_name,
+        avatar: author?.avatar || null
+      };
+      await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'group_message', data: wsPayload })
+      });
+    } catch (wsError) {
+      console.log('WS broadcast for group message failed (non-critical):', (wsError as any).message || wsError);
+    }
 
     // Create notifications for other group members
     await createGroupMessageNotifications(groupId, decoded.id, content);

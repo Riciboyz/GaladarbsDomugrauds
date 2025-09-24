@@ -200,6 +200,7 @@ wss.on('connection', async (ws, req) => {
           break;
         
         case 'join_group':
+          console.log('📨 WebSocket Server: Received join_group:', data);
           await handleJoinGroup(ws, data);
           break;
         
@@ -341,7 +342,11 @@ async function handleAuthentication(ws, data) {
 
 // Handle joining a group
 async function handleJoinGroup(ws, data) {
+  console.log('🔍 WebSocket Server: handleJoinGroup called with data:', data);
+  console.log('🔍 WebSocket Server: ws.userId:', ws.userId);
+  
   if (!ws.userId) {
+    console.log('❌ WebSocket Server: No userId, sending auth error');
     ws.send(JSON.stringify({
       type: 'error',
       data: { message: 'Authentication required' }
@@ -350,7 +355,9 @@ async function handleJoinGroup(ws, data) {
   }
 
   const { groupId } = data;
+  console.log('🔍 WebSocket Server: groupId from data:', groupId);
   if (!groupId) {
+    console.log('❌ WebSocket Server: No groupId, sending Group ID required error');
     ws.send(JSON.stringify({
       type: 'error',
       data: { message: 'Group ID required' }
@@ -405,6 +412,16 @@ async function handleLeaveGroup(ws, data) {
 
 // Handle group message
 async function handleGroupMessage(ws, data) {
+  // Ensure we have an authenticated user; if anonymous and token provided, upgrade
+  if (!ws.userId || String(ws.userId).startsWith('anonymous')) {
+    const maybeToken = data?.token;
+    const decoded = maybeToken ? verifyToken(maybeToken) : null;
+    if (decoded) {
+      ws.userId = decoded.id;
+      ws.userInfo = await getUserInfo(decoded.id);
+      userConnections.set(ws.userId, ws);
+    }
+  }
   if (!ws.userId) {
     ws.send(JSON.stringify({
       type: 'error',
@@ -435,34 +452,43 @@ async function handleGroupMessage(ws, data) {
 
   // Save message to database
   try {
+    // Izveidojam unikālu ziņas ID (timestamp + nejauša rinda)
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     
+    // Ierakstām ziņu datubāzē tabulā group_messages
     await db.run(`
       INSERT INTO group_messages (id, group_id, sender_id, content, message_type, attachment_url, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `, [messageId, groupId, ws.userId, content, messageType, attachmentUrl]);
 
-    // Create message object for broadcasting
+    // Get user info if not already available
+    if (!ws.userInfo) {
+      ws.userInfo = await getUserInfo(ws.userId);
+    }
+
+    // Sagatavojam WS ziņas objektu, ko sūtīsim klientiem
     const message = {
-      id: messageId,
-      group_id: groupId,
-      sender_id: ws.userId,
-      content: content,
-      message_type: messageType,
-      attachment_url: attachmentUrl,
-      created_at: new Date().toISOString(),
-      username: ws.userInfo.username,
-      display_name: ws.userInfo.display_name,
-      avatar: ws.userInfo.avatar
+      id: messageId, // ziņas ID
+      group_id: groupId, // grupas ID
+      sender_id: ws.userId, // sūtītāja ID
+      content: content, // teksta saturs
+      message_type: messageType, // 'text' | 'image' | 'file'
+      attachment_url: attachmentUrl, // ja ir fails/attēls – tā saite
+      created_at: new Date().toISOString(), // izveides laiks ISO formātā
+      username: ws.userInfo?.username || 'Unknown', // sūtītāja lietotājvārds
+      display_name: ws.userInfo?.display_name || 'Unknown User', // sūtītāja vārds uzvārds / display name
+      avatar: ws.userInfo?.avatar || null // sūtītāja avatārs
     };
 
-    // Broadcast to group members
-    broadcastToGroup(groupId, {
-      type: 'group_message',
-      data: message
-    }, ws.userId);
+    // Izveidojam WS ziņojumu payload
+    const payload = { type: 'group_message', data: message };
+    console.log('📨 WebSocket Server: Broadcasting message:', payload);
+    // Sūtām visiem šīs grupas dalībniekiem (izņemot sūtītāju)
+    broadcastToGroup(groupId, payload, ws.userId);
+    // Papildus – sūtām visiem savienojumiem kā drošības tīklu; klienti filtrē pēc group_id
+    broadcastToAll(payload, ws.userId);
 
-    // Send confirmation to sender
+    // Atsūtām apstiprinājumu pašam sūtītājam, lai UI var nekavējoties atzīmēt piegādi
     ws.send(JSON.stringify({
       type: 'message_sent',
       data: { messageId, message }

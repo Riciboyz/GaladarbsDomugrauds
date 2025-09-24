@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useUser } from '../contexts/UserContext'
 import { useToast } from '../contexts/ToastContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
+import { useGroup } from '../contexts/GroupContext'
 import { 
   PaperAirplaneIcon,
   PhotoIcon,
@@ -33,6 +34,7 @@ interface Message {
 export default function GroupChat({ group, onClose }: GroupChatProps) {
   const { user } = useUser()
   const { success, error: showError } = useToast()
+  const { sendGroupMessage, sendTyping, sendStopTyping } = useWebSocket()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -49,41 +51,141 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
   const { 
     isConnected, 
     lastMessage,
-    sendGroupMessage, 
     joinGroup, 
-    leaveGroup, 
-    sendTyping, 
-    sendStopTyping
+    leaveGroup
   } = useWebSocket()
 
-  // Join group when WebSocket connects
+  // Track joined groups to prevent spam
+  const joinedGroupsRef = useRef(new Set<string>())
+  const currentGroupRef = useRef<string | null>(null)
+  const isJoiningRef = useRef(false)
+  
+  // Store functions in refs to avoid dependency issues
+  const joinGroupRef = useRef(joinGroup)
+  const leaveGroupRef = useRef(leaveGroup)
+  
+  // Update refs when functions change
+  joinGroupRef.current = joinGroup
+  leaveGroupRef.current = leaveGroup
+
+  // Join group when WebSocket connects (only once per group)
   useEffect(() => {
-    if (isConnected && group.id) {
-      console.log('👥 Joining group:', group.id)
-      joinGroup(group.id)
+    console.log('🔍 GroupChat: useEffect triggered', { 
+      isConnected, 
+      groupId: group.id, 
+      hasJoined: joinedGroupsRef.current.has(group.id),
+      isJoining: isJoiningRef.current,
+      currentGroup: currentGroupRef.current
+    })
+    
+    // Prevent multiple simultaneous joins
+    if (isJoiningRef.current) {
+      console.log('🚫 Already joining, skipping')
+      return
     }
     
+    // If group changed, leave previous group
+    if (currentGroupRef.current && currentGroupRef.current !== group.id) {
+      console.log('👋 Leaving previous group:', currentGroupRef.current)
+      leaveGroupRef.current(currentGroupRef.current)
+      joinedGroupsRef.current.delete(currentGroupRef.current)
+      currentGroupRef.current = null
+    }
+    
+    // Join new group if connected and not already joined
+    if (isConnected && group.id && !joinedGroupsRef.current.has(group.id)) {
+      console.log('👥 Joining group:', group.id)
+      isJoiningRef.current = true
+      const success = joinGroupRef.current(group.id)
+      if (success) {
+        joinedGroupsRef.current.add(group.id)
+        currentGroupRef.current = group.id
+        console.log('✅ Successfully joined group:', group.id)
+      } else {
+        console.log('❌ Failed to join group:', group.id)
+      }
+      
+      // Reset joining flag after a short delay
+      setTimeout(() => {
+        isJoiningRef.current = false
+      }, 1000)
+    } else {
+      console.log('🚫 Not joining group:', { isConnected, groupId: group.id, hasJoined: joinedGroupsRef.current.has(group.id) })
+    }
+  }, [isConnected, group.id]) // Removed all function dependencies
+
+  // Leave group when component unmounts
+  useEffect(() => {
     return () => {
-      if (group.id) {
-        console.log('👋 Leaving group:', group.id)
-        leaveGroup(group.id)
+      if (isConnected && currentGroupRef.current) {
+        console.log('👋 Leaving group on unmount:', currentGroupRef.current)
+        leaveGroupRef.current(currentGroupRef.current)
+        joinedGroupsRef.current.delete(currentGroupRef.current)
+        currentGroupRef.current = null
       }
     }
-  }, [isConnected, group.id, joinGroup, leaveGroup])
+  }, []) // Empty dependency array - only run on unmount
   // React to site-wide websocket messages relevant to this group
   useEffect(() => {
-    if (!lastMessage) return
-    const { type, data } = lastMessage
-    if (type === 'group_message' && data.groupId === group.id) {
-      setMessages(prev => [...prev, data.message])
+    const handleWebSocketMessage = (event: CustomEvent) => {
+      try {
+        const message = JSON.parse(event.detail)
+        const { type, data } = message
+
+        // Normalize helper to our Message shape
+        const normalize = (m: any): Message => ({
+          id: m.id,
+          group_id: m.group_id || m.groupId || group.id,
+          sender_id: m.sender_id || m.senderId,
+          content: m.content,
+          message_type: m.message_type || m.messageType || 'text',
+          attachment_url: m.attachment_url || m.attachmentUrl,
+          created_at: m.created_at || m.createdAt || new Date().toISOString(),
+          username: m.username,
+          display_name: m.display_name || m.displayName,
+          avatar: m.avatar
+        })
+
+        if (type === 'group_message' || type === 'message_sent') {
+          console.log('💬 GroupChat: Received group message:', { type, data, groupId: group.id })
+          const msgObj = data?.message ? data.message : data
+          const msgGroupId = msgObj?.group_id || msgObj?.groupId
+          console.log('💬 GroupChat: Message group ID:', msgGroupId, 'Current group ID:', group.id)
+          if (msgGroupId === group.id) {
+            const normalized = normalize(msgObj)
+            console.log('💬 GroupChat: Adding message to chat:', normalized)
+            setMessages(prev => {
+              if (prev.some(m => m.id === normalized.id)) {
+                console.log('💬 GroupChat: Message already exists, skipping')
+                return prev
+              }
+              console.log('💬 GroupChat: Adding new message to state')
+              return [...prev, normalized]
+            })
+            scrollToBottom()
+          } else {
+            console.log('💬 GroupChat: Message not for this group, ignoring')
+          }
+        }
+        if ((type === 'user_typing' || type === 'user_stopped_typing') && data?.groupId === group.id) {
+          if (type === 'user_typing') {
+            setTypingUsers(prev => Array.from(new Set([...prev, data.userId])))
+          } else {
+            setTypingUsers(prev => prev.filter(id => id !== data.userId))
+          }
+        }
+      } catch (error) {
+        console.error('Error handling WebSocket message in GroupChat:', error)
+      }
     }
-    if (type === 'user_typing' && data.groupId === group.id) {
-      setTypingUsers(prev => Array.from(new Set([...prev, data.userId])))
+
+    // Listen for WebSocket messages
+    window.addEventListener('websocket-message', handleWebSocketMessage as EventListener)
+    
+    return () => {
+      window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener)
     }
-    if (type === 'user_stopped_typing' && data.groupId === group.id) {
-      setTypingUsers(prev => prev.filter(id => id !== data.userId))
-    }
-  }, [lastMessage, group.id])
+  }, [group.id])
 
   useEffect(() => {
     loadMessages()
@@ -164,15 +266,23 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
     
     // Send via WebSocket if connected, otherwise fallback to API
     if (isConnected) {
-      const success = sendGroupMessage(group.id, messageContent, 'text')
-      if (success) {
-        setNewMessage('')
-        // Stop typing indicator
-        sendStopTyping(group.id)
-        setIsTyping(false)
-      } else {
-        showError('Send Message', 'Failed to send message via WebSocket')
+      sendGroupMessage(group.id, messageContent, 'text')
+      // Optimistic add for sender; WS echo will be de-duplicated by id
+      const optimisticMsg: Message = {
+        id: `tmp_${Date.now()}`,
+        group_id: group.id,
+        sender_id: user.id,
+        content: messageContent,
+        message_type: 'text',
+        created_at: new Date().toISOString(),
+        username: user.username,
+        display_name: user.displayName,
+        avatar: user.avatar
       }
+      setMessages(prev => [...prev, optimisticMsg])
+      setNewMessage('')
+      scrollToBottom()
+      return
     } else {
       // Fallback to API
       try {
@@ -307,9 +417,21 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
         throw new Error(messageData.error || 'Failed to send file')
       }
 
-      // Clear input and reload messages
+      // Clear input and append locally for instant feedback
       e.target.value = ''
-      loadMessages(true)
+      const localMsg: Message = {
+        id: messageData.messageId,
+        group_id: group.id,
+        sender_id: user.id,
+        content: `${fileIcon} ${file.name}`,
+        message_type: messageType,
+        attachment_url: uploadData.url,
+        created_at: new Date().toISOString(),
+        username: user.username,
+        display_name: user.displayName,
+        avatar: user.avatar
+      }
+      setMessages(prev => [...prev, localMsg])
       success('File Sent', 'File uploaded and sent successfully!')
       
     } catch (error) {

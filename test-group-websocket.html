@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Group WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .message { background-color: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; font-size: 12px; }
+        .group-message { background-color: #e7f3ff; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        h2 { margin-top: 30px; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Group WebSocket Test</h1>
+    <div id="status" class="status disconnected">Disconnected</div>
+    
+    <h2>Authentication</h2>
+    <input type="text" id="token" placeholder="Enter auth token (optional)" style="width: 300px;">
+    <button onclick="authenticate()">🔐 Authenticate</button>
+    
+    <h2>Group Management</h2>
+    <input type="text" id="groupId" placeholder="Enter group ID" style="width: 200px;">
+    <button onclick="joinGroup()">👥 Join Group</button>
+    <button onclick="leaveGroup()">👋 Leave Group</button>
+    
+    <h2>Group Messages</h2>
+    <div id="groupMessages" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+    
+    <h2>Send Message</h2>
+    <input type="text" id="messageContent" placeholder="Enter message content" style="width: 300px;">
+    <button onclick="sendGroupMessage()" id="sendBtn" disabled>💬 Send Message</button>
+    
+    <h2>All WebSocket Messages</h2>
+    <div id="allMessages" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+    
+    <h2>Controls</h2>
+    <button onclick="clearLogs()">🧹 Clear Logs</button>
+
+    <script>
+        let ws = null;
+        let currentGroupId = null;
+        const status = document.getElementById('status');
+        const groupMessages = document.getElementById('groupMessages');
+        const allMessages = document.getElementById('allMessages');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function connect() {
+            if (ws) return;
+            
+            addMessage('🔌 Connecting to WebSocket...');
+            ws = new WebSocket('ws://localhost:3001');
+            
+            ws.onopen = () => {
+                status.textContent = '✅ Connected';
+                status.className = 'status connected';
+                addMessage('✅ WebSocket connected successfully');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                addAllMessage('📨 Received: ' + data.type + ' - ' + JSON.stringify(data.data));
+                
+                // Handle group messages
+                if (data.type === 'group_message') {
+                    addGroupMessage(data.data);
+                } else if (data.type === 'joined_group') {
+                    addMessage('✅ Successfully joined group: ' + data.data.groupId);
+                    currentGroupId = data.data.groupId;
+                    sendBtn.disabled = false;
+                } else if (data.type === 'left_group') {
+                    addMessage('👋 Left group: ' + data.data.groupId);
+                    if (currentGroupId === data.data.groupId) {
+                        currentGroupId = null;
+                        sendBtn.disabled = true;
+                    }
+                } else if (data.type === 'authenticated') {
+                    addMessage('✅ Authentication successful: ' + data.data.user.username);
+                } else if (data.type === 'auth_error') {
+                    addMessage('❌ Authentication failed: ' + data.data.message);
+                }
+            };
+            
+            ws.onclose = (event) => {
+                status.textContent = '❌ Disconnected';
+                status.className = 'status disconnected';
+                addMessage('❌ Disconnected: ' + event.code + ' ' + event.reason);
+                ws = null;
+                currentGroupId = null;
+                sendBtn.disabled = true;
+                
+                // Auto-reconnect
+                setTimeout(() => {
+                    addMessage('🔄 Attempting to reconnect...');
+                    connect();
+                }, 2000);
+            };
+            
+            ws.onerror = (error) => {
+                addMessage('❌ WebSocket Error: ' + error);
+            };
+        }
+
+        function authenticate() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('❌ WebSocket not connected');
+                return;
+            }
+            
+            const token = document.getElementById('token').value;
+            if (!token) {
+                addMessage('❌ Please enter a token');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'authenticate',
+                data: { token: token }
+            }));
+            addMessage('🔐 Sending authentication request...');
+        }
+
+        function joinGroup() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('❌ WebSocket not connected');
+                return;
+            }
+            
+            const groupId = document.getElementById('groupId').value;
+            if (!groupId) {
+                addMessage('❌ Please enter a group ID');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'join_group',
+                data: { groupId: groupId }
+            }));
+            addMessage('👥 Attempting to join group: ' + groupId);
+        }
+
+        function leaveGroup() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('❌ WebSocket not connected');
+                return;
+            }
+            
+            if (!currentGroupId) {
+                addMessage('❌ Not currently in a group');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'leave_group',
+                data: { groupId: currentGroupId }
+            }));
+            addMessage('👋 Leaving group: ' + currentGroupId);
+        }
+
+        function sendGroupMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('❌ WebSocket not connected');
+                return;
+            }
+            
+            if (!currentGroupId) {
+                addMessage('❌ Not currently in a group');
+                return;
+            }
+            
+            const content = document.getElementById('messageContent').value;
+            if (!content.trim()) {
+                addMessage('❌ Please enter message content');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'group_message',
+                data: { 
+                    groupId: currentGroupId, 
+                    content: content.trim(),
+                    messageType: 'text'
+                }
+            }));
+            addMessage('💬 Sending message: ' + content);
+            document.getElementById('messageContent').value = '';
+        }
+
+        function addMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + ':</strong> ' + message;
+            allMessages.appendChild(div);
+            allMessages.scrollTop = allMessages.scrollHeight;
+        }
+
+        function addAllMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + ':</strong> ' + message;
+            allMessages.appendChild(div);
+            allMessages.scrollTop = allMessages.scrollHeight;
+        }
+
+        function addGroupMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'group-message';
+            div.innerHTML = `
+                <strong>💬 Group Message:</strong><br>
+                <strong>From:</strong> ${message.username} (${message.display_name})<br>
+                <strong>Content:</strong> ${message.content}<br>
+                <strong>Type:</strong> ${message.message_type}<br>
+                <strong>Time:</strong> ${new Date(message.created_at).toLocaleTimeString()}<br>
+                <strong>Group ID:</strong> ${message.group_id}
+            `;
+            groupMessages.appendChild(div);
+            groupMessages.scrollTop = groupMessages.scrollHeight;
+        }
+
+        function clearLogs() {
+            groupMessages.innerHTML = '';
+            allMessages.innerHTML = '';
+        }
+
+        // Auto-connect on page load
+        window.onload = () => {
+            addMessage('🚀 Page loaded, connecting to WebSocket...');
+            connect();
+        };
+    </script>
+</body>
+</html>

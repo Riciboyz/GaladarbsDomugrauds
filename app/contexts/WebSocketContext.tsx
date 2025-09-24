@@ -54,16 +54,16 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       if (ws || connectInProgressRef.current) return
       connectInProgressRef.current = true
       
-      const websocket = new WebSocket('ws://localhost:3001')
-      setWs(websocket)
+      const websocket = new WebSocket('ws://localhost:3001') // izveidojam pārlūka WebSocket savienojumu ar serveri
+      setWs(websocket) // saglabājam instance React state, lai citi hooki varētu to izmantot
       
-      websocket.onopen = () => {
+      websocket.onopen = () => { // kad savienojums atvērts (CONNECTED)
         console.log('🔌 WebSocketProvider: Connected to WebSocket')
-        setIsConnected(true)
-        reconnectAttemptsRef.current = 0
-        connectInProgressRef.current = false
+        setIsConnected(true) // iestādam statusu UI indikatoram
+        reconnectAttemptsRef.current = 0 // atiestatām atkārtotas pieslēgšanās mēģinājumu skaitītāju
+        connectInProgressRef.current = false // atzīmējam, ka vairs nenotiek pieslēgšanās process
 
-        // Start heartbeat pings
+        // Start heartbeat pings // periodiski sūtām ping, lai noturētu savienojumu dzīvu
         if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current)
         heartbeatTimerRef.current = setInterval(() => {
           try {
@@ -81,12 +81,16 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             ?.split('=')[1]
           
           if (token) {
-            console.log('🔐 WebSocketProvider: Authenticating...')
+            console.log('🔐 WebSocketProvider: Authenticating with token:', token.substring(0, 20) + '...')
             websocket.send(JSON.stringify({
               type: 'authenticate',
               data: { token }
             }))
+          } else {
+            console.log('🔐 WebSocketProvider: No auth token found')
           }
+        } else {
+          console.log('🔐 WebSocketProvider: No user logged in')
         }
       }
       
@@ -110,25 +114,28 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               console.error('❌ WebSocketProvider: Authentication failed:', message.data.message)
               break
             case 'group_message':
-              console.log('💬 WebSocketProvider: Group message received')
+              console.log('💬 WebSocketProvider: Group message received:', message.data)
               break
             case 'user_typing':
-              console.log('⌨️ WebSocketProvider: User typing')
+              console.log('⌨️ WebSocketProvider: User typing:', message.data)
               break
             case 'user_stopped_typing':
-              console.log('⌨️ WebSocketProvider: User stopped typing')
+              console.log('⌨️ WebSocketProvider: User stopped typing:', message.data)
               break
             case 'new_thread':
-              console.log('📝 WebSocketProvider: New thread received')
+              console.log('📝 WebSocketProvider: New thread received:', message.data)
               break
             case 'thread_updated':
-              console.log('📝 WebSocketProvider: Thread updated')
+              console.log('📝 WebSocketProvider: Thread updated:', message.data)
               break
             case 'thread_deleted':
-              console.log('📝 WebSocketProvider: Thread deleted')
+              console.log('📝 WebSocketProvider: Thread deleted:', message.data)
+              break
+            case 'pong':
+              // Heartbeat response, don't log
               break
             default:
-              console.log('📨 WebSocketProvider: Unknown message type:', message.type)
+              console.log('📨 WebSocketProvider: Unknown message type:', message.type, message.data)
           }
         } catch (error) {
           console.error('❌ WebSocketProvider: Error parsing message:', error)
@@ -189,20 +196,29 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   }
 
   const sendGroupMessage = (groupId: string, content: string, messageType: string = 'text', attachmentUrl?: string): boolean => {
+    const token = typeof document !== 'undefined'
+      ? document.cookie.split('; ').find(r => r.startsWith('auth-token='))?.split('=')[1]
+      : undefined
+    console.log('🔌 WebSocketContext: Sending group message:', { groupId, content, messageType, hasToken: !!token })
     return sendMessage({
       type: 'group_message',
-      data: { groupId, content, messageType, attachmentUrl }
+      data: { groupId, content, messageType, attachmentUrl, token }
     })
   }
 
   const joinGroup = (groupId: string): boolean => {
+    const token = typeof document !== 'undefined'
+      ? document.cookie.split('; ').find(r => r.startsWith('auth-token='))?.split('=')[1]
+      : undefined
+    console.log('🔌 WebSocketContext: Joining group:', groupId, 'with token:', token ? 'yes' : 'no')
     return sendMessage({
       type: 'join_group',
-      data: { groupId }
+      data: { groupId, token }
     })
   }
 
   const leaveGroup = (groupId: string): boolean => {
+    console.log('🔌 WebSocketContext: Leaving group:', groupId)
     return sendMessage({
       type: 'leave_group',
       data: { groupId }

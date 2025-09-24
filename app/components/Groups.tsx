@@ -22,7 +22,7 @@ import GroupChat from './GroupChat'
 import GroupManagement from './GroupManagement'
 
 export default function Groups() {
-  const { groups, createGroup, loadGroups } = useGroup()
+  const { groups, createGroup, loadGroups, joinGroupRealtime, leaveGroupRealtime } = useGroup()
   const { user, users } = useUser()
   const { addNotification } = useNotification()
   const { success, error: showError } = useToast()
@@ -46,7 +46,20 @@ export default function Groups() {
   const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [groupToLeave, setGroupToLeave] = useState<Group | null>(null)
   const [leaveLoading, setLeaveLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'private' | 'public' | 'created'>(user ? 'public' : 'public')
+  const [activeTab, setActiveTab] = useState<'private' | 'public' | 'created'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('groups-active-tab') as any
+      if (saved === 'private' || saved === 'public' || saved === 'created') return saved
+    }
+    return 'public'
+  })
+
+  // Persist tab selection so refresh keeps the same view
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('groups-active-tab', activeTab)
+    }
+  }, [activeTab])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -83,11 +96,8 @@ export default function Groups() {
   const visibleGroups = groups
     .filter(group => {
       if (activeTab === 'public') {
-        // Show public groups that the user can join OR ones the user created
-        return !group.isPrivate && (
-          (user ? group.createdBy === user.id : false) ||
-          (!user || !group.members?.includes(user!.id))
-        )
+        // Show ALL public groups (joined, joinable, or created by you)
+        return !group.isPrivate
       }
       if (activeTab === 'private') {
         // Show only private groups where the user is a member or creator
@@ -174,8 +184,14 @@ export default function Groups() {
       
       if (response.ok) {
         success('Success', 'Successfully joined group!')
-        // Refresh groups
-        loadGroups()
+        // Join real-time group
+        joinGroupRealtime(group.id)
+        // Refresh groups and jump into chat of the joined group
+        await loadGroups()
+        const updated = groups.find(g => g.id === group.id) || group
+        setSelectedGroup(updated)
+        setShowChat(true)
+        setActiveTab(updated.isPrivate ? 'private' : 'public')
       } else {
         throw new Error(data.error || 'Failed to join group')
       }
@@ -205,6 +221,8 @@ export default function Groups() {
       
       if (response.ok) {
         success('Success', 'Successfully left group!')
+        // Leave real-time group
+        leaveGroupRealtime(groupToLeave.id)
         setShowLeaveModal(false)
         setGroupToLeave(null)
         // Refresh groups
@@ -375,6 +393,12 @@ export default function Groups() {
                   <div className="flex items-center space-x-2 text-white/90">
                     <UsersIcon className="w-4 h-4" />
                     <span className="text-sm font-medium">{group.members?.length || 0} members</span>
+                    {group.onlineMembers && group.onlineMembers.length > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-green-300">{group.onlineMembers.length} online</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -387,6 +411,18 @@ export default function Groups() {
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 text-xl mb-1">{group.name}</h3>
                   <p className="text-gray-600 text-sm line-clamp-2">{group.description}</p>
+                  {group.typingUsers && group.typingUsers.length > 0 && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></div>
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                      <span className="text-xs text-blue-600">
+                        {group.typingUsers.length === 1 ? 'Someone is typing...' : `${group.typingUsers.length} people typing...`}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {/* Only show 3-dots menu for groups created by current user */}
                 {user && group.createdBy === user.id && (
@@ -426,6 +462,13 @@ export default function Groups() {
                 )}
               </div>
 
+
+              {/* Last Activity */}
+              {group.lastActivity && (
+                <div className="text-xs text-gray-500 mb-2">
+                  Last activity: {new Date(group.lastActivity).toLocaleString()}
+                </div>
+              )}
 
               {/* Action Button */}
               <div className="space-y-3">
