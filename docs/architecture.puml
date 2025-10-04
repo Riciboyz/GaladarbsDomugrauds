@@ -1,0 +1,91 @@
+@startuml
+skinparam backgroundColor #111111
+skinparam defaultFontColor white
+skinparam rectangle { BorderColor #333333; BackgroundColor #161616; RoundCorner 8 }
+skinparam package   { BackgroundColor transparent; BorderColor transparent }
+skinparam ArrowColor #cfcfcf
+skinparam ArrowThickness 1.2
+
+' VIEWS (TOP ROW)
+together {
+package "VIEWS" {
+  rectangle US as "«View»\nUserSearch"
+  rectangle RG as "«View»\nRegister"
+  rectangle LG as "«View»\nLogin"
+  rectangle PF as "«View»\nProfile"
+  rectangle WTH as "«View»\nWeather"
+}
+}
+
+' CONTEXTS (MIDDLE ROW)
+together {
+package "CONTEXTS" {
+  rectangle AC  as "AuthContext"  #0b2436
+  rectangle ThC as "ThemeContext" #0b2436
+  rectangle TCx as "ThreadContext"#0b2436
+  rectangle GCx as "GroupContext" #0b2436Sš
+  rectangle NCx as "NotificationContext" #0b2436
+  rectangle WSC as "WebSocketContext" #0b2436
+}
+}
+
+' API / CLASSES (LOWER ROW)
+together {
+package "API / CLASSES" {
+  rectangle A_LOGIN    as "«Class»\n/api/auth/login"        #0d2230
+  rectangle A_REGISTER as "«Class»\n/api/auth/register"     #0d2230
+  rectangle A_2FA      as "«Class»\n/api/auth/2fa/verify"   #0d2230
+  rectangle A_THREADS  as "«Class»\n/api/threads"           #0d2230
+  rectangle A_USERS    as "«Class»\n/api/users"             #0d2230
+  rectangle A_NOTIFS   as "«Class»\n/api/notifications"     #0d2230
+  rectangle A_GROUPS   as "«Class»\n/api/groups"            #0d2230
+  rectangle A_DAILY    as "«Class»\n/api/daily-topic"       #0d2230
+  rectangle A_WEATHER  as "«Class»\n/api/weather"           #0d2230
+}
+}
+
+' DB / EXTERNAL
+rectangle DB    as "Database\nthreads_app.db" #202020
+rectangle OTP   as "user_otp_codes"           #202020
+rectangle SESS  as "user_sessions"            #202020
+rectangle RESEND as "Email\nResend/SMTP"     #1f2937
+rectangle OPENM  as "Open‑Meteo API"          #1f2937
+rectangle WSSRV  as "WebSocket :3001"         #1f2937
+
+' Connections
+US  --> AC
+RG  --> AC
+LG  --> AC
+PF  --> AC
+WTH --> ThC
+
+AC  --> ThC
+ThC --> TCx
+TCx --> GCx
+GCx --> NCx
+WSC --> WSSRV
+
+AC  ..> A_LOGIN
+AC  ..> A_REGISTER
+AC  ..> A_2FA
+TCx ..> A_THREADS
+AC  ..> A_USERS
+NCx ..> A_NOTIFS
+GCx ..> A_GROUPS
+ThC ..> A_DAILY
+ThC ..> A_WEATHER
+
+A_LOGIN    ..> SESS
+A_REGISTER ..> SESS
+A_2FA      ..> OTP
+A_THREADS  ..> DB
+A_USERS    ..> DB
+A_NOTIFS   ..> DB
+A_GROUPS   ..> DB
+A_DAILY    ..> DB
+A_WEATHER  ..> OPENM
+A_2FA      ..> RESEND
+
+@enduml
+
+

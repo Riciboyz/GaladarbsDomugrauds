@@ -9,6 +9,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        brand: {
+          green: {
+            900: '#1a2e1a',
+            700: '#2d5a2d',
+            600: '#4a7c59',
+          },
+          rose: {
+            50: '#f8f4f4',
+            100: '#e8d5d5',
+          },
+        },
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',
@@ -36,7 +47,15 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Playfair Display"', 'serif'],
       },
+      boxShadow: {
+        'dg-sm': '0 2px 10px rgba(0,0,0,.06)',
+        'dg-md': '0 4px 16px rgba(0,0,0,.08)',
+        'dg-lg': '0 12px 28px rgba(0,0,0,.10)',
+        'card': '0 8px 24px rgba(0,0,0,.06)',
+        'card-hover': '0 12px 32px rgba(0,0,0,.1)'
+      }
     },
   },
   plugins: [],

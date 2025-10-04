@@ -1,0 +1,109 @@
+@startuml
+!theme plain
+skinparam backgroundColor #f8f9fa
+skinparam actorStyle awesome
+skinparam usecaseStyle rectangle
+skinparam usecase {
+  BackgroundColor #e3f2fd
+  BorderColor #1976d2
+  FontColor #0d47a1
+}
+skinparam actor {
+  BackgroundColor #fff3e0
+  BorderColor #f57c00
+  FontColor #e65100
+}
+
+left to right direction
+
+actor "Lietotājs" as User
+
+rectangle "Threads App" {
+  usecase "Autentifikācija" as UC1
+  usecase "Reģistrēšanās" as UC2
+  usecase "Pierakstīšanās" as UC3
+  usecase "Ievada verifikācijas kodu" as UC4
+  usecase "Izrakstīšanās" as UC5
+  
+  usecase "Lietotāju profilu apskate" as UC6
+  usecase "Draugu pievienošana" as UC7
+  usecase "Draugu noņemšana" as UC8
+  usecase "Pavedienu apskate" as UC9
+  
+  usecase "Pavedienu izveide" as UC10
+  usecase "Informācijas ievade" as UC11
+  usecase "Failu pievienošana" as UC12
+  usecase "Komentāru pievienošana" as UC13
+  
+  usecase "Pavedienu pārskats" as UC14
+  usecase "Apskats" as UC15
+  
+  usecase "Profila rediģēšana" as UC16
+  usecase "Informācijas maiņa" as UC17
+  usecase "Profila attēla maiņa" as UC18
+  usecase "Paroles maiņa" as UC19
+  
+  usecase "Sava profila apskate" as UC20
+  usecase "Draugu pārvaldīšana" as UC21
+  usecase "Pavedienu pārvaldīšana" as UC22
+  usecase "Pavedienu apskate" as UC23
+  
+  usecase "Grupas funkcionalitāte" as UC24
+  usecase "Grupas izveide" as UC25
+  usecase "Grupas pievienošanās" as UC26
+  usecase "Grupas čats" as UC27
+  
+  usecase "Paziņojumi" as UC28
+  usecase "Paziņojumu apskate" as UC29
+  usecase "Paziņojumu izveide" as UC30
+  
+  usecase "Dienas tēmas" as UC31
+  usecase "Tēmas apskate" as UC32
+  usecase "Tēmas iesniegums" as UC33
+  
+  usecase "Laikapstākļi" as UC34
+  usecase "Laikapstākļu apskate" as UC35
+}
+
+' User connections
+User --> UC1
+User --> UC6
+User --> UC10
+User --> UC14
+User --> UC16
+User --> UC20
+User --> UC24
+User --> UC28
+User --> UC31
+User --> UC34
+
+' Include relationships
+UC1 ..> UC2 : <<ietver>>
+UC1 ..> UC3 : <<ietver>>
+UC2 ..> UC4 : <<ietver>>
+UC10 ..> UC11 : <<ietver>>
+UC10 ..> UC12 : <<ietver>>
+
+' Extend relationships
+UC1 ..> UC5 : <<paplašina>>
+UC6 ..> UC7 : <<paplašina>>
+UC6 ..> UC8 : <<paplašina>>
+UC6 ..> UC9 : <<paplašina>>
+UC10 ..> UC13 : <<paplašina>>
+UC14 ..> UC15 : <<paplašina>>
+UC16 ..> UC17 : <<paplašina>>
+UC16 ..> UC18 : <<paplašina>>
+UC16 ..> UC19 : <<paplašina>>
+UC20 ..> UC21 : <<paplašina>>
+UC20 ..> UC22 : <<paplašina>>
+UC20 ..> UC23 : <<paplašina>>
+UC24 ..> UC25 : <<paplašina>>
+UC24 ..> UC26 : <<paplašina>>
+UC24 ..> UC27 : <<paplašina>>
+UC28 ..> UC29 : <<paplašina>>
+UC28 ..> UC30 : <<paplašina>>
+UC31 ..> UC32 : <<paplašina>>
+UC31 ..> UC33 : <<paplašina>>
+UC34 ..> UC35 : <<paplašina>>
+
+@enduml

@@ -16,8 +16,8 @@ import Search from './Search'
 import Groups from './Groups'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import SimpleCreateThread from './SimpleCreateThread'
-import DailyTopicBanner from './DailyTopicBanner'
 import TopicSubmission from './TopicSubmission'
+import RightSidebar from './RightSidebar'
 import { 
   HomeIcon, 
   UserIcon, 
@@ -64,15 +64,20 @@ export default function MainApp() {
     // { id: 'settings', label: 'Settings', icon: Cog6ToothIcon }, // Temporarily disabled
   ]
 
+  const openTopicSubmission = (topicId: string) => {
+    setCurrentTopicId(topicId)
+    setActiveTab('topic-submission')
+  }
+
+  const openNotifications = () => {
+    setActiveTab('notifications')
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
         return (
           <div>
-            <DailyTopicBanner onTopicClick={(topicId) => {
-              setCurrentTopicId(topicId)
-              setActiveTab('topic-submission')
-            }} />
             <Feed onUserClick={handleUserClick} />
           </div>
         )
@@ -98,7 +103,6 @@ export default function MainApp() {
       default:
         return (
           <div>
-            <DailyTopicBanner />
             <Feed onUserClick={handleUserClick} />
           </div>
         )
@@ -106,7 +110,7 @@ export default function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <KeyboardShortcuts
         onNewThread={() => setShowCreateThread(true)}
         onSearch={() => setActiveTab('search')}
@@ -118,14 +122,19 @@ export default function MainApp() {
       />
       
       <div className="flex min-h-screen">
-        {/* Ultra-Minimal Sidebar */}
+        {/* Refined Light Sidebar */}
         <Sidebar activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as Tab)} tabs={tabs} />
         
-        {/* Ultra-Clean Main Content */}
+        {/* Spacious Main Content + Right Sidebar */}
         <div className="flex-1 ml-72">
           <div className="min-h-screen">
             <div className="container-padding py-8">
-              {renderContent()}
+              <div className="mx-auto max-w-6xl flex gap-6">
+                <div className="flex-1 max-w-2xl">
+                  {renderContent()}
+                </div>
+                <RightSidebar onOpenTopicSubmission={openTopicSubmission} onOpenNotifications={openNotifications} />
+              </div>
             </div>
           </div>
         </div>

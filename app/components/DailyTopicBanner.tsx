@@ -69,9 +69,9 @@ export default function DailyTopicBanner({ onTopicClick }: DailyTopicBannerProps
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl p-6 mb-8 animate-pulse">
-        <div className="h-6 bg-white/20 rounded w-3/4 mb-2"></div>
-        <div className="h-4 bg-white/20 rounded w-1/2"></div>
+      <div className="dg-gradient-hero rounded-2xl p-8 mb-8 border border-gray-100 animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
       </div>
     )
   }
@@ -83,25 +83,25 @@ export default function DailyTopicBanner({ onTopicClick }: DailyTopicBannerProps
   return (
     <div 
       onClick={handleClick}
-      className="bg-gradient-to-r from-black via-gray-800 to-gray-700 rounded-2xl p-6 mb-8 cursor-pointer hover:shadow-2xl shadow-black/30 transition-all duration-300 transform hover:scale-[1.02] group border border-gray-800"
+      className="bg-white rounded-2xl p-6 mb-6 cursor-pointer border border-gray-100 shadow-dg-sm hover:shadow-dg-md transition-shadow duration-200 group"
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-2">
-            <CalendarIcon className="w-6 h-6 text-white" />
-            <h2 className="text-2xl font-bold text-white">Daily Topic</h2>
+          <div className="flex items-center gap-3 mb-2">
+            <CalendarIcon className="w-6 h-6 text-brand-green-700" />
+            <h2 className="text-xl font-semibold text-gray-900">Daily Topic</h2>
           </div>
-          <h3 className="text-xl font-semibold text-white mb-2">{topic.title}</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-1">{topic.title}</h3>
           {topic.description && (
-            <p className="text-white/90 text-sm mb-3">{topic.description}</p>
+            <p className="text-gray-600 text-sm mb-2 leading-relaxed">{topic.description}</p>
           )}
-          <div className="flex items-center space-x-4 text-white/80 text-sm">
+          <div className="flex items-center gap-4 text-gray-500 text-sm">
             <span>Created by {topic.created_by_display_name}</span>
             <span>•</span>
             <span>{new Date(topic.created_at).toLocaleDateString()}</span>
           </div>
         </div>
-        <div className="flex items-center space-x-2 text-white group-hover:translate-x-1 transition-transform duration-200">
+        <div className="flex items-center gap-2 text-brand-green-700">
           <span className="text-sm font-medium">Participate</span>
           <ArrowRightIcon className="w-5 h-5" />
         </div>

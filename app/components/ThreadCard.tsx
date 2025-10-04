@@ -479,21 +479,21 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
   }
 
   return (
-    <div className={`hover:bg-gray-50 transition-colors duration-200 ${isReply ? 'ml-8 border-l border-gray-200' : ''}`}>
-      <div className="p-4">
+    <div id={`thread-${thread.id}`} className={`${isReply ? 'ml-8 border-l border-gray-200' : ''}`}>
+      <div className="p-5 bg-white border border-gray-100 rounded-xl shadow-dg-sm hover:shadow-dg-md transition-shadow duration-200">
         {/* Thread Header */}
         <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             <img
               src={author.avatar || `https://ui-avatars.com/api/?name=${author.displayName}&background=3b82f6&color=fff`}
               alt={author.displayName}
-              className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-dg-sm hover:opacity-90 transition-opacity"
               onClick={() => onUserClick?.(author.id)}
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
                 <h3 
-                  className="font-semibold text-gray-900 truncate text-sm cursor-pointer hover:text-blue-600"
+                  className="font-semibold text-gray-900 truncate text-sm cursor-pointer hover:text-brand-green-700"
                   onClick={() => onUserClick?.(author.id)}
                 >
                   {author.displayName}
@@ -527,10 +527,10 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                     handleFollow()
                   }}
                   disabled={isFollowingUser}
-                  className={`mt-1 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  className={`mt-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     isFollowing
                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                      : 'bg-brand-green-700 text-white hover:bg-brand-green-600'
                   } ${isFollowingUser ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {isFollowingUser ? (
@@ -562,12 +562,12 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
               
               {showOptions && (
                 <div 
-                  className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
+                  className="absolute right-0 top-8 bg-white border border-gray-100 rounded-xl shadow-dg-sm z-10"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={handleDelete}
-                    className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-xl"
                   >
                     Delete
                   </button>
@@ -578,7 +578,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         </div>
 
         {/* Thread Content */}
-        <div className="text-gray-900 mb-4 whitespace-pre-wrap">
+        <div className="text-gray-800 mb-4 whitespace-pre-wrap leading-relaxed">
           {thread.content}
         </div>
 
@@ -601,7 +601,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         )}
 
         {/* Thread Actions */}
-        <div className="flex items-center space-x-6 text-gray-500">
+        <div className="flex items-center gap-6 text-gray-500">
           {/* Like Button */}
           <button
             onClick={handleLike}
@@ -647,23 +647,23 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
           </button>
 
           {/* Share Button */}
-          <button className="flex items-center space-x-1 hover:text-green-500 transition-colors">
+          <button className="flex items-center space-x-1 hover:text-brand-green-700 transition-colors">
             <ShareIcon className="w-5 h-5" />
           </button>
         </div>
 
         {/* Comments Section */}
         {showComments && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="mt-4 pt-4 border-t border-gray-100">
             <div className="space-y-3">
               {thread.replies?.map((comment: any) => {
                 const commentAuthor = users.find(u => u.id === comment.authorId)
                 return (
-                  <div key={comment.id} className="flex items-start space-x-3">
+                  <div key={comment.id} className="flex items-start gap-3">
                     <img
                       src={commentAuthor?.avatar || `https://ui-avatars.com/api/?name=${commentAuthor?.displayName || 'Unknown'}&background=3b82f6&color=fff`}
                       alt={commentAuthor?.displayName || 'Unknown'}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-9 h-9 rounded-xl object-cover shadow-dg-sm"
                     />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
@@ -684,7 +684,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                           })()}
                         </span>
                       </div>
-                      <p className="text-gray-700 text-sm">{comment.content}</p>
+                      <p className="text-gray-700 text-sm leading-relaxed">{comment.content}</p>
                     </div>
                   </div>
                 )
@@ -692,18 +692,18 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
               
               {/* Add Comment Form */}
               {user && (
-                <div className="flex items-start space-x-3 pt-3">
+                <div className="flex items-start gap-3 pt-3">
                   <img
                     src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=3b82f6&color=fff`}
                     alt={user.displayName}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-9 h-9 rounded-xl object-cover shadow-dg-sm"
                   />
                   <div className="flex-1">
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder="Write a comment..."
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
+                      className="w-full p-3 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-green-700 focus:border-brand-green-700 text-sm resize-none"
                       rows={2}
                     />
                     <div className="flex justify-end space-x-2 mt-2">
@@ -716,7 +716,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                       <button
                         onClick={handleComment}
                         disabled={!commentText.trim() || isSubmittingComment}
-                        className="px-4 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        className="px-4 py-1 bg-brand-green-700 text-white rounded-lg hover:bg-brand-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
                         {isSubmittingComment ? 'Posting...' : 'Reply'}
                       </button>

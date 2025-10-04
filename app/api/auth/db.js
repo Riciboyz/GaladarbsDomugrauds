@@ -228,6 +228,74 @@ const deleteAllUserSessions = async (userId) => {
   }
 };
 
+// OTP (One-Time Password) helpers for Email 2FA
+const ensureOtpTable = async () => {
+  // Create OTP table if it doesn't exist (SQLite syntax)
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS user_otp_codes (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      attempts INTEGER DEFAULT 0,
+      consumed_at DATETIME NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  // Indexes
+  await db.query('CREATE INDEX IF NOT EXISTS idx_user_otp_user ON user_otp_codes(user_id)');
+  await db.query('CREATE INDEX IF NOT EXISTS idx_user_otp_expires ON user_otp_codes(expires_at)');
+};
+
+const hashOtpCode = (code) => {
+  return crypto.createHash('sha256').update(String(code)).digest('hex');
+};
+
+const createEmailOtp = async (userId, purpose, code, ttlSeconds) => {
+  await ensureOtpTable();
+  const id = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + Math.max(30, ttlSeconds || 600) * 1000).toISOString();
+  const codeHash = hashOtpCode(code);
+  await db.query(
+    `INSERT INTO user_otp_codes (id, user_id, purpose, code_hash, expires_at) VALUES (?, ?, ?, ?, ?)`,
+    [id, userId, purpose, codeHash, expiresAt]
+  );
+  return { id, expiresAt };
+};
+
+const verifyAndConsumeEmailOtp = async (userId, purpose, code) => {
+  await ensureOtpTable();
+  const result = await db.get(
+    `SELECT * FROM user_otp_codes 
+     WHERE user_id = ? AND purpose = ? AND consumed_at IS NULL 
+       AND expires_at > datetime('now')
+     ORDER BY created_at DESC LIMIT 1`,
+    [userId, purpose]
+  );
+  const row = result && result.rows ? result.rows[0] : null;
+  if (!row) {
+    return { ok: false, reason: 'not_found' };
+  }
+  // Rate limit attempts
+  if ((row.attempts || 0) >= 5) {
+    return { ok: false, reason: 'too_many_attempts' };
+  }
+  const providedHash = hashOtpCode(code);
+  if (providedHash !== row.code_hash) {
+    await db.query(`UPDATE user_otp_codes SET attempts = attempts + 1 WHERE id = ?`, [row.id]);
+    return { ok: false, reason: 'invalid_code' };
+  }
+  // Mark consumed
+  await db.query(`UPDATE user_otp_codes SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?`, [row.id]);
+  return { ok: true };
+};
+
+const purgeExpiredOtps = async () => {
+  await ensureOtpTable();
+  await db.query(`DELETE FROM user_otp_codes WHERE expires_at <= datetime('now') OR consumed_at IS NOT NULL`);
+};
+
 const searchUsers = async (query, options = {}) => {
   const { limit = 50, offset = 0 } = options;
   
@@ -265,4 +333,9 @@ module.exports = {
   deleteSession,
   deleteAllUserSessions,
   searchUsers
+  ,
+  // OTP exports
+  createEmailOtp,
+  verifyAndConsumeEmailOtp,
+  purgeExpiredOtps
 };

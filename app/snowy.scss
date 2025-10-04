@@ -1,0 +1,726 @@
+/* ❄️ Snowy Theme - Beautiful Winter Design with Real Snowflakes ❄️ */
+.snowy, .weather-snowy {
+  position: relative;
+  overflow: hidden;
+  
+  /* Beautiful winter gradient background - much darker for snow visibility */
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0f1a 0%, #0f172a 30%, #1e293b 70%, #334155 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+
+  /* Kill any inherited decorative pseudo-elements/animations (e.g., rotating starfields) */
+  &::before,
+  &::after {
+    content: none !important;
+    background: none !important;
+    animation: none !important;
+  }
+  
+  /* Theme variables - winter blue palette */
+  --dg-bg: #0a0f1a;
+  --dg-ink: #ffffff;
+  --dg-accent: #60a5fa;
+  --dg-primary: #1e40af;
+  --dg-secondary: #3b82f6;
+  --dg-success: #10b981;
+  --dg-warning: #f59e0b;
+  --dg-error: #ef4444;
+  --dg-card-bg: rgba(15, 23, 42, 0.9);
+  --dg-border: rgba(96, 165, 250, 0.5);
+  --dg-hover: rgba(96, 165, 250, 0.3);
+  --dg-text-primary: #ffffff;
+  --dg-text-secondary: #e2e8f0;
+  --dg-text-muted: #94a3b8;
+  --dg-sidebar-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  --dg-header-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  
+  /* Sidebar styling with winter theme */
+  .sidebar {
+    background: var(--dg-sidebar-bg) !important;
+    border-color: var(--dg-border) !important;
+    box-shadow: 
+      0 4px 6px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(15px) !important;
+  }
+  
+  /* Header styling with winter theme */
+  .header {
+    background: var(--dg-header-bg) !important;
+    border-color: var(--dg-border) !important;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(15px) !important;
+  }
+  
+  /* Card styling with winter theme */
+  .card {
+    background: var(--dg-card-bg) !important;
+    border-color: var(--dg-border) !important;
+    box-shadow: 
+      0 4px 6px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(15px) !important;
+  }
+  
+  /* Button styling with winter theme */
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #1d4ed8 100%) !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+    box-shadow: 
+      0 2px 4px rgba(59, 130, 246, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  .btn-secondary {
+    background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 50%, #2563eb 100%) !important;
+    border-color: #1e40af !important;
+    color: #ffffff !important;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  /* Text styling */
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--dg-text-primary) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  p, span, div, a {
+    color: var(--dg-text-secondary) !important;
+  }
+  
+  .text-muted {
+    color: var(--dg-text-muted) !important;
+  }
+  
+  /* Reaction buttons styling with winter theme */
+  .card button, .card a {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(30, 64, 175, 0.3) 100%) !important;
+    border: 1px solid rgba(96, 165, 250, 0.4) !important;
+    color: #ffffff !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .card button:hover, .card a:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.5) 0%, rgba(30, 64, 175, 0.5) 100%) !important;
+    box-shadow: 
+      0 4px 8px rgba(96, 165, 250, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-2px);
+  }
+
+  /* Ensure icons and text inside these buttons also inherit colors */
+  .card button *, .card a * {
+    color: #ffffff !important;
+  }
+  
+  /* Override Tailwind classes - force winter theme everywhere */
+  [class*='bg-gray'], [class*='bg-white'], [class*='bg-slate'], [class*='bg-zinc'], [class*='bg-neutral'] {
+    background: transparent !important;
+  }
+  
+  /* Force all main containers to use winter theme */
+  body, html, main, .content, .container, .page-wrapper {
+    background: var(--dg-bg) !important;
+  }
+  
+  /* Override any light backgrounds (including slash-opacity utilities) */
+  .bg-white, .bg-white\/5, .bg-white\/10, .bg-white\/20, .bg-white\/30, .bg-white\/40, .bg-white\/50,
+  .bg-gray-50, .bg-gray-100, .bg-gray-200,
+  .bg-slate-50, .bg-slate-100, .bg-slate-200,
+  .bg-zinc-50, .bg-zinc-100, .bg-zinc-200,
+  [class*='bg-white/'], [class*='bg-gray-1'], [class*='bg-slate-1'], [class*='bg-zinc-1'] {
+    background: var(--dg-card-bg) !important;
+    color: var(--dg-text-secondary) !important;
+  }
+
+  /* Darken common UI containers that might still be white */
+  .card, .card-elevated, .card-glass, .panel, .widget, .widget-card, .compose, .profile-card,
+  .timeline-card, .thread-card, .dg-card, .dg-card--subtle {
+    background: var(--dg-card-bg) !important;
+    border-color: var(--dg-border) !important;
+    color: var(--dg-text-secondary) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  /* Neutralize bright white gradient cards (e.g., hero/spotlight widgets) */
+  .dg-gradient-hero, .dg-gradient-chip, .gradient-card, .spotlight, .hero, .glass-hero,
+  .card[style*='linear-gradient'], [class*='gradient'] {
+    background: var(--dg-card-bg) !important;
+    background-image: none !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Replace any white glass gradients with winter glass */
+  .glass, .glass-card, .glass-panel, .frosted, .frosted-card {
+    background: linear-gradient(135deg, rgba(15,23,42,0.75) 0%, rgba(15,23,42,0.6) 100%) !important;
+    border-color: var(--dg-border) !important;
+    color: var(--dg-text-secondary) !important;
+    backdrop-filter: blur(16px) !important;
+  }
+
+  /* If any element has inline white backgrounds, neutralize them */
+  [style*='background-color: rgb(255'], [style*='background:#fff'], [style*='background: #fff'],
+  [style*='background-color:#fff'], [style*='background-color: #ffffff'] {
+    background: var(--dg-card-bg) !important;
+    color: var(--dg-text-secondary) !important;
+  }
+  
+  /* Force text colors */
+  .text-gray-900, .text-gray-800, .text-gray-700, .text-slate-900, .text-slate-800 {
+    color: var(--dg-text-primary) !important;
+  }
+  
+  .text-gray-600, .text-gray-500, .text-slate-600, .text-slate-500 {
+    color: var(--dg-text-secondary) !important;
+  }
+  
+  .text-gray-400, .text-gray-300, .text-slate-400, .text-slate-300 {
+    color: var(--dg-text-muted) !important;
+  }
+  
+  [class*='text-gray'], [class*='text-slate'], [class*='text-zinc'], [class*='text-neutral'] {
+    color: var(--dg-text-secondary) !important;
+  }
+  
+  [class*='border-gray'], [class*='border-slate'], [class*='border-zinc'], [class*='border-neutral'] {
+    border-color: var(--dg-border) !important;
+  }
+  
+  [class*='hover:bg-gray'], [class*='hover:bg-slate'], [class*='hover:bg-zinc'], [class*='hover:bg-neutral'] {
+    background: var(--dg-hover) !important;
+  }
+  
+  [class*='hover:text-gray'], [class*='hover:text-slate'], [class*='hover:text-zinc'], [class*='hover:text-neutral'] {
+    color: var(--dg-text-primary) !important;
+  }
+}
+
+/* Beautiful snow effect with real snowflake symbols */
+.snow {
+  position: fixed;
+  top: -10vh;
+  left: 0;
+  width: 100vw;
+  height: 120vh;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Individual snowflake styling - much more visible */
+.snow > div {
+  font-size: 50px;
+  color: rgba(255, 255, 255, 1);
+  position: absolute;
+  top: -5vh;
+  text-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.8),
+    0 0 25px rgba(255, 255, 255, 0.6),
+    0 0 35px rgba(255, 255, 255, 0.4),
+    0 0 45px rgba(255, 255, 255, 0.2);
+  animation: snowfall 9s linear infinite;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+}
+
+/* Different snowflake sizes and blur effects */
+.snow > div:nth-child(2n) {
+  filter: blur(1px);
+  font-size: 40px;
+  opacity: 0.8;
+}
+
+.snow > div:nth-child(6n) {
+  filter: blur(2px);
+  font-size: 30px;
+  opacity: 0.6;
+}
+
+.snow > div:nth-child(10n) {
+  filter: blur(3px);
+  font-size: 25px;
+  opacity: 0.4;
+}
+
+/* Individual snowflake animations with different paths and timings */
+.snow > div:nth-child(1) {
+  --size: 0.8vw;
+  --left-ini: 0vw;
+  --left-end: -1vw;
+  left: 70vw;
+  animation: snowfall 9s linear infinite;
+  animation-delay: -1s;
+}
+
+.snow > div:nth-child(2) {
+  --size: 0.2vw;
+  --left-ini: -7vw;
+  --left-end: 10vw;
+  left: 65vw;
+  animation: snowfall 15s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(3) {
+  --size: 1vw;
+  --left-ini: 6vw;
+  --left-end: 6vw;
+  left: 1vw;
+  animation: snowfall 9s linear infinite;
+  animation-delay: -7s;
+}
+
+.snow > div:nth-child(4) {
+  --size: 0.2vw;
+  --left-ini: -3vw;
+  --left-end: 9vw;
+  left: 88vw;
+  animation: snowfall 14s linear infinite;
+  animation-delay: -5s;
+}
+
+.snow > div:nth-child(5) {
+  --size: 0.4vw;
+  --left-ini: -2vw;
+  --left-end: -9vw;
+  left: 74vw;
+  animation: snowfall 6s linear infinite;
+  animation-delay: -4s;
+}
+
+.snow > div:nth-child(6) {
+  --size: 0.2vw;
+  --left-ini: 5vw;
+  --left-end: 1vw;
+  left: 35vw;
+  animation: snowfall 6s linear infinite;
+  animation-delay: -7s;
+}
+
+.snow > div:nth-child(7) {
+  --size: 0.4vw;
+  --left-ini: -2vw;
+  --left-end: -1vw;
+  left: 27vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(8) {
+  --size: 1vw;
+  --left-ini: -9vw;
+  --left-end: -2vw;
+  left: 69vw;
+  animation: snowfall 8s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(9) {
+  --size: 0.2vw;
+  --left-ini: -1vw;
+  --left-end: -5vw;
+  left: 84vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -6s;
+}
+
+.snow > div:nth-child(10) {
+  --size: 0.2vw;
+  --left-ini: 7vw;
+  --left-end: -9vw;
+  left: 82vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -3s;
+}
+
+.snow > div:nth-child(11) {
+  --size: 0.6vw;
+  --left-ini: -2vw;
+  --left-end: -1vw;
+  left: 48vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -1s;
+}
+
+.snow > div:nth-child(12) {
+  --size: 0.2vw;
+  --left-ini: 5vw;
+  --left-end: 6vw;
+  left: 39vw;
+  animation: snowfall 15s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(13) {
+  --size: 0.2vw;
+  --left-ini: 6vw;
+  --left-end: 5vw;
+  left: 3vw;
+  animation: snowfall 9s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(14) {
+  --size: 0.8vw;
+  --left-ini: -5vw;
+  --left-end: -2vw;
+  left: 49vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(15) {
+  --size: 0.6vw;
+  --left-ini: 10vw;
+  --left-end: 4vw;
+  left: 77vw;
+  animation: snowfall 7s linear infinite;
+  animation-delay: -4s;
+}
+
+.snow > div:nth-child(16) {
+  --size: 0.8vw;
+  --left-ini: -3vw;
+  --left-end: 1vw;
+  left: 86vw;
+  animation: snowfall 14s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(17) {
+  --size: 1vw;
+  --left-ini: 6vw;
+  --left-end: -7vw;
+  left: 18vw;
+  animation: snowfall 9s linear infinite;
+  animation-delay: -6s;
+}
+
+.snow > div:nth-child(18) {
+  --size: 1vw;
+  --left-ini: -9vw;
+  --left-end: 4vw;
+  left: 64vw;
+  animation: snowfall 13s linear infinite;
+  animation-delay: -7s;
+}
+
+.snow > div:nth-child(19) {
+  --size: 1vw;
+  --left-ini: 2vw;
+  --left-end: -7vw;
+  left: 52vw;
+  animation: snowfall 15s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(20) {
+  --size: 0.4vw;
+  --left-ini: 0vw;
+  --left-end: 8vw;
+  left: 5vw;
+  animation: snowfall 8s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(21) {
+  --size: 0.6vw;
+  --left-ini: -9vw;
+  --left-end: -2vw;
+  left: 10vw;
+  animation: snowfall 12s linear infinite;
+  animation-delay: -3s;
+}
+
+.snow > div:nth-child(22) {
+  --size: 0.8vw;
+  --left-ini: -3vw;
+  --left-end: -8vw;
+  left: 54vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(23) {
+  --size: 0.6vw;
+  --left-ini: -7vw;
+  --left-end: -8vw;
+  left: 20vw;
+  animation: snowfall 6s linear infinite;
+  animation-delay: -3s;
+}
+
+.snow > div:nth-child(24) {
+  --size: 0.4vw;
+  --left-ini: 10vw;
+  --left-end: -4vw;
+  left: 68vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -8s;
+}
+
+.snow > div:nth-child(25) {
+  --size: 1vw;
+  --left-ini: 3vw;
+  --left-end: 5vw;
+  left: 90vw;
+  animation: snowfall 7s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(26) {
+  --size: 1vw;
+  --left-ini: -7vw;
+  --left-end: 5vw;
+  left: 71vw;
+  animation: snowfall 13s linear infinite;
+  animation-delay: -2s;
+}
+
+.snow > div:nth-child(27) {
+  --size: 0.6vw;
+  --left-ini: 9vw;
+  --left-end: 4vw;
+  left: 2vw;
+  animation: snowfall 15s linear infinite;
+  animation-delay: -5s;
+}
+
+.snow > div:nth-child(28) {
+  --size: 1vw;
+  --left-ini: -5vw;
+  --left-end: 3vw;
+  left: 23vw;
+  animation: snowfall 12s linear infinite;
+  animation-delay: -1s;
+}
+
+.snow > div:nth-child(29) {
+  --size: 0.4vw;
+  --left-ini: -2vw;
+  --left-end: -1vw;
+  left: 39vw;
+  animation: snowfall 14s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(30) {
+  --size: 0.6vw;
+  --left-ini: -9vw;
+  --left-end: -5vw;
+  left: 76vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -5s;
+}
+
+.snow > div:nth-child(31) {
+  --size: 0.4vw;
+  --left-ini: -5vw;
+  --left-end: 3vw;
+  left: 14vw;
+  animation: snowfall 8s linear infinite;
+  animation-delay: -5s;
+}
+
+.snow > div:nth-child(32) {
+  --size: 0.2vw;
+  --left-ini: 5vw;
+  --left-end: -1vw;
+  left: 86vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(33) {
+  --size: 0.4vw;
+  --left-ini: -3vw;
+  --left-end: 10vw;
+  left: 66vw;
+  animation: snowfall 6s linear infinite;
+  animation-delay: -6s;
+}
+
+.snow > div:nth-child(34) {
+  --size: 1vw;
+  --left-ini: -3vw;
+  --left-end: 6vw;
+  left: 75vw;
+  animation: snowfall 14s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(35) {
+  --size: 1vw;
+  --left-ini: -6vw;
+  --left-end: 7vw;
+  left: 22vw;
+  animation: snowfall 7s linear infinite;
+  animation-delay: -5s;
+}
+
+.snow > div:nth-child(36) {
+  --size: 1vw;
+  --left-ini: 3vw;
+  --left-end: 4vw;
+  left: 10vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -10s;
+}
+
+.snow > div:nth-child(37) {
+  --size: 0.6vw;
+  --left-ini: 2vw;
+  --left-end: 10vw;
+  left: 95vw;
+  animation: snowfall 13s linear infinite;
+  animation-delay: -6s;
+}
+
+.snow > div:nth-child(38) {
+  --size: 0.8vw;
+  --left-ini: 5vw;
+  --left-end: 8vw;
+  left: 34vw;
+  animation: snowfall 9s linear infinite;
+  animation-delay: -10s;
+}
+
+.snow > div:nth-child(39) {
+  --size: 0.8vw;
+  --left-ini: 4vw;
+  --left-end: 0vw;
+  left: 80vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -2s;
+}
+
+.snow > div:nth-child(40) {
+  --size: 0.8vw;
+  --left-ini: 1vw;
+  --left-end: -7vw;
+  left: 45vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -4s;
+}
+
+.snow > div:nth-child(41) {
+  --size: 0.2vw;
+  --left-ini: 9vw;
+  --left-end: 10vw;
+  left: 82vw;
+  animation: snowfall 8s linear infinite;
+  animation-delay: -2s;
+}
+
+.snow > div:nth-child(42) {
+  --size: 1vw;
+  --left-ini: 9vw;
+  --left-end: -9vw;
+  left: 22vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -6s;
+}
+
+.snow > div:nth-child(43) {
+  --size: 0.6vw;
+  --left-ini: 5vw;
+  --left-end: 8vw;
+  left: 66vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -1s;
+}
+
+.snow > div:nth-child(44) {
+  --size: 0.6vw;
+  --left-ini: -5vw;
+  --left-end: -2vw;
+  left: 75vw;
+  animation: snowfall 12s linear infinite;
+  animation-delay: -4s;
+}
+
+.snow > div:nth-child(45) {
+  --size: 0.2vw;
+  --left-ini: 0vw;
+  --left-end: 3vw;
+  left: 2vw;
+  animation: snowfall 7s linear infinite;
+  animation-delay: -5s;
+}
+
+.snow > div:nth-child(46) {
+  --size: 0.2vw;
+  --left-ini: 8vw;
+  --left-end: -3vw;
+  left: 94vw;
+  animation: snowfall 8s linear infinite;
+  animation-delay: -9s;
+}
+
+.snow > div:nth-child(47) {
+  --size: 0.6vw;
+  --left-ini: -6vw;
+  --left-end: -9vw;
+  left: 95vw;
+  animation: snowfall 11s linear infinite;
+  animation-delay: -4s;
+}
+
+.snow > div:nth-child(48) {
+  --size: 0.2vw;
+  --left-ini: -5vw;
+  --left-end: 6vw;
+  left: 34vw;
+  animation: snowfall 10s linear infinite;
+  animation-delay: -6s;
+}
+
+.snow > div:nth-child(49) {
+  --size: 0.8vw;
+  --left-ini: 4vw;
+  --left-end: 8vw;
+  left: 22vw;
+  animation: snowfall 12s linear infinite;
+  animation-delay: -10s;
+}
+
+.snow > div:nth-child(50) {
+  --size: 0.2vw;
+  --left-ini: -4vw;
+  --left-end: 4vw;
+  left: 100vw;
+  animation: snowfall 14s linear infinite;
+  animation-delay: -9s;
+}
+
+/* Snowfall animation with wind effect */
+@keyframes snowfall {
+  0% {
+    transform: translate3d(var(--left-ini), 0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--left-end), 110vh, 0) rotate(360deg);
+    opacity: 0;
+  }
+}

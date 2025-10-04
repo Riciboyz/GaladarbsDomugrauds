@@ -1,0 +1,170 @@
+/* Sunny theme - Orange and white theme with sun rays */
+.sunny, .weather-sunny {
+  position: relative;
+  overflow: hidden;
+  
+  /* Bright orange gradient background */
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%);
+  
+  /* Sun rays effect */
+  &::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    animation: sunRays 4s ease-in-out infinite alternate;
+    z-index: 1;
+    pointer-events: none;
+  }
+  
+  /* Additional sun rays */
+  &::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      linear-gradient(45deg, transparent 48%, rgba(255, 255, 255, 0.1) 49%, rgba(255, 255, 255, 0.1) 51%, transparent 52%),
+      linear-gradient(-45deg, transparent 48%, rgba(255, 255, 255, 0.1) 49%, rgba(255, 255, 255, 0.1) 51%, transparent 52%),
+      linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.1) 49%, rgba(255, 255, 255, 0.1) 51%, transparent 52%),
+      linear-gradient(0deg, transparent 48%, rgba(255, 255, 255, 0.1) 49%, rgba(255, 255, 255, 0.1) 51%, transparent 52%);
+    animation: sunRaysRotate 6s linear infinite;
+    z-index: 1;
+    pointer-events: none;
+  }
+  
+  /* Sunny theme colors */
+  --dg-bg: #f97316;
+  --dg-ink: #ffffff;
+  --dg-accent: #f59e0b;
+  --dg-primary: #ea580c;
+  --dg-secondary: #dc2626;
+  --dg-success: #10b981;
+  --dg-warning: #f59e0b;
+  --dg-error: #ef4444;
+  --dg-card-bg: rgba(234, 88, 12, 0.9);
+  --dg-border: rgba(249, 115, 22, 0.5);
+  --dg-hover: rgba(249, 115, 22, 0.2);
+  --dg-text-primary: #ffffff;
+  --dg-text-secondary: #fef3c7;
+  --dg-text-muted: #fbbf24;
+  --dg-sidebar-bg: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+  --dg-header-bg: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+  
+  /* Sidebar styling */
+  .sidebar {
+    background: var(--dg-sidebar-bg) !important;
+    border-color: var(--dg-border) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  /* Header styling */
+  .header {
+    background: var(--dg-header-bg) !important;
+    border-color: var(--dg-border) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  /* Card styling */
+  .card {
+    background: var(--dg-card-bg) !important;
+    border-color: var(--dg-border) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  /* Button styling */
+  .btn-primary {
+    background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%) !important;
+    border-color: #ea580c !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(234, 88, 12, 0.3) !important;
+  }
+  
+  .btn-secondary {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  /* Text styling */
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--dg-text-primary) !important;
+  }
+  
+  p, span, div, a {
+    color: var(--dg-text-secondary) !important;
+  }
+  
+  .text-muted {
+    color: var(--dg-text-muted) !important;
+  }
+  
+  /* Reaction buttons styling */
+  .card button, .card a {
+    background: linear-gradient(135deg, rgba(234, 88, 12, 0.3) 0%, rgba(220, 38, 38, 0.3) 100%) !important;
+    border: 1px solid rgba(249, 115, 22, 0.5) !important;
+    color: #ffffff !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .card button:hover, .card a:hover {
+    background: linear-gradient(135deg, rgba(234, 88, 12, 0.5) 0%, rgba(220, 38, 38, 0.5) 100%) !important;
+    box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3) !important;
+    transform: translateY(-2px);
+  }
+
+  /* Ensure icons and text inside these buttons also inherit colors */
+  .card button *, .card a * {
+    color: #ffffff !important;
+  }
+  
+  /* Override Tailwind classes */
+  [class*='bg-white'], [class*='bg-gray'], [class*='bg-slate'], [class*='bg-zinc'], [class*='bg-neutral'] {
+    background: transparent !important;
+  }
+  
+  [class*='text-gray'], [class*='text-slate'], [class*='text-zinc'], [class*='text-neutral'] {
+    color: var(--dg-text-secondary) !important;
+  }
+  
+  [class*='border-gray'], [class*='border-slate'], [class*='border-zinc'], [class*='border-neutral'] {
+    border-color: var(--dg-border) !important;
+  }
+  
+  [class*='hover:bg-gray'], [class*='hover:bg-slate'], [class*='hover:bg-zinc'], [class*='hover:bg-neutral'] {
+    background: var(--dg-hover) !important;
+  }
+  
+  [class*='hover:text-gray'], [class*='hover:text-slate'], [class*='hover:text-zinc'], [class*='hover:text-neutral'] {
+    color: var(--dg-text-primary) !important;
+  }
+}
+
+/* Animations */
+@keyframes sunRays {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes sunRaysRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

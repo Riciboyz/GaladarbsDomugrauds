@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2024-01-15T10:00:00.000Z" agent="5.0" etag="abc123" version="24.0.0">
+  <diagram name="Use Case Diagram" id="use-case">
+    <mxGraphModel dx="1422" dy="754" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Actor -->
+        <mxCell id="actor" value="Lietotājs" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff3e0;strokeColor=#f57c00;fontColor=#e65100;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="200" width="30" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- System Boundary -->
+        <mxCell id="system" value="Threads App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#6c757d;fontColor=#495057;fontSize=16;fontStyle=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="50" width="1100" height="800" as="geometry" />
+        </mxCell>
+        
+        <!-- Main Use Cases -->
+        <mxCell id="uc1" value="Autentifikācija" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc2" value="Reģistrēšanās" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc3" value="Pierakstīšanās" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc4" value="Ievada verifikācijas kodu" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc5" value="Izrakstīšanās" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc6" value="Lietotāju profilu apskate" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="250" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc7" value="Draugu pievienošana" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="250" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc8" value="Draugu noņemšana" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="250" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc9" value="Pavedienu apskate" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="250" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc10" value="Pavedienu izveide" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc11" value="Informācijas ievade" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc12" value="Failu pievienošana" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc13" value="Komentāru pievienošana" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc14" value="Pavedienu pārskats" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc15" value="Apskats" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc16" value="Profila rediģēšana" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc17" value="Informācijas maiņa" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc18" value="Profila attēla maiņa" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc19" value="Paroles maiņa" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="550" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc20" value="Sava profila apskate" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="550" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc21" value="Draugu pārvaldīšana" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="550" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc22" value="Pavedienu pārvaldīšana" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="550" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc23" value="Pavedienu apskate" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="550" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc24" value="Grupas funkcionalitāte" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="650" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc25" value="Grupas izveide" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="650" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc26" value="Grupas pievienošanās" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="650" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc27" value="Grupas čats" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="650" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc28" value="Paziņojumi" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="650" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc29" value="Paziņojumu apskate" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="750" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc30" value="Paziņojumu izveide" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="750" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc31" value="Dienas tēmas" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="700" y="750" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc32" value="Tēmas apskate" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="750" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="uc33" value="Tēmas iesniegums" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontColor=#0d47a1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="750" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Actor connections -->
+        <mxCell id="conn1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="300" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc6">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="300" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn3" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc10">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="300" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn4" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="300" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn5" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc16">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="700" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn6" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc20">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="500" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn7" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc24">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="300" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn8" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc28">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="1100" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn9" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="actor" target="uc31">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="230" as="sourcePoint" />
+            <mxPoint x="700" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Include relationships (dashed lines with <<ietver>>) -->
+        <mxCell id="include1" value="&lt;&lt;ietver&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc1" target="uc2">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="180" as="sourcePoint" />
+            <mxPoint x="500" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="include2" value="&lt;&lt;ietver&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc1" target="uc3">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="180" as="sourcePoint" />
+            <mxPoint x="700" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="include3" value="&lt;&lt;ietver&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc2" target="uc4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="620" y="180" as="sourcePoint" />
+            <mxPoint x="900" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="include4" value="&lt;&lt;ietver&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc10" target="uc11">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="380" as="sourcePoint" />
+            <mxPoint x="500" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="include5" value="&lt;&lt;ietver&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc10" target="uc12">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="380" as="sourcePoint" />
+            <mxPoint x="700" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Extend relationships (dashed lines with <<paplašina>>) -->
+        <mxCell id="extend1" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc1" target="uc5">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="180" as="sourcePoint" />
+            <mxPoint x="1100" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend2" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc6" target="uc7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="280" as="sourcePoint" />
+            <mxPoint x="500" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend3" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc6" target="uc8">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="280" as="sourcePoint" />
+            <mxPoint x="700" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend4" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc6" target="uc9">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="280" as="sourcePoint" />
+            <mxPoint x="900" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend5" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc10" target="uc13">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="380" as="sourcePoint" />
+            <mxPoint x="900" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend6" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc14" target="uc15">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="480" as="sourcePoint" />
+            <mxPoint x="500" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend7" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc16" target="uc17">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="480" as="sourcePoint" />
+            <mxPoint x="900" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend8" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc16" target="uc18">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="480" as="sourcePoint" />
+            <mxPoint x="1100" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend9" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc16" target="uc19">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="480" as="sourcePoint" />
+            <mxPoint x="300" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend10" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc20" target="uc21">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="620" y="580" as="sourcePoint" />
+            <mxPoint x="700" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend11" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc20" target="uc22">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="620" y="580" as="sourcePoint" />
+            <mxPoint x="900" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend12" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc20" target="uc23">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="620" y="580" as="sourcePoint" />
+            <mxPoint x="1100" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend13" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc24" target="uc25">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="680" as="sourcePoint" />
+            <mxPoint x="500" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend14" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc24" target="uc26">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="680" as="sourcePoint" />
+            <mxPoint x="700" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend15" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc24" target="uc27">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="680" as="sourcePoint" />
+            <mxPoint x="900" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend16" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc28" target="uc29">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1220" y="680" as="sourcePoint" />
+            <mxPoint x="300" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend17" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc28" target="uc30">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1220" y="680" as="sourcePoint" />
+            <mxPoint x="500" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend18" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc31" target="uc32">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="780" as="sourcePoint" />
+            <mxPoint x="900" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="extend19" value="&lt;&lt;paplašina&gt;&gt;" style="endArrow=classic;html=1;rounded=0;strokeColor=#666666;strokeWidth=1;dashed=1;fontColor=#666666;fontSize=10;" edge="1" parent="1" source="uc31" target="uc33">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="780" as="sourcePoint" />
+            <mxPoint x="1100" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -8,6 +8,7 @@ import { NotificationProvider } from './contexts/NotificationContext'
 import { TopicDayProvider } from './contexts/TopicDayContext'
 import { ToastProvider, useToast } from './contexts/ToastContext'
 import { WebSocketProvider } from './contexts/WebSocketContext'
+import { WeatherProvider } from './contexts/WeatherContext'
 import ToastContainer from './components/Toast-simple'
 
 function ToastWrapper() {
@@ -18,20 +19,22 @@ function ToastWrapper() {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
-      <UserProvider>
-        <WebSocketProvider>
-          <ThreadProvider>
-            <GroupProvider>
-              <NotificationProvider>
-                <TopicDayProvider>
-                  {children}
-                  <ToastWrapper />
-                </TopicDayProvider>
-              </NotificationProvider>
-            </GroupProvider>
-          </ThreadProvider>
-        </WebSocketProvider>
-      </UserProvider>
+      <WeatherProvider>
+        <UserProvider>
+          <WebSocketProvider>
+            <ThreadProvider>
+              <GroupProvider>
+                <NotificationProvider>
+                  <TopicDayProvider>
+                    {children}
+                    <ToastWrapper />
+                  </TopicDayProvider>
+                </NotificationProvider>
+              </GroupProvider>
+            </ThreadProvider>
+          </WebSocketProvider>
+        </UserProvider>
+      </WeatherProvider>
     </ToastProvider>
   )
 }

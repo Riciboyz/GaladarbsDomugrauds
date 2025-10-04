@@ -8,7 +8,7 @@ export default function Home() {
   const { user } = useUser()
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen dg-bg">
       {user ? <MainApp /> : <AuthPage />}
     </main>
   )

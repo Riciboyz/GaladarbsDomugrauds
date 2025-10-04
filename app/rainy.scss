@@ -1,0 +1,106 @@
+/* Scoped SCSS rainy effect - only under .rainy /.weather-rainy */
+
+.rainy,
+.weather-rainy {
+  position: relative;
+  overflow: hidden;
+
+  /* No gradient background – removed disturbing overlay */
+  &::before {
+    content: none !important;
+  }
+
+  /* Remove ALL background colors in rainy mode */
+  * {
+    background: transparent !important;
+  }
+
+  /* But keep specific elements visible */
+  .card,
+  .sidebar,
+  .header,
+  button,
+  .btn,
+  [role="button"] {
+    background: inherit !important;
+  }
+
+  /* Ensure content sits above rain */
+  main,
+  .content,
+  .container,
+  .page-wrapper {
+    position: relative;
+    z-index: 2;
+  }
+
+  .rain {
+    position: fixed;
+    width: 120vw;
+    height: 100vh;
+    left: -10vw;
+    top: 0;
+    z-index: 1;
+    pointer-events: none;
+
+    /* Hide interactive hover helpers for clean background-only effect */
+    .left,
+    .right {
+      width: 20vw;
+      height: 100vh;
+      left: 10vw;
+      position: absolute;
+      z-index: 2;
+      display: none;
+    }
+
+    .right {
+      left: initial;
+      right: 10vw;
+    }
+    .right.center {
+      right: 30vw;
+    }
+    .left.center {
+      left: 30vw;
+    }
+
+    @property --angle {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 91deg;
+    }
+
+    .drop {
+      border: 0.2vmin solid transparent;
+      border-bottom-color: rgba(171, 194, 233, 0.55);
+      position: absolute;
+      top: -5vmin;
+      --angle: 91deg;
+      filter: blur(0.2px);
+    }
+
+    $drops: 500;
+    @for $i from 1 through $drops {
+      .drop:nth-child(#{$i}) {
+        opacity: (random(40) + 30) * 0.01; // 0.30 - 0.70
+        left: random(1200) * 0.1vw;
+        border-left-width: random(20) * 0.1vmin;
+        animation: fall-#{$i} (random(15) * 0.15s)
+          (random(25) * -0.5s)
+          ease-in
+          infinite;
+      }
+
+      @keyframes fall-#{$i} {
+        #{percentage(random(50) / 500)} {
+          transform: rotate(var(--angle)) translateX(0);
+        }
+        to {
+          transform: rotate(var(--angle))
+            translateX(calc(100vh + 5vmin));
+        }
+      }
+    }
+  }
+}

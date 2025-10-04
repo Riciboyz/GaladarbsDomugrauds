@@ -29,6 +29,9 @@ export default function AuthPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false)
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+  const [devShownCode, setDevShownCode] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,6 +75,18 @@ export default function AuthPage() {
 
       const data = await response.json()
 
+      if (response.ok && data.twoFactorRequired) {
+        setTwoFactorRequired(true)
+        if (data.devCode) {
+          setDevShownCode(String(data.devCode))
+          success('2FA (DEV)', 'Ievadi ekrānā redzamo kodu.')
+        } else {
+          setDevShownCode('')
+          success('2FA', 'Mēs nosūtījām kodu uz tavu e‑pastu.')
+        }
+        return
+      }
+
       if (response.ok) {
         setUser(data.user)
         await loadThreadsFromAPI()
@@ -82,6 +97,35 @@ export default function AuthPage() {
       }
     } catch (error) {
       console.error('Auth error:', error)
+      setErrorMessage('Network error. Please try again.')
+      showError('Network Error', 'Please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrorMessage('')
+    try {
+      const resp = await fetch('/api/auth/2fa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, code: twoFactorCode })
+      })
+      const data = await resp.json()
+      if (resp.ok) {
+        setUser(data.user)
+        await loadThreadsFromAPI()
+        setTwoFactorRequired(false)
+        setTwoFactorCode('')
+        success('Welcome!', 'You have successfully logged in.')
+      } else {
+        setErrorMessage(data.error || 'Invalid code')
+        showError('2FA Failed', data.error || 'Invalid code')
+      }
+    } catch (err) {
       setErrorMessage('Network error. Please try again.')
       showError('Network Error', 'Please check your connection and try again.')
     } finally {
@@ -172,6 +216,7 @@ export default function AuthPage() {
               </div>
 
               {/* Ultra-Clean Form */}
+              {!twoFactorRequired ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email */}
                 <div>
@@ -284,6 +329,39 @@ export default function AuthPage() {
                   {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
                 </button>
               </form>
+              ) : (
+              <form onSubmit={handleVerifyCode} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ievadi 6‑ciparu kodu
+                  </label>
+                  <input
+                    type="text"
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                    placeholder="123456"
+                    maxLength={6}
+                    required
+                  />
+                  {devShownCode && (
+                    <p className="mt-2 text-xs text-gray-600">Kods (parādīts tikai dev režīmā): <span className="font-mono">{devShownCode}</span></p>
+                  )}
+                </div>
+                {errorMessage && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{errorMessage}</p>
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  {loading ? 'Please wait...' : 'Verify Code'}
+                </button>
+              </form>
+              )}
 
               {/* Ultra-Minimal Quick Login */}
               <div className="mt-6 text-center">

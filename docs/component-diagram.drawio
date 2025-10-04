@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2024-01-15T10:00:00.000Z" agent="5.0" etag="abc123" version="24.0.0">
+  <diagram name="Component Architecture" id="component-arch">
+    <mxGraphModel dx="1422" dy="754" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- App Component -->
+        <mxCell id="app" value="App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="20" width="120" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Layout -->
+        <mxCell id="layout" value="Layout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="80" width="120" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- VIEWS ROW -->
+        <mxCell id="views-label" value="VIEWS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="50" y="150" width="100" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="user-search" value="&lt;&lt;View&gt;&gt;&#xa;UserSearch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="register" value="&lt;&lt;View&gt;&gt;&#xa;Register" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="170" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="login" value="&lt;&lt;View&gt;&gt;&#xa;Login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="290" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="profile" value="&lt;&lt;View&gt;&gt;&#xa;Profile" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="410" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="weather" value="&lt;&lt;View&gt;&gt;&#xa;Weather" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="530" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="threads" value="&lt;&lt;View&gt;&gt;&#xa;Threads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="650" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="groups" value="&lt;&lt;View&gt;&gt;&#xa;Groups" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="770" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="admin" value="&lt;&lt;View&gt;&gt;&#xa;Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2d3748;strokeColor=#4a5568;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="890" y="190" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <!-- CONTEXTS ROW -->
+        <mxCell id="contexts-label" value="CONTEXTS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="50" y="280" width="100" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-context" value="AuthContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="50" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="theme-context" value="ThemeContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="170" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="thread-context" value="ThreadContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="group-context" value="GroupContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="410" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="notification-context" value="NotificationContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="530" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="websocket-context" value="WebSocketContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="650" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="user-context" value="UserContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="770" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="toast-context" value="ToastContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a365d;strokeColor=#2c5282;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="890" y="320" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <!-- API/CLASSES ROW -->
+        <mxCell id="api-label" value="API / CLASSES" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="50" y="410" width="100" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-login" value="&lt;&lt;Class&gt;&gt;&#xa;/api/auth/login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="50" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-register" value="&lt;&lt;Class&gt;&gt;&#xa;/api/auth/register" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="170" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-2fa" value="&lt;&lt;Class&gt;&gt;&#xa;/api/auth/2fa/verify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="290" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="api-threads" value="&lt;&lt;Class&gt;&gt;&#xa;/api/threads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="410" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="api-users" value="&lt;&lt;Class&gt;&gt;&#xa;/api/users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="530" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="api-groups" value="&lt;&lt;Class&gt;&gt;&#xa;/api/groups" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="650" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="api-notifications" value="&lt;&lt;Class&gt;&gt;&#xa;/api/notifications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="770" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="api-weather" value="&lt;&lt;Class&gt;&gt;&#xa;/api/weather" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c5530;strokeColor=#38a169;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="890" y="450" width="100" height="50" as="geometry" />
+        </mxCell>
+        
+        <!-- DATABASE/EXTERNAL SERVICES -->
+        <mxCell id="db-label" value="DATABASE / EXTERNAL" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="50" y="540" width="100" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="database" value="Database&#xa;threads_app.db" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a5568;strokeColor=#718096;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="50" y="580" width="120" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="email-service" value="Email Service&#xa;Resend/SMTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a5568;strokeColor=#718096;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="580" width="120" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="weather-api" value="Weather API&#xa;Open-Meteo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a5568;strokeColor=#718096;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="580" width="120" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="websocket-server" value="WebSocket&#xa;Server :3001" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4a5568;strokeColor=#718096;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="580" width="120" height="50" as="geometry" />
+        </mxCell>
+        
+        <!-- CONNECTIONS (Dashed lines) -->
+        <mxCell id="app-layout" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=2;dashed=1;" edge="1" parent="1" source="app" target="layout">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="60" as="sourcePoint" />
+            <mxPoint x="560" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- View to Context connections -->
+        <mxCell id="user-search-auth" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="user-search" target="auth-context">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="100" y="240" as="sourcePoint" />
+            <mxPoint x="100" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="register-auth" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="register" target="auth-context">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="220" y="240" as="sourcePoint" />
+            <mxPoint x="100" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="login-auth" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="login" target="auth-context">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="240" as="sourcePoint" />
+            <mxPoint x="100" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="profile-auth" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="profile" target="auth-context">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="460" y="240" as="sourcePoint" />
+            <mxPoint x="100" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="weather-theme" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="weather" target="theme-context">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="580" y="240" as="sourcePoint" />
+            <mxPoint x="220" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="threads-thread-context" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="threads" target="thread-context">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="700" y="240" as="sourcePoint" />
+            <mxPoint x="340" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="groups-group-context" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="groups" target="group-context">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="240" as="sourcePoint" />
+            <mxPoint x="460" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Context to API connections -->
+        <mxCell id="auth-login-api" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="auth-context" target="auth-login">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="100" y="370" as="sourcePoint" />
+            <mxPoint x="100" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="auth-register-api" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="auth-context" target="auth-register">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="100" y="370" as="sourcePoint" />
+            <mxPoint x="220" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="auth-2fa-api" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="auth-context" target="auth-2fa">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="100" y="370" as="sourcePoint" />
+            <mxPoint x="340" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="thread-context-api" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="thread-context" target="api-threads">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="370" as="sourcePoint" />
+            <mxPoint x="460" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="group-context-api" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="group-context" target="api-groups">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="460" y="370" as="sourcePoint" />
+            <mxPoint x="700" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="notification-context-api" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="notification-context" target="api-notifications">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="580" y="370" as="sourcePoint" />
+            <mxPoint x="820" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="theme-context-weather" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="theme-context" target="api-weather">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="220" y="370" as="sourcePoint" />
+            <mxPoint x="940" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- API to Database connections -->
+        <mxCell id="auth-login-db" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="auth-login" target="database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="100" y="500" as="sourcePoint" />
+            <mxPoint x="110" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="auth-register-db" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="auth-register" target="database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="220" y="500" as="sourcePoint" />
+            <mxPoint x="110" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="api-threads-db" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="api-threads" target="database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="460" y="500" as="sourcePoint" />
+            <mxPoint x="110" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="api-users-db" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="api-users" target="database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="580" y="500" as="sourcePoint" />
+            <mxPoint x="110" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="api-groups-db" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="api-groups" target="database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="700" y="500" as="sourcePoint" />
+            <mxPoint x="110" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="api-notifications-db" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="api-notifications" target="database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="500" as="sourcePoint" />
+            <mxPoint x="110" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- External service connections -->
+        <mxCell id="auth-2fa-email" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="auth-2fa" target="email-service">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="500" as="sourcePoint" />
+            <mxPoint x="260" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="api-weather-external" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="api-weather" target="weather-api">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="940" y="500" as="sourcePoint" />
+            <mxPoint x="410" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="websocket-context-server" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#a0aec0;strokeWidth=1;dashed=1;" edge="1" parent="1" source="websocket-context" target="websocket-server">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="700" y="370" as="sourcePoint" />
+            <mxPoint x="560" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

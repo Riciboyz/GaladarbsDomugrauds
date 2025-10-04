@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 const authDb = require('../db');
+const { sendEmailOtp } = require('../mailer');
+
+console.log('2FA flag at runtime (login):', process.env.TWO_FA_EMAIL_ENABLED);
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,15 +27,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate JWT token
-    const token = authDb.generateToken(user);
+    const twoFaEnabled = (process.env.TWO_FA_EMAIL_ENABLED || 'false').toLowerCase() === 'true';
+    if (twoFaEnabled) {
+      // Step 1: Generate and send OTP, do not create session yet
+      const code = Math.floor(100000 + Math.random() * 900000);
+      const ttlSeconds = parseInt(process.env.TWO_FA_EMAIL_TTL_SECONDS || '600', 10);
+      await authDb.createEmailOtp(user.id, 'login', String(code), ttlSeconds);
+      const mailResult = await sendEmailOtp(user.email, String(code));
+      console.log('2FA mailer result:', mailResult);
 
-    // Create session
+      const devShowCode = (process.env.TWO_FA_DEV_SHOW_CODE || 'false').toLowerCase() === 'true';
+      return NextResponse.json({
+        success: true,
+        twoFactorRequired: true,
+        userHint: { email: user.email.replace(/(^.).+(@.*$)/, '$1***$2') },
+        message: 'Verification code sent to email',
+        ...(devShowCode ? { devCode: String(code) } : {})
+      });
+    }
+
+    // 2FA disabled: proceed with normal session creation
+    const token = authDb.generateToken(user);
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
     await authDb.createSession(user.id, token, ipAddress, userAgent);
 
-    // Set HTTP-only cookie
     const response = NextResponse.json({
       success: true,
       user: {
@@ -53,7 +73,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return response;
