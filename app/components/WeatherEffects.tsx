@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useWeather } from '../contexts/WeatherContext';
 
 interface WeatherEffectsProps {
@@ -10,6 +10,40 @@ interface WeatherEffectsProps {
 const WeatherEffects: React.FC<WeatherEffectsProps> = ({ className = '' }) => {
   const { weatherTheme } = useWeather();
   const [particles, setParticles] = useState<Array<{ id: number; left: number; delay: number }>>([]);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Load persisted audio preference
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('sunnyAudioEnabled');
+      if (stored === 'true') setAudioEnabled(true);
+    } catch {}
+  }, []);
+
+  // Try to play/pause audio on changes
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (weatherTheme !== 'sunny') {
+      audioRef.current.pause();
+      return;
+    }
+    if (audioEnabled) {
+      audioRef.current.volume = 0.25;
+      audioRef.current.play().catch(() => {
+        // Autoplay likely blocked; will play on next user interaction
+      });
+    } else {
+      audioRef.current.pause();
+    }
+  }, [audioEnabled, weatherTheme]);
+
+  const onToggleAudio = () => {
+    const next = !audioEnabled;
+    setAudioEnabled(next);
+    try { localStorage.setItem('sunnyAudioEnabled', String(next)); } catch {}
+  };
 
   useEffect(() => {
     if (weatherTheme === 'rainy' || weatherTheme === 'snowy') {
@@ -44,100 +78,25 @@ const WeatherEffects: React.FC<WeatherEffectsProps> = ({ className = '' }) => {
 
   return (
     <div className={`weather-effects ${weatherTheme} ${className}`}>
+      {/* sunny visual scene removed to avoid obstructing content */}
       {weatherTheme === 'sunny' && (
-        <div className="sunny-field" aria-hidden>
-          <input type="checkbox" id="gfxmenu" readOnly />
-          <input type="radio" name="gfx" id="good" defaultChecked readOnly />
-          <input type="radio" name="gfx" id="okay" readOnly />
-          <input type="radio" name="gfx" id="dq" readOnly />
-          <input type="radio" name="gfx" id="mobile" readOnly />
-          <input type="checkbox" name="sfx" id="sound" readOnly />
-
-          <div>
-            <div id="main">
-              <div>
-                <x>
-                  <y>
-                    <z>
-                      <distant>
-                        <sky>
-                          {Array.from({ length: 15 }).map((_, i) => (
-                            <u key={`s1-${i}`} />
-                          ))}
-                        </sky>
-                        <sky2>
-                          {Array.from({ length: 6 }).map((_, i) => (
-                            <u key={`s2-${i}`} />
-                          ))}
-                        </sky2>
-                        <trees>
-                          <l>
-                            {Array.from({ length: 8 }).map((_, i) => (
-                              <u key={`t1-${i}`} />
-                            ))}
-                            <s />
-                          </l>
-                          <l>
-                            {Array.from({ length: 4 }).map((_, i) => (
-                              <u key={`t2-${i}`} />
-                            ))}
-                          </l>
-                          <l>
-                            {Array.from({ length: 13 }).map((_, i) => (
-                              <u key={`t3-${i}`} />
-                            ))}
-                          </l>
-                          <l>
-                            {Array.from({ length: 3 }).map((_, i) => (
-                              <u key={`t4-${i}`} />
-                            ))}
-                            <tree />
-                          </l>
-                          <l>
-                            <u />
-                          </l>
-                          <l>
-                            {Array.from({ length: 18 }).map((_, i) => (
-                              <u key={`t6-${i}`} />
-                            ))}
-                          </l>
-                        </trees>
-                      </distant>
-                      <field>
-                        {Array.from({ length: 7 }).map((_, i) => (
-                          <l key={`f-${i}`} />
-                        ))}
-                        <plain />
-                        <grass>
-                          {Array.from({ length: 4 }).map((_, gi) => (
-                            <g key={`g-${gi}`}>
-                              {Array.from({ length: 6 }).map((_, ui) => (
-                                <u key={`gu-${gi}-${ui}`} />
-                              ))}
-                            </g>
-                          ))}
-                          {Array.from({ length: 3 }).map((_, gi) => (
-                            <g2 key={`g2-${gi}`}>
-                              {Array.from({ length: 6 }).map((_, ui) => (
-                                <u key={`g2u-${gi}-${ui}`} />
-                              ))}
-                            </g2>
-                          ))}
-                        </grass>
-                        <bugs>
-                          <u />
-                          <u />
-                          <u />
-                        </bugs>
-                      </field>
-                    </z>
-                  </y>
-                </x>
-              </div>
-            </div>
-            <div id="cover" />
-          </div>
-        </div>
+        <>
+          <audio
+            ref={audioRef}
+            src="/assets/audio/birds.mp3"
+            loop
+            preload="none"
+          />
+          <button
+            type="button"
+            aria-label={audioEnabled ? 'Izslēgt putnu skaņas' : 'Ieslēgt putnu skaņas'}
+            onClick={onToggleAudio}
+            className="fixed bottom-4 right-4 z-50 btn-secondary shadow-lg"
+            style={{ backdropFilter: 'blur(8px)' }}
+          >
+            {audioEnabled ? '🔊 Birds' : '🔈 Birds'}
+          </button>
+        </>
       )}
       {weatherTheme === 'rainy' && (
         <div className="rain">
@@ -158,6 +117,20 @@ const WeatherEffects: React.FC<WeatherEffectsProps> = ({ className = '' }) => {
               ))}
             </div>
           )}
+      {weatherTheme === 'cloudy' && (
+        <div id="clouds">
+          <div className="cloud x1"></div>
+          <div className="cloud x2"></div>
+          <div className="cloud x3"></div>
+          <div className="cloud x4"></div>
+          <div className="cloud x5"></div>
+          <div className="cloud x6"></div>
+          <div className="cloud x7"></div>
+          <div className="cloud x8"></div>
+          <div className="cloud x9"></div>
+          <div className="cloud x10"></div>
+        </div>
+      )}
     </div>
   );
 };

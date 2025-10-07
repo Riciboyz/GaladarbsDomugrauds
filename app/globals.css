@@ -18,12 +18,60 @@
   
   body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(255,255,255,0.6) 0%, transparent 60%),
+    radial-gradient(1000px 700px at 80% 90%, rgba(0,0,0,0.04) 0%, transparent 70%),
+    linear-gradient(135deg, rgb(var(--background-start-rgb)) 0%, rgb(var(--background-end-rgb)) 100%);
+  background-attachment: fixed;
+}
+
+/* When sunny theme is active, clear the default body background to show sunny.scss */
+html.sunny, html.weather-sunny,
+body.sunny, body.weather-sunny {
+  background: #fbb002 !important;
+  background-color: #fbb002 !important; /* warm sunny base */
+}
+
+/* Remove default body gap so no underlying bg shows as a top line */
+body.sunny, body.weather-sunny {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Sunny: let the page background show through all wrappers */
+.sunny .dg-bg, .weather-sunny .dg-bg {
+  background: transparent !important;
+}
+.sunny .bg-white, .weather-sunny .bg-white,
+.sunny .bg-gray-50, .weather-sunny .bg-gray-50,
+.sunny .bg-gray-100, .weather-sunny .bg-gray-100,
+.sunny .bg-neutral-50, .weather-sunny .bg-neutral-50 {
+  background: transparent !important;
+}
+
+/* Subtle global vignette for depth */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(80% 60% at 50% 50%, transparent 60%, rgba(0,0,0,0.06) 100%);
+  z-index: 0;
+}
+
+/* In sunny theme, remove vignette to avoid any top-edge line */
+.sunny::after, .weather-sunny::after,
+body.sunny::after, body.weather-sunny::after,
+html.sunny::after, html.weather-sunny::after {
+  content: none !important;
+  background: none !important;
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Ensure no accidental top border in sunny */
+body.sunny,
+body.weather-sunny {
+  border-top: 0 !important;
 }
 
 @layer utilities {
@@ -40,52 +88,179 @@
 
 /* Weather Themes - Complete Design */
 .sunny, .weather-sunny {
-  background: linear-gradient(135deg, #fff7ed 0%, #fde68a 50%, #fbbf24 100%);
+  /* Defer background to sunny.scss for rich composition; keep transitions global */
   position: relative;
   overflow: hidden;
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sunny *, .weather-sunny * {
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.3s ease, transform 0.2s ease;
 }
 
+/* Minimal, airy surfaces */
 .sunny .sidebar, .weather-sunny .sidebar {
-  background: #fef3c7 !important;
-  border-color: #fbbf24 !important;
+  background: rgba(255, 251, 235, 0.9) !important;
+  border-color: rgba(255, 196, 120, 0.45) !important;
+  box-shadow: 0 8px 28px rgba(255, 196, 120, 0.18) !important;
+  backdrop-filter: blur(16px) !important;
 }
 
 .sunny .header, .weather-sunny .header {
-  background: #fed7aa !important;
-  border-color: #fbbf24 !important;
+  background: rgba(255, 249, 235, 0.95) !important;
+  border: 0 !important; /* remove thin line on top */
+  box-shadow: 0 6px 20px rgba(255, 196, 120, 0.16) !important;
+  backdrop-filter: blur(16px) !important;
 }
 
 .sunny .card, .weather-sunny .card {
-  background: #ffffff !important;
-  border-color: #fbbf24 !important;
-  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.2) !important;
+  background: rgba(255, 253, 245, 0.9) !important;
+  border-color: rgba(255, 196, 120, 0.45) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06), 0 6px 18px rgba(255, 196, 120, 0.18) !important;
+  backdrop-filter: blur(16px) !important;
 }
 
+/* Buttons align to sunny.scss palette (sky + warm accent) */
 .sunny .btn-primary, .weather-sunny .btn-primary {
-  background: #ea580c !important;
-  color: white !important;
-  border-color: #ea580c !important;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  color: #3a2a12 !important;
+  border-color: rgba(245, 158, 11, 0.9) !important;
+  box-shadow: 0 8px 22px rgba(245, 158, 11, 0.28) !important;
 }
 
 .sunny .btn-secondary, .weather-sunny .btn-secondary {
-  background: #f59e0b !important;
-  color: white !important;
-  border-color: #f59e0b !important;
+  background: linear-gradient(135deg, #fff1bf 0%, #ffd48a 100%) !important;
+  color: #2b2b2b !important;
+  border-color: rgba(255, 196, 120, 0.9) !important;
+  box-shadow: 0 6px 18px rgba(255, 196, 120, 0.28) !important;
 }
 
+/* Sunny: ensure all buttons inside cards are themed (covers widgets like Topic/Follow) */
+.sunny .card button, .weather-sunny .card button,
+.sunny .card a[role="button"], .weather-sunny .card a[role="button"],
+.sunny .card .btn, .weather-sunny .card .btn {
+  background: linear-gradient(135deg, #fff1bf 0%, #ffd48a 100%) !important;
+  border: 1px solid rgba(255, 196, 120, 0.9) !important;
+  color: #7a4b0a !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 12px rgba(255, 196, 120, 0.28) !important;
+}
+
+.sunny .card button:hover, .weather-sunny .card button:hover,
+.sunny .card a[role="button"]:hover, .weather-sunny .card a[role="button"]:hover,
+.sunny .card .btn:hover, .weather-sunny .card .btn:hover {
+  background: linear-gradient(135deg, #fff1bf 0%, #ffcf7a 100%) !important;
+  box-shadow: 0 8px 16px rgba(255, 196, 120, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Sunny theme: base style for generic buttons that don't declare a variant */
+.sunny button:not([class*='btn-']), .weather-sunny button:not([class*='btn-']),
+.sunny .btn:not([class*='btn-']), .weather-sunny .btn:not([class*='btn-']),
+.sunny [role="button"]:not([class*='btn-']), .weather-sunny [role="button"]:not([class*='btn-']),
+.sunny a[role="button"]:not([class*='btn-']), .weather-sunny a[role="button"]:not([class*='btn-']) {
+  background: linear-gradient(135deg, #fff1bf 0%, #ffd48a 100%) !important;
+  border: 1px solid rgba(255, 196, 120, 0.9) !important;
+  color: #7a4b0a !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 12px rgba(255, 196, 120, 0.28) !important;
+}
+
+.sunny button:not([class*='btn-']):hover, .weather-sunny button:not([class*='btn-']):hover,
+.sunny .btn:not([class*='btn-']):hover, .weather-sunny .btn:not([class*='btn-']):hover,
+.sunny [role="button"]:not([class*='btn-']):hover, .weather-sunny [role="button"]:not([class*='btn-']):hover,
+.sunny a[role="button"]:not([class*='btn-']):hover, .weather-sunny a[role="button"]:not([class*='btn-']):hover {
+  background: linear-gradient(135deg, #fff1bf 0%, #ffcf7a 100%) !important;
+  box-shadow: 0 8px 16px rgba(255, 196, 120, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Sunny: icons and inner text in buttons */
+.sunny button svg, .weather-sunny button svg,
+.sunny .btn svg, .weather-sunny .btn svg,
+.sunny [role="button"] svg, .weather-sunny [role="button"] svg,
+.sunny a[role="button"] svg, .weather-sunny a[role="button"] svg {
+  stroke: #7a4b0a !important;
+  fill: none !important;
+  stroke-width: 1.5 !important;
+}
+
+.sunny button span, .weather-sunny button span,
+.sunny .btn span, .weather-sunny .btn span,
+.sunny [role="button"] span, .weather-sunny [role="button"] span,
+.sunny a[role="button"] span, .weather-sunny a[role="button"] span,
+.sunny button div, .weather-sunny button div,
+.sunny .btn div, .weather-sunny .btn div {
+  color: #7a4b0a !important;
+  font-weight: 500 !important;
+}
+
+/* Sunny: focus/disabled states */
+.sunny button:focus, .weather-sunny button:focus,
+.sunny .btn:focus, .weather-sunny .btn:focus {
+  outline: 2px solid rgba(245, 158, 11, 0.5) !important;
+  outline-offset: 2px !important;
+}
+
+.sunny button:disabled, .weather-sunny button:disabled,
+.sunny .btn:disabled, .weather-sunny .btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  filter: saturate(0.85);
+}
+
+/* Sunny variants */
+.sunny .btn-success, .weather-sunny .btn-success,
+.sunny .success, .weather-sunny .success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+  color: #065f46 !important;
+  border: 1px solid rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25) !important;
+}
+
+.sunny .btn-danger, .weather-sunny .btn-danger,
+.sunny .danger, .weather-sunny .danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+  color: #7f1d1d !important;
+  border: 1px solid rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25) !important;
+}
+
+.sunny .btn-outline, .weather-sunny .btn-outline,
+.sunny .outline, .weather-sunny .outline {
+  background: transparent !important;
+  color: #7a4b0a !important;
+  border: 1px solid rgba(255, 196, 120, 0.9) !important;
+}
+
+.sunny .btn-ghost, .weather-sunny .btn-ghost,
+.sunny .ghost, .weather-sunny .ghost {
+  background: rgba(255, 212, 138, 0.18) !important;
+  color: #7a4b0a !important;
+  border: 1px solid rgba(255, 196, 120, 0.4) !important;
+}
+
+.sunny .btn-link, .weather-sunny .btn-link,
+.sunny .link, .weather-sunny .link {
+  background: transparent !important;
+  border: 0 !important;
+  color: #b45309 !important;
+  text-decoration: underline;
+}
+
+/* Elegant text tones */
 .sunny h1, .sunny h2, .sunny h3, .sunny h4, .sunny h5, .sunny h6,
 .weather-sunny h1, .weather-sunny h2, .weather-sunny h3, .weather-sunny h4, .weather-sunny h5, .weather-sunny h6 {
-  color: #1f2937 !important;
+  color: #333333 !important;
 }
 
 .sunny p, .sunny span, .sunny div, .sunny a,
 .weather-sunny p, .weather-sunny span, .weather-sunny div, .weather-sunny a {
-  color: #374151 !important;
+  color: #4a4a4a !important;
 }
 
 .rainy, .weather-rainy {
@@ -691,18 +866,6 @@
 }
 
 /* Simple weather effects */
-.sunny::before, .weather-sunny::before {
-  content: '';
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
-  animation: sunRays 8s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
 
 .rainy::before, .weather-rainy::before {
     content: '';
@@ -973,28 +1136,28 @@
 
 /* Basic button styles */
 .btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors;
+  @apply bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200;
 }
 
 .btn-secondary {
-  @apply bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors;
+  @apply bg-gray-700 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200;
 }
 
 .btn-ghost {
-  @apply bg-transparent text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors;
+  @apply bg-white/40 dark:bg-white/10 border border-white/50 text-gray-800 dark:text-gray-200 px-5 py-2.5 rounded-xl font-medium backdrop-blur-md hover:bg-white/60 dark:hover:bg-white/15 transition-all duration-200;
 }
 
 /* Basic card styles */
 .card {
-  @apply bg-white rounded-lg shadow-md p-6 border border-gray-200;
+  @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-gray-200/60;
 }
 
 .card-elevated {
-  @apply bg-white rounded-lg shadow-lg p-6 border border-gray-200;
+  @apply bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-gray-200/70;
 }
 
 .card-glass {
-  @apply bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-6 border border-gray-200;
+  @apply bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-200/50;
 }
 
 /* Basic text styles */

@@ -1,0 +1,109 @@
+@startuml
+skinparam backgroundColor #111111
+skinparam defaultFontColor white
+skinparam componentStyle rectangle
+skinparam rectangle { BorderColor #333333; BackgroundColor #151515; RoundCorner 10 }
+skinparam package   { BackgroundColor transparent; BorderColor #2a2a2a; RoundCorner 14 }
+skinparam ArrowColor #cfcfcf
+skinparam ArrowThickness 1.2
+
+title Weather Theming – Component Diagram
+
+package "Next.js App Shell" {
+  rectangle LAYOUT as "app/layout.tsx\n«Root Layout»" #1a1a1a
+  rectangle PROVIDERS as "app/providers.tsx\n«Providers»" #1a1a1a
+  rectangle GLOBAL_THEME as "app/components/GlobalWeatherTheme.tsx\n«Applies <body> theme class»" #1a1a1a
+  rectangle EFFECTS as "app/components/WeatherEffects.tsx\n«Visual effects layer»" #1a1a1a
+  rectangle WIDGET as "app/components/WeatherWidget.tsx\n«Weather summary UI»" #1a1a1a
+  rectangle RIGHT_SIDEBAR as "app/components/RightSidebar.tsx\n«Integrates WeatherWidget»" #1a1a1a
+  rectangle PAGE_HOME as "app/page.tsx\n«Home»" #1a1a1a
+  rectangle PAGE_WEATHER as "app/weather/page.tsx\n«Weather Demo»" #1a1a1a
+}
+
+package "React Contexts" {
+  rectangle WX_CTX as "app/contexts/WeatherContext.tsx\n«WeatherContext»\n- theme (localStorage)\n- weather data\n- fetch + determineTheme()\n- CustomEvent + StorageEvent sync" #0b2436
+  rectangle WS_CTX as "app/contexts/WebSocketContext.tsx\n«WebSocketContext»" #0b2436
+  rectangle NOTIF_CTX as "app/contexts/NotificationContext.tsx\n«NotificationContext»" #0b2436
+  rectangle GROUP_CTX as "app/contexts/GroupContext.tsx\n«GroupContext»" #0b2436
+  rectangle THREAD_CTX as "app/contexts/ThreadContext.tsx\n«ThreadContext»" #0b2436
+  rectangle USER_CTX as "app/contexts/UserContext.tsx\n«UserContext»" #0b2436
+}
+
+package "API Routes" {
+  rectangle API_WEATHER as "app/api/weather/route.ts\n«GET /api/weather»\nFetch Open‑Meteo / Simulated" #0d2230
+  rectangle API_AUTH as "app/api/auth/*\n«Auth endpoints»" #0d2230
+  rectangle API_GROUPS as "app/api/groups/*\n«Groups»" #0d2230
+  rectangle API_THREADS as "app/api/threads/*\n«Threads»" #0d2230
+}
+
+package "Styling / Themes" {
+  rectangle SCSS_SUNNY as "app/sunny.scss\n«Sunny theme»" #1f2937
+  rectangle SCSS_RAINY as "app/rainy.scss\n«Rainy theme»" #1f2937
+  rectangle SCSS_NIGHT as "app/night.scss\n«Night theme»" #1f2937
+  rectangle SCSS_SNOWY as "app/snowy.scss\n«Snowy theme»" #1f2937
+  rectangle SCSS_CLOUDY as "app/cloudy.scss\n«Cloudy theme»" #1f2937
+  rectangle GLOBALS as "app/globals.css\n«Variables + base mapping»" #1f2937
+}
+
+package "Browser State" {
+  rectangle LOCALSTORAGE as "localStorage\nweatherTheme" #202020
+  rectangle EVENTS as "CustomEvent('weather-theme-change')\nStorageEvent" #202020
+}
+
+package "External Services" {
+  rectangle OPEN_METEO as "Open‑Meteo API" #303030
+  rectangle WSS_SERVER as "WebSocket :3001" #303030
+}
+
+' App composition
+LAYOUT --> PROVIDERS
+PROVIDERS --> WX_CTX
+PROVIDERS --> WS_CTX
+PROVIDERS --> NOTIF_CTX
+PROVIDERS --> GROUP_CTX
+PROVIDERS --> THREAD_CTX
+PROVIDERS --> USER_CTX
+
+PAGE_HOME --> RIGHT_SIDEBAR
+RIGHT_SIDEBAR --> WIDGET
+
+PAGE_HOME --> GLOBAL_THEME
+PAGE_WEATHER --> GLOBAL_THEME
+GLOBAL_THEME --> WX_CTX : uses theme
+GLOBAL_THEME --> SCSS_SUNNY : applies .sunny class
+GLOBAL_THEME --> SCSS_RAINY
+GLOBAL_THEME --> SCSS_NIGHT
+GLOBAL_THEME --> SCSS_SNOWY
+GLOBAL_THEME --> SCSS_CLOUDY
+GLOBALS -[hidden]-> SCSS_SUNNY
+GLOBALS -[hidden]-> SCSS_RAINY
+GLOBALS -[hidden]-> SCSS_NIGHT
+GLOBALS -[hidden]-> SCSS_SNOWY
+GLOBALS -[hidden]-> SCSS_CLOUDY
+
+EFFECTS --> WX_CTX : reads theme
+EFFECTS ..> SCSS_SUNNY
+EFFECTS ..> SCSS_RAINY
+EFFECTS ..> SCSS_NIGHT
+EFFECTS ..> SCSS_SNOWY
+EFFECTS ..> SCSS_CLOUDY
+
+WIDGET --> WX_CTX : reads data
+WX_CTX ..> API_WEATHER : fetch()
+API_WEATHER ..> OPEN_METEO
+
+' Theme persistence / sync
+WX_CTX --> LOCALSTORAGE : set/get theme
+WX_CTX --> EVENTS : dispatch CustomEvent
+EVENTS --> GLOBAL_THEME : listens
+EVENTS --> WIDGET : listens (optional)
+
+' WebSocket and others
+WS_CTX ..> WSS_SERVER
+THREAD_CTX ..> API_THREADS
+GROUP_CTX ..> API_GROUPS
+USER_CTX ..> API_AUTH
+
+@enduml
+
+
