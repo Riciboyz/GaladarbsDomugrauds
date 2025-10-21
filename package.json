@@ -21,9 +21,12 @@
   "dependencies": {
     "@heroicons/react": "^2.0.18",
     "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
     "date-fns": "^2.30.0",
+    "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "next": "14.2.32",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.6",
     "openmeteo": "^1.2.1",
     "react": "^18",

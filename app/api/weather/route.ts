@@ -1,52 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchWeatherApi } from 'openmeteo';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('Weather API: Starting request...');
     const { searchParams } = new URL(request.url);
-    const latitude = searchParams.get('lat') || '56.9496'; // Riga, Latvia default
-    const longitude = searchParams.get('lon') || '24.1052';
+    const latitude = searchParams.get('lat') || '57.3119'; // Cēsis, Latvia default
+    const longitude = searchParams.get('lon') || '25.2746';
     
     console.log('Weather API: Coordinates:', latitude, longitude);
 
-    // Simulated weather data for testing (since Open-Meteo API has rate limits)
+    // Fetch real weather data from Open-Meteo API
+    const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,rain,snowfall,weather_code&timezone=auto`;
+    
+    console.log('Weather API: Fetching from Open-Meteo:', openMeteoUrl);
+    
+    const response = await fetch(openMeteoUrl);
+    if (!response.ok) {
+      throw new Error(`Open-Meteo API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Weather API: Received data from Open-Meteo');
+    
+    // Transform Open-Meteo data to our format
     const weatherData = {
       location: {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
-        elevation: 17,
-        utcOffsetSeconds: 0,
+        elevation: data.elevation || 0,
+        utcOffsetSeconds: data.utc_offset_seconds || 0,
       },
       current: {
-        time: new Date(),
-        temperature_2m: 12.7,
-        relative_humidity_2m: 40,
-        apparent_temperature: 9.2,
-        is_day: 1,
-        precipitation: 0,
-        rain: 0,
-        showers: 0,
-        snowfall: 0,
-        weather_code: 2, // Partly cloudy
-        cloud_cover: 77,
-        pressure_msl: 1036.7,
-        surface_pressure: 1034.6,
-        wind_speed_10m: 9,
-        wind_direction_10m: 94,
-        wind_gusts_10m: 22.7,
+        time: new Date(data.current.time),
+        temperature_2m: data.current.temperature_2m,
+        relative_humidity_2m: data.current.relative_humidity_2m,
+        apparent_temperature: data.current.apparent_temperature,
+        is_day: data.current.is_day,
+        precipitation: data.current.precipitation,
+        rain: data.current.rain,
+        showers: data.current.showers,
+        snowfall: data.current.snowfall,
+        weather_code: data.current.weather_code,
+        cloud_cover: data.current.cloud_cover,
+        pressure_msl: data.current.pressure_msl,
+        surface_pressure: data.current.surface_pressure,
+        wind_speed_10m: data.current.wind_speed_10m,
+        wind_direction_10m: data.current.wind_direction_10m,
+        wind_gusts_10m: data.current.wind_gusts_10m,
       },
       hourly: {
-        time: Array.from({ length: 24 }, (_, i) => new Date(Date.now() + i * 60 * 60 * 1000)),
-        temperature_2m: Array.from({ length: 24 }, (_, i) => 12 + Math.sin(i / 24 * Math.PI * 2) * 5),
-        rain: Array.from({ length: 24 }, () => 0),
-        snowfall: Array.from({ length: 24 }, () => 0),
-        weather_code: Array.from({ length: 24 }, () => 2),
+        time: data.hourly.time.map((time: string) => new Date(time)),
+        temperature_2m: data.hourly.temperature_2m,
+        rain: data.hourly.rain,
+        snowfall: data.hourly.snowfall,
+        weather_code: data.hourly.weather_code,
       },
     };
 
-    console.log('Weather API: Success, returning simulated data');
+    console.log('Weather API: Success, returning real weather data');
+    console.log('Weather API: Current weather code:', data.current.weather_code);
+    console.log('Weather API: Current temperature:', data.current.temperature_2m);
+    console.log('Weather API: Is day:', data.current.is_day);
     return NextResponse.json(weatherData);
+    
   } catch (error) {
     console.error('Weather API error:', error);
     return NextResponse.json(

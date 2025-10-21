@@ -156,10 +156,14 @@ async function getNotificationsFromDB(userId: string, limit: number, offset: num
       LIMIT ? OFFSET ?
     `;
     
+    console.log('🔍 Querying notifications for user:', userId, 'with query:', query)
+    
     db.all(query, [userId, limit, offset], (err: any, rows: any[]) => {
       if (err) {
+        console.error('❌ Error querying notifications:', err)
         reject(err);
       } else {
+        console.log('📬 Found notifications:', rows?.length || 0, 'for user:', userId)
         resolve(rows || []);
       }
       db.close();

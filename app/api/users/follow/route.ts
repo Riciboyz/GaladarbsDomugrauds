@@ -84,23 +84,27 @@ export async function POST(request: NextRequest) {
     const updatedCurrentUser = await authDb.getUserById(decoded.id);
     const updatedTargetUser = await authDb.getUserById(userId);
 
-    // Send WebSocket notification for real-time updates
-    try {
-      const ws = new WebSocket('ws://localhost:3001')
-      ws.onopen = () => {
-        ws.send(JSON.stringify({
-          type: 'follow_updated',
-          data: {
-            userId: userId,
-            followerId: decoded.id,
-            action: action,
-            timestamp: new Date().toISOString()
-          }
-        }))
-        ws.close()
+    // Send follow notification if someone followed the user
+    if (action === 'follow') {
+      try {
+        const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'follow',
+            fromUserId: decoded.id,
+            toUserId: userId,
+            message: `${currentUser.display_name || currentUser.username} started following you`,
+            data: { followerId: decoded.id }
+          })
+        })
+        
+        if (notificationResponse.ok) {
+          console.log('🔔 Follow notification sent successfully')
+        }
+      } catch (notificationError) {
+        console.error('Error sending follow notification:', notificationError)
       }
-    } catch (wsError) {
-      console.log('WebSocket notification failed (non-critical):', wsError)
     }
 
     return NextResponse.json({

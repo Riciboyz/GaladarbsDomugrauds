@@ -99,59 +99,26 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         
         // Send real-time notification if someone liked the thread
         if (!isLiked && author.id !== user.id) {
-          // Create notification in database
+          // Use the notifications/send API which handles both database storage and Socket.IO delivery
           try {
-            const notificationResponse = await fetch('/api/notifications', {
+            const notificationResponse = await fetch('/api/notifications/send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                userId: author.id,
                 type: 'like',
+                fromUserId: user.id,
+                toUserId: author.id,
                 message: `${user.displayName} liked your thread`,
-                relatedId: thread.id
+                data: { relatedId: thread.id }
               })
             })
             
             if (notificationResponse.ok) {
               const notificationData = await notificationResponse.json()
-              
-              // Add to local state
-              addNotification({
-                id: notificationData.notification.id,
-                type: 'like',
-                message: `${user.displayName} liked your thread`,
-                userId: author.id,
-                read: false,
-                createdAt: new Date(notificationData.notification.createdAt)
-              })
-              
-              // Send real-time notification via WebSocket
-              sendMessage({
-                type: 'notification',
-                data: {
-                  userId: author.id,
-                  notification: {
-                    id: notificationData.notification.id,
-                    type: 'like',
-                    message: `${user.displayName} liked your thread`,
-                    userId: author.id,
-                    read: false,
-                    createdAt: notificationData.notification.createdAt
-                  }
-                }
-              })
+              console.log('🔔 Like notification sent successfully:', notificationData.notification.id)
             }
           } catch (notificationError) {
-            console.error('Error creating notification:', notificationError)
-            // Fallback to local notification
-            addNotification({
-              id: Date.now().toString(),
-              type: 'like',
-              message: `${user.displayName} liked your thread`,
-              userId: author.id,
-              read: false,
-              createdAt: new Date()
-            })
+            console.error('Error sending like notification:', notificationError)
           }
         }
       } else {
@@ -183,59 +150,26 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         
         // Send notification if someone disliked the thread (only for new dislikes)
         if (action === 'dislike' && author.id !== user.id) {
-          // Create notification in database
+          // Use the notifications/send API which handles both database storage and Socket.IO delivery
           try {
-            const notificationResponse = await fetch('/api/notifications', {
+            const notificationResponse = await fetch('/api/notifications/send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                userId: author.id,
                 type: 'dislike',
+                fromUserId: user.id,
+                toUserId: author.id,
                 message: `${user.displayName} disliked your thread`,
-                relatedId: thread.id
+                data: { relatedId: thread.id }
               })
             })
             
             if (notificationResponse.ok) {
               const notificationData = await notificationResponse.json()
-              
-              // Add to local state
-              addNotification({
-                id: notificationData.notification.id,
-                type: 'dislike',
-                message: `${user.displayName} disliked your thread`,
-                userId: author.id,
-                read: false,
-                createdAt: new Date(notificationData.notification.createdAt)
-              })
-              
-              // Send real-time notification via WebSocket
-              sendMessage({
-                type: 'notification',
-                data: {
-                  userId: author.id,
-                  notification: {
-                    id: notificationData.notification.id,
-                    type: 'dislike',
-                    message: `${user.displayName} disliked your thread`,
-                    userId: author.id,
-                    read: false,
-                    createdAt: notificationData.notification.createdAt
-                  }
-                }
-              })
+              console.log('🔔 Dislike notification sent successfully:', notificationData.notification.id)
             }
           } catch (notificationError) {
-            console.error('Error creating notification:', notificationError)
-            // Fallback to local notification
-            addNotification({
-              id: Date.now().toString(),
-              type: 'dislike',
-              message: `${user.displayName} disliked your thread`,
-              userId: author.id,
-              read: false,
-              createdAt: new Date()
-            })
+            console.error('Error sending dislike notification:', notificationError)
           }
         }
       } else {
@@ -398,59 +332,26 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         
         // Send notification to the original author
         if (author && author.id !== user.id) {
-          // Create notification in database
+          // Use the unified notifications/send API which handles both database storage and Socket.IO delivery
           try {
-            const notificationResponse = await fetch('/api/notifications', {
+            const notificationResponse = await fetch('/api/notifications/send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                userId: author.id,
                 type: 'comment',
+                fromUserId: user.id,
+                toUserId: author.id,
                 message: `${user.displayName} commented on your thread`,
-                relatedId: thread.id
+                data: { relatedId: thread.id }
               })
             })
             
             if (notificationResponse.ok) {
               const notificationData = await notificationResponse.json()
-              
-              // Add to local state
-              addNotification({
-                id: notificationData.notification.id,
-                type: 'comment',
-                message: `${user.displayName} commented on your thread`,
-                userId: author.id,
-                read: false,
-                createdAt: new Date(notificationData.notification.createdAt)
-              })
-              
-              // Send real-time notification via WebSocket
-              sendMessage({
-                type: 'notification',
-                data: {
-                  userId: author.id,
-                  notification: {
-                    id: notificationData.notification.id,
-                    type: 'comment',
-                    message: `${user.displayName} commented on your thread`,
-                    userId: author.id,
-                    read: false,
-                    createdAt: notificationData.notification.createdAt
-                  }
-                }
-              })
+              console.log('🔔 Comment notification sent successfully:', notificationData.notification.id)
             }
           } catch (notificationError) {
-            console.error('Error creating notification:', notificationError)
-            // Fallback to local notification
-            addNotification({
-              id: Date.now().toString(),
-              type: 'comment',
-              message: `${user.displayName} commented on your thread`,
-              userId: author.id,
-              read: false,
-              createdAt: new Date()
-            })
+            console.error('Error sending comment notification:', notificationError)
           }
         }
       }

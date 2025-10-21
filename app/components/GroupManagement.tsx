@@ -160,15 +160,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       const data = await response.json()
       
       if (response.ok) {
-        addNotification({
-          id: Date.now().toString(),
-          type: 'group_invite',
-          message: `Invitation sent to ${users.find(u => u.id === inviteUserId)?.displayName}`,
-          userId: user.id,
-          read: false,
-          createdAt: new Date()
-        })
-        success('Invitation sent successfully!')
+        success('Invitation sent', `Invite sent to ${users.find(u => u.id === inviteUserId)?.displayName || 'user'}`)
         setInviteUserId('')
         setShowInviteSection(false)
       } else {
@@ -181,10 +173,10 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
   }
 
   // Get users that have mutual following relationship (both follow each other)
+  // Allow inviting any user you follow; backend enforces stricter rules for private groups
   const mutualFollowers = user ? users.filter(u => 
     u.id !== user.id && 
-    user.following?.includes(u.id) && 
-    u.following?.includes(user.id)
+    user.following?.includes(u.id)
   ) : []
 
   if (!user || group.createdBy !== user.id) {
@@ -420,10 +412,10 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                       {mutualFollowers.length === 0 && (
                         <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <p className="text-xs text-yellow-800 font-medium mb-1">
-                            No mutual followers available
+                            No users available to invite
                           </p>
                           <p className="text-xs text-yellow-700">
-                            You can only invite users who follow each other. Follow some users and ask them to follow you back to enable invitations.
+                            You can invite users you follow. Follow some users to enable invitations.
                           </p>
                         </div>
                       )}
@@ -442,7 +434,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                       </button>
                       <button
                         type="submit"
-                        disabled={!inviteUserId || mutualFollowers.length === 0}
+                        disabled={!inviteUserId}
                         className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Send Invitation

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNotification } from '../contexts/NotificationContext'
 import { useUser } from '../contexts/UserContext'
 import { useToast } from '../contexts/ToastContext'
@@ -18,7 +18,6 @@ export default function Notifications() {
   const { notifications, markNotificationAsRead, markAllAsRead } = useNotification()
   const { user } = useUser()
   const { success, error: showError } = useToast()
-  const [filter, setFilter] = useState('all')
   const { connectWebSocket, disconnectWebSocket } = useRealtimeNotifications()
 
   // Connect to real-time notifications when component mounts
@@ -28,22 +27,18 @@ export default function Notifications() {
   }, [connectWebSocket, disconnectWebSocket])
 
   const filteredNotifications = notifications.filter(notification => {
-    // Only show notifications for current user
-    if (notification.userId !== user?.id) return false
+    // Only show notifications for current user - check both userId and user_id fields
+    const notificationUserId = notification.userId || notification.user_id
+    if (notificationUserId !== user?.id) return false
     
-    if (filter === 'all') return true
-    if (filter === 'unread') return !notification.read
-    return notification.type === filter
+    // Only show unread notifications (hide read ones)
+    return !notification.read && !notification.is_read
   })
 
-  const unreadCount = notifications.filter(n => !n.read && n.userId === user?.id).length
-
-  // Debug logging
-  useEffect(() => {
-    console.log('🔔 Notifications component - Current user:', user?.id)
-    console.log('🔔 Notifications component - All notifications:', notifications)
-    console.log('🔔 Notifications component - Filtered notifications:', filteredNotifications)
-  }, [notifications, user, filteredNotifications])
+  const unreadCount = notifications.filter(n => {
+    const notificationUserId = n.userId || n.user_id
+    return !n.read && !n.is_read && notificationUserId === user?.id
+  }).length
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -73,17 +68,21 @@ export default function Notifications() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
+      console.log('🔔 Marking notification as read:', notificationId)
       await markNotificationAsRead(notificationId)
+      console.log('✅ Notification marked as read successfully')
     } catch (error) {
-      console.error('Error marking notification as read:', error)
+      console.error('❌ Error marking notification as read:', error)
     }
   }
 
   const handleMarkAllAsRead = async () => {
     try {
+      console.log('🔔 Marking all notifications as read')
       await markAllAsRead()
+      console.log('✅ All notifications marked as read successfully')
     } catch (error) {
-      console.error('Error marking all as read:', error)
+      console.error('❌ Error marking all notifications as read:', error)
     }
   }
 
@@ -107,29 +106,6 @@ export default function Notifications() {
             </button>
           )}
         </div>
-
-        {/* Filters */}
-        <div className="flex items-center space-x-1 mt-4">
-          {[
-            { id: 'all', label: 'All' },
-            { id: 'unread', label: 'Unread' },
-            { id: 'like', label: 'Likes' },
-            { id: 'comment', label: 'Comments' },
-            { id: 'follow', label: 'Follows' }
-          ].map((filterOption) => (
-            <button
-              key={filterOption.id}
-              onClick={() => setFilter(filterOption.id)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                filter === filterOption.id
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              {filterOption.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Notifications List */}
@@ -138,45 +114,48 @@ export default function Notifications() {
           <div className="card p-12 text-center">
             <BellIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="heading-3 text-gray-900 mb-2">
-              {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+              No notifications yet
             </h3>
             <p className="body-regular text-gray-600">
-              {filter === 'unread' 
-                ? 'You\'re all caught up!'
-                : 'When you get notifications, they\'ll appear here'
-              }
+              When you get notifications, they'll appear here
             </p>
           </div>
-        ) : (
+        ) : filteredNotifications.length > 0 ? (
           filteredNotifications.map((notification) => (
             <div
               key={notification.id}
               className={`card-elevated transition-all duration-200 ${
-                !notification.read ? 'bg-blue-50/50 border-blue-200' : ''
+                !notification.read && !notification.is_read ? 'bg-blue-50/50 border-blue-200' : 'bg-gray-50/50 border-gray-200'
               }`}
             >
               <div className="p-4">
                 <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
+                  <div className={`flex-shrink-0 ${
+                    notification.read || notification.is_read ? 'opacity-60' : ''
+                  }`}>
                     {getNotificationIcon(notification.type)}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="body-regular text-gray-900">
+                        <p className={`body-regular ${
+                          notification.read || notification.is_read ? 'text-gray-600' : 'text-gray-900'
+                        }`}>
                           {getNotificationMessage(notification)}
                         </p>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className={`text-sm mt-1 ${
+                          notification.read || notification.is_read ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           {new Date(notification.createdAt).toLocaleString()}
                         </p>
                       </div>
                       
                       <div className="flex items-center space-x-2 ml-4">
-                        {!notification.read && (
+                        {!notification.read && !notification.is_read && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                         )}
-                        {!notification.read && (
+                        {!notification.read && !notification.is_read && (
                           <button
                             onClick={() => handleMarkAsRead(notification.id)}
                             className="btn-icon text-gray-400 hover:text-gray-600"
@@ -191,6 +170,12 @@ export default function Notifications() {
               </div>
             </div>
           ))
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">
+              No notifications found
+            </p>
+          </div>
         )}
       </div>
     </div>

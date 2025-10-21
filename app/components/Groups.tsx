@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useGroup, Group } from '../contexts/GroupContext'
 import { useUser } from '../contexts/UserContext'
-import { useNotification } from '../contexts/NotificationContext'
 import { useToast } from '../contexts/ToastContext'
 import { 
   UserGroupIcon,
@@ -24,7 +23,6 @@ import GroupManagement from './GroupManagement'
 export default function Groups() {
   const { groups, createGroup, loadGroups, joinGroupRealtime, leaveGroupRealtime } = useGroup()
   const { user, users } = useUser()
-  const { addNotification } = useNotification()
   const { success, error: showError } = useToast()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -53,6 +51,8 @@ export default function Groups() {
     }
     return 'public'
   })
+  const [pendingInvites, setPendingInvites] = useState<any[]>([])
+  const [loadingInvites, setLoadingInvites] = useState(false)
 
   // Persist tab selection so refresh keeps the same view
   useEffect(() => {
@@ -78,6 +78,26 @@ export default function Groups() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [openMenuId])
+
+  // Load groups and pending invites on mount
+  useEffect(() => {
+    loadGroups()
+    const loadInvites = async () => {
+      try {
+        setLoadingInvites(true)
+        const res = await fetch('/api/groups/invite', { credentials: 'include' })
+        const data = await res.json()
+        if (res.ok && data.success) {
+          setPendingInvites(data.invitations || [])
+        }
+      } catch (e) {
+        console.error('Error loading invites:', e)
+      } finally {
+        setLoadingInvites(false)
+      }
+    }
+    loadInvites()
+  }, [])
 
   // Counts for tabs
   const privateCount = user
@@ -140,6 +160,7 @@ export default function Groups() {
       const response = await fetch('/api/groups/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           groupId: selectedGroup.id,
           inviterId: user.id,
@@ -149,24 +170,19 @@ export default function Groups() {
 
       const data = await response.json()
       
-      if (response.ok) {
-        addNotification({
-          id: Date.now().toString(),
-          type: 'group_invite',
-          message: `Invitation sent to ${users.find(u => u.id === inviteUserId)?.displayName}`,
-          userId: user.id,
-          read: false,
-          createdAt: new Date()
-        })
+      if (response.ok && data.success) {
+        success('Invitation sent', `Invite sent to ${users.find(u => u.id === inviteUserId)?.displayName || 'user'}`)
         setInviteUserId('')
         setShowInviteModal(false)
         setSelectedGroup(null)
       } else {
-        throw new Error(data.error || 'Failed to send invitation')
+        console.error('Invite failed:', response.status, data)
+        throw new Error(data?.error || 'Failed to send invitation')
       }
     } catch (error) {
       console.error('Error sending invitation:', error)
-      alert('Failed to send invitation. Please try again.')
+      const message = (error as any)?.message || 'Failed to send invitation. Please try again.'
+      showError('Error', message)
     }
   }
 
@@ -288,6 +304,43 @@ export default function Groups() {
     loadGroups()
   }
 
+  const acceptInvite = async (invitationId: string) => {
+    try {
+      const res = await fetch('/api/groups/invite', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ invitationId, status: 'accepted' })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to accept invite')
+      setPendingInvites(prev => prev.filter(inv => inv.id !== invitationId))
+      await loadGroups()
+      success('Joined group!', 'You have joined the group.')
+    } catch (e) {
+      console.error(e)
+      showError('Error', 'Could not accept the invite')
+    }
+  }
+
+  const declineInvite = async (invitationId: string) => {
+    try {
+      const res = await fetch('/api/groups/invite', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ invitationId, status: 'declined' })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to decline invite')
+      setPendingInvites(prev => prev.filter(inv => inv.id !== invitationId))
+      success('Invite declined', 'Invitation was declined.')
+    } catch (e) {
+      console.error(e)
+      showError('Error', 'Could not decline the invite')
+    }
+  }
+
   // Get users that the current user follows (for invitations)
   const followedUsers = user ? users.filter(u => 
     u.id !== user.id && user.following?.includes(u.id)
@@ -354,6 +407,42 @@ export default function Groups() {
           />
         </div>
       </div>
+
+      {/* Pending Invitations */}
+      {user && (
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Pending Invitations</h3>
+          {loadingInvites ? (
+            <div className="text-sm text-gray-500">Loading invites...</div>
+          ) : pendingInvites.length === 0 ? (
+            <div className="text-sm text-gray-500">No pending invites</div>
+          ) : (
+            <div className="space-y-3">
+              {pendingInvites.map((inv: any) => (
+                <div key={inv.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                      {inv.group_avatar ? (
+                        <img src={inv.group_avatar} alt={inv.group_name} className="w-10 h-10 rounded-lg object-cover" />
+                      ) : (
+                        <UsersIcon className="w-5 h-5 text-gray-600" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{inv.group_name || 'Group invite'}</div>
+                      <div className="text-xs text-gray-500">Invited by {inv.inviter_display_name || inv.inviter_username}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button onClick={() => acceptInvite(inv.id)} className="px-3 py-1.5 text-xs font-medium bg-black text-white rounded-lg hover:bg-gray-800">Accept</button>
+                    <button onClick={() => declineInvite(inv.id)} className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Decline</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Groups Grid - Instagram/Twitter Style */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -472,6 +561,18 @@ export default function Groups() {
 
               {/* Action Button */}
               <div className="space-y-3">
+                {user && group.createdBy === user.id && (
+                  <button
+                    onClick={() => {
+                      setSelectedGroup(group)
+                      setShowInviteModal(true)
+                    }}
+                    className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center space-x-2"
+                  >
+                    <UserPlusIcon className="w-4 h-4" />
+                    <span>Invite Members</span>
+                  </button>
+                )}
                 {user && !group.members?.includes(user.id) && !group.isPrivate && (
                   <button
                     onClick={() => handleJoinGroup(group)}

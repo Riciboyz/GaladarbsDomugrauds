@@ -88,35 +88,41 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // Load notifications from API when user is authenticated
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadNotificationsFromAPI()
     } else {
       // Clear notifications when user logs out
       setNotifications([])
     }
-  }, [user])
+  }, [user?.id]) // Only depend on user ID, not the entire user object
 
   const loadNotificationsFromAPI = async () => {
     try {
-      console.log('🔄 Loading notifications from API...')
+      console.log('🔄 Loading notifications from API for user:', user?.id)
       const response = await fetch('/api/notifications', {
         credentials: 'include'
       })
+      
+      console.log('📡 Notifications API response status:', response.status)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
       const data = await response.json()
+      console.log('📡 Notifications API response data:', data)
       
       if (data.success) {
-        // Convert string dates back to Date objects
+        // Convert string dates back to Date objects and normalize field names
         const notificationsWithDates = data.notifications.map((notification: any) => ({
           ...notification,
-          createdAt: new Date(notification.createdAt)
+          userId: notification.userId || notification.user_id, // Normalize user ID field
+          read: notification.read || notification.is_read === 1, // Normalize read status
+          createdAt: new Date(notification.createdAt || notification.created_at)
         }))
         setNotifications(notificationsWithDates)
         console.log('✅ Loaded notifications:', notificationsWithDates.length, 'notifications')
+        console.log('📬 Notifications data:', notificationsWithDates)
       } else {
         console.error('❌ Failed to load notifications:', data.error)
         // Fallback to mock data if API fails
@@ -134,14 +140,58 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => [notification, ...prev])
   }
 
-  const markNotificationAsRead = (notificationId: string) => {
-    setNotifications(prev => prev.map(notification => 
-      notification.id === notificationId ? { ...notification, read: true } : notification
-    ))
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      // Optimistic UI update
+      setNotifications(prev => prev.map(notification => 
+        notification.id === notificationId ? { ...notification, read: true } : notification
+      ))
+      
+      // Send API request to mark as read
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        console.error('Failed to mark notification as read')
+        // Revert optimistic update on failure
+        setNotifications(prev => prev.map(notification => 
+          notification.id === notificationId ? { ...notification, read: false } : notification
+        ))
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error)
+      // Revert optimistic update on error
+      setNotifications(prev => prev.map(notification => 
+        notification.id === notificationId ? { ...notification, read: false } : notification
+      ))
+    }
   }
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })))
+  const markAllAsRead = async () => {
+    try {
+      // Optimistic UI update
+      setNotifications(prev => prev.map(notification => ({ ...notification, read: true })))
+      
+      // Send API request to mark all as read
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        console.error('Failed to mark all notifications as read')
+        // Revert optimistic update on failure
+        setNotifications(prev => prev.map(notification => ({ ...notification, read: false })))
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error)
+      // Revert optimistic update on error
+      setNotifications(prev => prev.map(notification => ({ ...notification, read: false })))
+    }
   }
 
   const value: NotificationContextType = {

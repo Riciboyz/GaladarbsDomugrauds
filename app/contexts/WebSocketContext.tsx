@@ -152,12 +152,12 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           heartbeatTimerRef.current = null
         }
         
-        // Exponential backoff reconnect (max ~30s)
-        const attempt = Math.min(reconnectAttemptsRef.current + 1, 6)
+        // Exponential backoff reconnect (max ~60s, less aggressive)
+        const attempt = Math.min(reconnectAttemptsRef.current + 1, 4)
         reconnectAttemptsRef.current = attempt
-        const delay = Math.min(3000 * Math.pow(2, attempt - 1), 30000)
+        const delay = Math.min(5000 * Math.pow(2, attempt - 1), 60000)
         setTimeout(() => {
-          console.log(`🔄 WebSocketProvider: Reconnecting (attempt ${attempt})...`)
+          console.log(`🔄 WebSocketProvider: Reconnecting (attempt ${attempt}) in ${delay}ms...`)
           connect()
         }, delay)
       }
@@ -185,7 +185,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         heartbeatTimerRef.current = null
       }
     }
-  }, [user])
+  }, [user?.id]) // Only depend on user ID, not the entire user object
 
   const sendMessage = (message: WebSocketMessage): boolean => {
     if (ws && ws.readyState === WebSocket.OPEN) {

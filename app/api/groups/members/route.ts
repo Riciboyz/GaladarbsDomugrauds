@@ -173,7 +173,7 @@ async function getGroupFromDB(groupId: string) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbPath);
     
-    const query = 'SELECT * FROM groups WHERE id = ?';
+    const query = 'SELECT * FROM groups WHERE id = ? AND is_deleted = 0';
     
     db.get(query, [groupId], (err: any, row: any) => {
       if (err) {

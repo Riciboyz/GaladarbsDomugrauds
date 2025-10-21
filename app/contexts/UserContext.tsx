@@ -27,6 +27,7 @@ interface UserContextType {
   followUser: (userId: string) => Promise<boolean>
   unfollowUser: (userId: string) => Promise<boolean>
   isFollowing: (userId: string) => boolean
+  isLoading: boolean
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -112,6 +113,7 @@ const mockUsers: User[] = [
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [users, setUsers] = useState<User[]>(mockUsers)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Load user from session on mount
   useEffect(() => {
@@ -136,6 +138,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           })
           // Load all users from API
           loadUsersFromAPI()
+          setIsLoading(false)
           return
         }
         }
@@ -179,6 +182,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem('user')
           }
         }
+      } finally {
+        setIsLoading(false)
       }
     }
     
@@ -190,14 +195,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loadUsersFromAPI()
   }, [])
 
-  // Save user to localStorage when it changes
+  // Save user to localStorage when it changes (only after initial load)
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user))
-    } else {
-      localStorage.removeItem('user')
+    if (!isLoading) {
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('user')
+      }
     }
-  }, [user])
+  }, [user, isLoading])
 
   const loadUsersFromAPI = async () => {
     try {
@@ -345,6 +352,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     followUser,
     unfollowUser,
     isFollowing,
+    isLoading,
   }
 
   return (

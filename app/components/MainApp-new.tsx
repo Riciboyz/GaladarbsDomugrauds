@@ -69,10 +69,6 @@ export default function MainApp() {
     setActiveTab('topic-submission')
   }
 
-  const openNotifications = () => {
-    setActiveTab('notifications')
-  }
-
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
@@ -133,7 +129,7 @@ export default function MainApp() {
                 <div className="flex-1 max-w-2xl">
                   {renderContent()}
                 </div>
-                <RightSidebar onOpenTopicSubmission={openTopicSubmission} onOpenNotifications={openNotifications} />
+                <RightSidebar onOpenTopicSubmission={openTopicSubmission} />
               </div>
             </div>
           </div>

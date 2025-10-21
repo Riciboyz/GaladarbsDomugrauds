@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { io, Socket } from 'socket.io-client'
 import { useUser } from '../contexts/UserContext'
 import { useNotification } from '../contexts/NotificationContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
@@ -17,6 +18,7 @@ export function useRealtimeNotifications() {
     // Poll for new notifications every 3 seconds
     const pollNotifications = async () => {
       try {
+        console.log('🔄 Polling notifications for user:', user.id)
         const response = await fetch(`/api/notifications?userId=${user.id}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
@@ -24,94 +26,137 @@ export function useRealtimeNotifications() {
         
         if (response.ok) {
           const data = await response.json()
+          console.log('📬 Polled notifications response:', data)
           if (data.success && data.notifications) {
             // Check for new notifications
             data.notifications.forEach((notification: any) => {
-              if (notification.userId === user.id && !notification.read) {
+              console.log('📬 Checking notification:', notification)
+              if (notification.user_id === user.id && !notification.is_read) {
                 // Check if notification already exists in state
                 const existingNotification = document.querySelector(`[data-notification-id="${notification.id}"]`)
                 if (!existingNotification) {
+                  console.log('📬 Adding new notification from polling:', notification)
                   addNotification({
                     id: notification.id,
                     type: notification.type,
                     message: notification.message,
-                    userId: notification.userId,
-                    read: notification.read,
-                    createdAt: new Date(notification.createdAt)
+                    userId: notification.user_id,
+                    read: notification.is_read,
+                    createdAt: new Date(notification.created_at)
                   })
+                } else {
+                  console.log('📬 Notification already exists in UI, skipping')
                 }
+              } else {
+                console.log('📬 Notification not for current user or already read, skipping')
               }
             })
           }
+        } else {
+          console.error('❌ Failed to poll notifications:', response.status)
         }
       } catch (error) {
         console.error('Error polling notifications:', error)
       }
     }
 
-    // Start polling
-    intervalRef.current = setInterval(pollNotifications, 2000)
+    // Start polling every 2 minutes (reduced frequency to improve performance)
+    intervalRef.current = setInterval(pollNotifications, 120000)
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
     }
-  }, [user, addNotification])
+  }, [user?.id, addNotification])
 
-  // Handle real-time notifications from WebSocket
-  useEffect(() => {
-    if (lastMessage && lastMessage.type === 'notification_received') {
-      const notification = lastMessage.data
-      if (notification && notification.userId === user?.id) {
-        console.log('🔔 Processing real-time notification:', notification)
-        addNotification({
-          id: notification.id,
-          type: notification.type,
-          message: notification.message,
-          userId: notification.userId,
-          read: notification.read,
-          createdAt: new Date(notification.createdAt)
-        })
-      }
-    }
-  }, [lastMessage, user, addNotification])
-
-  // Simulate real-time notifications for demo purposes
+  // Handle real-time notifications via Socket.IO
   useEffect(() => {
     if (!user) return
+    
+    console.log('🔌 Starting Socket.IO connection for user:', user.id)
+    let socket: Socket | null = null
+    
+    try {
+      socket = io('http://localhost:3001', {
+        transports: ['websocket'],
+        withCredentials: false,
+        timeout: 10000,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+      })
 
-    const simulateRealTimeNotifications = () => {
-      // Only add notification occasionally (1% chance every 5 seconds)
-      if (Math.random() > 0.99) {
-        const notificationTypes = ['like', 'comment', 'follow', 'group_invite']
-        const randomType = notificationTypes[Math.floor(Math.random() * notificationTypes.length)]
+      socket.on('connect', () => {
+        console.log('🔌 Socket.IO connected successfully')
+        const token = typeof document !== 'undefined'
+          ? document.cookie.split('; ').find(r => r.startsWith('auth-token='))?.split('=')[1]
+          : undefined
+        console.log('🔐 Registering with userId:', user.id, 'token:', token ? 'present' : 'missing')
+        socket?.emit('register', { userId: user.id, token })
+      })
+
+      socket.on('registered', (data) => {
+        console.log('✅ Socket.IO registered successfully:', data)
+      })
+
+      socket.on('auth_error', (err) => {
+        console.error('❌ Socket.IO auth error:', err)
+      })
+
+      socket.on('notification', (n: any) => {
+        console.log('🔔 Socket.IO notification received:', n)
+        if (!n) return
         
-        const messages = {
-          like: 'Someone liked your thread! ❤️',
-          comment: 'Someone commented on your thread! 💬',
-          follow: 'Someone started following you! 👥',
-          group_invite: 'You\'ve been invited to join a group! 🎉'
+        // Handle different notification formats
+        const notificationData = n.notification || n
+        const targetUserId = notificationData.toUserId || notificationData.userId || n.toUserId
+        
+        console.log('🔔 Processing notification for user:', user.id, 'target:', targetUserId)
+        
+        // Only add notification if it's for the current user
+        if (targetUserId === user.id) {
+          console.log('🔔 Adding notification to UI:', notificationData)
+          addNotification({
+            id: notificationData.id || `notif_${Date.now()}`,
+            type: notificationData.type || 'notification',
+            message: notificationData.message || 'New notification',
+            userId: targetUserId,
+            read: false,
+            createdAt: new Date(notificationData.createdAt || Date.now())
+          })
+        } else {
+          console.log('🔔 Notification not for current user, ignoring')
         }
+      })
 
-        addNotification({
-          id: Date.now().toString(),
-          type: randomType as any,
-          message: messages[randomType as keyof typeof messages],
-          userId: user.id,
-          read: false,
-          createdAt: new Date()
-        })
+      socket.on('disconnect', (reason) => {
+        console.log('🔌 Socket.IO disconnected:', reason)
+      })
+
+      socket.on('connect_error', (err) => {
+        console.error('❌ Socket.IO connection error:', err)
+      })
+
+      // Fallback: if no connection after 30 seconds, try again
+      const timeout = setTimeout(() => {
+        if (!socket?.connected) {
+          console.log('🔄 Socket.IO connection timeout, retrying...')
+          socket?.connect()
+        }
+      }, 30000)
+
+      return () => {
+        clearTimeout(timeout)
+        try { socket?.disconnect() } catch {}
       }
+    } catch (e) {
+      console.error('Socket.IO setup error:', e)
     }
+  }, [user?.id, addNotification])
 
-    // Simulate notifications every 5 seconds
-    const simulationInterval = setInterval(simulateRealTimeNotifications, 5000)
-
-    return () => {
-      clearInterval(simulationInterval)
-    }
-  }, [user, addNotification])
+  // Note: Removed simulation code as we now have real automatic notifications
+  // for likes, comments, follows, and group invitations
 
   const connectWebSocket = () => {
     console.log('WebSocket connection would be established here')

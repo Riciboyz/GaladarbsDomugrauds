@@ -1,0 +1,102 @@
+<mxGraphModel dx="1639" dy="1069" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- Title -->
+    <mxCell id="title" value="Frontend Sequential Component Flow - DomuGrauds" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="200" y="10" width="430" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- Vertical chain (center) -->
+    <mxCell id="app" value="«component»&lt;br&gt;<b>App (RootLayout)</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="60" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="mainapp" value="«component»&lt;br&gt;<b>MainApp</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="160" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="sidebar" value="«component»&lt;br&gt;<b>Sidebar</b> (tabs)" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="260" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="feed" value="«component»&lt;br&gt;<b>Feed</b> (home)" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="360" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="threadcard" value="«component»&lt;br&gt;<b>ThreadCard</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="460" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="simplecreate" value="«component»&lt;br&gt;<b>SimpleCreateThread</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="560" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="groups" value="«component»&lt;br&gt;<b>Groups</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="660" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="groupchat" value="«component»&lt;br&gt;<b>GroupChat</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="360" y="760" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- Side branches: contexts from MainApp -->
+    <mxCell id="userctx" value="«context»&lt;br&gt;<b>UserContext</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#666666;fillColor=#F5F5F5;" vertex="1" parent="1">
+      <mxGeometry x="120" y="150" width="200" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="threadctx" value="«context»&lt;br&gt;<b>ThreadContext</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#666666;fillColor=#F5F5F5;" vertex="1" parent="1">
+      <mxGeometry x="120" y="220" width="200" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="groupctx" value="«context»&lt;br&gt;<b>GroupContext</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#666666;fillColor=#F5F5F5;" vertex="1" parent="1">
+      <mxGeometry x="120" y="290" width="200" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="wsctx" value="«context»&lt;br&gt;<b>WebSocketContext</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#666666;fillColor=#F5F5F5;" vertex="1" parent="1">
+      <mxGeometry x="600" y="220" width="200" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="notifctx" value="«context»&lt;br&gt;<b>NotificationContext</b>" style="html=1;whiteSpace=wrap;rounded=0;align=center;verticalAlign=middle;strokeColor=#666666;fillColor=#F5F5F5;" vertex="1" parent="1">
+      <mxGeometry x="600" y="290" width="200" height="60" as="geometry" />
+    </mxCell>
+
+    <!-- edges vertical -->
+    <mxCell id="e1" edge="1" parent="1" source="app" target="mainapp" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e2" edge="1" parent="1" source="mainapp" target="sidebar" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e3" edge="1" parent="1" source="sidebar" target="feed" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e4" edge="1" parent="1" source="feed" target="threadcard" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e5" edge="1" parent="1" source="threadcard" target="simplecreate" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e6" edge="1" parent="1" source="simplecreate" target="groups" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e7" edge="1" parent="1" source="groups" target="groupchat" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- edges to contexts from MainApp/Sidebar -->
+    <mxCell id="c1" edge="1" parent="1" source="mainapp" target="userctx" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="c2" edge="1" parent="1" source="mainapp" target="threadctx" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="c3" edge="1" parent="1" source="mainapp" target="groupctx" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="c4" edge="1" parent="1" source="mainapp" target="wsctx" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="c5" edge="1" parent="1" source="mainapp" target="notifctx" style="endArrow=classic;html=1;rounded=0;" >
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>

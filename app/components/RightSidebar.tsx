@@ -5,15 +5,14 @@ import { useUser } from '../contexts/UserContext'
 import { useNotification } from '../contexts/NotificationContext'
 import { useThread } from '../contexts/ThreadContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
-import { BellIcon, CalendarDaysIcon, SparklesIcon, ArrowTopRightOnSquareIcon, UserPlusIcon } from '@heroicons/react/24/outline'
+import { CalendarDaysIcon, SparklesIcon, ArrowTopRightOnSquareIcon, UserPlusIcon } from '@heroicons/react/24/outline'
 import WeatherWidget from './WeatherWidget'
 
 interface RightSidebarProps {
   onOpenTopicSubmission?: (topicId: string) => void
-  onOpenNotifications?: () => void
 }
 
-export default function RightSidebar({ onOpenTopicSubmission, onOpenNotifications }: RightSidebarProps) {
+export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProps) {
   const { user, users, followUser, unfollowUser, isFollowing } = useUser()
   const { notifications } = useNotification()
   const { threads } = useThread()
@@ -177,26 +176,6 @@ export default function RightSidebar({ onOpenTopicSubmission, onOpenNotification
                   </div>
                 ))}
               </div>
-            </div>
-          </section>
-
-          {/* Notifications quick glance */}
-          <section className="rounded-3xl bg-white/70 backdrop-blur-md border border-gray-100 shadow-dg-md overflow-hidden">
-            <div className="p-5">
-              <div className="flex items-center gap-2 text-gray-800">
-                <BellIcon className="h-5 w-5" />
-                <span className="text-sm font-semibold">Notifications</span>
-                {unreadCount > 0 && (
-                  <span className="ml-auto rounded-full bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 shadow-dg-sm">{unreadCount}</span>
-                )}
-              </div>
-              <p className="mt-2 text-sm text-gray-600">Stay on top of mentions and replies.</p>
-              <button 
-                onClick={() => onOpenNotifications?.()}
-                className="mt-3 inline-block text-sm font-medium text-brand-green-700 hover:text-brand-green-800"
-              >
-                Open notifications →
-              </button>
             </div>
           </section>
 

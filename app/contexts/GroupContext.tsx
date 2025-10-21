@@ -10,14 +10,13 @@ export interface Group {
   description?: string
   avatar?: string
   members: string[]
-  admins: string[]
-  isPublic: boolean
-  isPrivate?: boolean
+  admins?: string[]
+  isPrivate: boolean
   createdBy: string
   memberCount?: number
   isMember?: boolean
   createdAt: Date | string
-  threads: string[]
+  threads?: string[]
   creator?: {
     id: string
     username: string
@@ -66,7 +65,7 @@ const mockGroups: Group[] = [
     avatar: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=150&h=150&fit=crop',
     members: ['1', '2', '3', '5'],
     admins: ['1'],
-    isPublic: true,
+    isPrivate: false,
     createdAt: new Date('2023-01-01'),
     threads: [],
   },
@@ -77,7 +76,7 @@ const mockGroups: Group[] = [
     avatar: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=150&h=150&fit=crop',
     members: ['2', '4', '6'],
     admins: ['2'],
-    isPublic: true,
+    isPrivate: false,
     createdAt: new Date('2023-01-02'),
     threads: [],
   },
@@ -88,7 +87,7 @@ const mockGroups: Group[] = [
     avatar: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=150&h=150&fit=crop',
     members: ['3', '1', '4'],
     admins: ['3'],
-    isPublic: true,
+    isPrivate: false,
     createdAt: new Date('2023-01-03'),
     threads: [],
   },
@@ -99,7 +98,7 @@ const mockGroups: Group[] = [
     avatar: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=150&h=150&fit=crop',
     members: ['5', '1'],
     admins: ['5'],
-    isPublic: false,
+    isPrivate: true,
     createdAt: new Date('2023-01-04'),
     threads: [],
   },
@@ -167,7 +166,25 @@ export function GroupProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       
       if (data.success) {
-        setGroups(data.groups)
+        const mapped: Group[] = (data.groups || []).map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          description: g.description,
+          avatar: g.avatar,
+          members: Array.isArray(g.members) ? g.members : [],
+          admins: g.admins || [],
+          isPrivate: !!g.isPrivate,
+          createdBy: g.createdBy,
+          memberCount: g.memberCount,
+          isMember: g.isMember,
+          createdAt: g.createdAt,
+          threads: g.threads || [],
+          creator: g.creator,
+          onlineMembers: [],
+          typingUsers: [],
+          lastActivity: new Date(),
+        }))
+        setGroups(mapped)
       } else {
         console.error('Error loading groups:', data.error)
         // Fallback to mock data

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 
 export interface WeatherData {
   location: {
@@ -67,6 +67,7 @@ export const WeatherProvider: React.FC<WeatherProviderProps> = ({ children }) =>
   const [weatherTheme, setWeatherTheme] = useState<WeatherTheme>('default');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastFetchRef = useRef<number>(0);
 
   // Load saved theme from localStorage on mount
   useEffect(() => {
@@ -104,26 +105,46 @@ export const WeatherProvider: React.FC<WeatherProviderProps> = ({ children }) =>
     rain: number, 
     snowfall: number
   ): WeatherTheme => {
-    // Weather codes from Open-Meteo API
-    // 0: Clear sky, 1-2: Partly cloudy, 3: Overcast, 45-48: Fog, 51-67: Drizzle/Rain, 71-77: Snow, 80-82: Rain showers, 85-86: Snow showers, 95-99: Thunderstorm
+    // Open-Meteo weather codes mapping (0-99)
     
-    if (snowfall > 0.1) return 'snowy';
-    if (rain > 0.1) return 'rainy';
-    if (isDay === 0) return 'night'; // Night time
-    if (weatherCode >= 45 && weatherCode <= 48) return 'cloudy'; // Fog
-    if (weatherCode >= 3 && weatherCode <= 48) return 'cloudy'; // Cloudy conditions
-    if (weatherCode === 1 || weatherCode === 2) return 'cloudy'; // Partly cloudy
-    if (weatherCode === 0) return 'sunny'; // Clear sky
+    // Snow conditions
+    if (snowfall > 0.1 || (weatherCode >= 71 && weatherCode <= 77) || (weatherCode >= 85 && weatherCode <= 86)) return 'snowy';
     
-    return 'default';
+    // Rain conditions
+    if (rain > 0.1 || (weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 82)) return 'rainy';
+    
+    // Thunderstorm conditions
+    if (weatherCode >= 95 && weatherCode <= 99) return 'rainy';
+    
+    // Night time
+    if (isDay === 0) return 'night';
+    
+    // Clear sky conditions (0-2)
+    if (weatherCode >= 0 && weatherCode <= 2) return 'sunny';
+    
+    // Cloudy conditions (3-48)
+    if (weatherCode >= 3 && weatherCode <= 48) return 'cloudy';
+    
+    // Default to cloudy for unknown conditions
+    return 'cloudy';
   }, []);
 
-  const fetchWeather = useCallback(async (lat: number = 56.9496, lon: number = 24.1052) => {
+  const fetchWeather = useCallback(async (lat: number = 57.3119, lon: number = 25.2746) => {
+    // Cache weather data for 10 minutes to prevent excessive API calls
+    const now = Date.now();
+    const cacheTime = 10 * 60 * 1000; // 10 minutes
+    
+    if (weatherData && (now - lastFetchRef.current) < cacheTime) {
+      console.log('WeatherContext: Using cached weather data');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
+    lastFetchRef.current = now;
     
     try {
-      const response = await fetch(`http://localhost:3000/api/weather?lat=${lat}&lon=${lon}`);
+      const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
       if (!response.ok) {
         throw new Error('Failed to fetch weather data');
       }
@@ -169,7 +190,7 @@ export const WeatherProvider: React.FC<WeatherProviderProps> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [getWeatherTheme]);
+  }, [getWeatherTheme, weatherData]);
 
   // Function to manually set theme and save to localStorage
   const setWeatherThemeManual = useCallback((theme: WeatherTheme) => {

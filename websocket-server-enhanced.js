@@ -23,6 +23,12 @@ const server = http.createServer((req, res) => {
         console.log('📡 Broadcasting to', userConnections.size, 'connected users');
         broadcastToAll(data);
         
+        // If it's a notification, also broadcast to specific user
+        if (data.type === 'notification' && data.userId) {
+          console.log('📬 Broadcasting notification to user:', data.userId);
+          broadcastToUser(data.userId, data);
+        }
+        
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true }));
       } catch (error) {
