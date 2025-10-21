@@ -19,18 +19,9 @@ const server = http.createServer((req, res) => {
         const data = JSON.parse(body);
         console.log('📨 Received API message:', data.type);
         
-        // Broadcast to all connected WebSocket clients
-        console.log('📡 Broadcasting to', userConnections.size, 'connected users');
-        broadcastToAll(data);
+        // Handle different message types with proper routing
+        handleAPIMessage(data, res);
         
-        // If it's a notification, also broadcast to specific user
-        if (data.type === 'notification' && data.userId) {
-          console.log('📬 Broadcasting notification to user:', data.userId);
-          broadcastToUser(data.userId, data);
-        }
-        
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
       } catch (error) {
         console.error('Error processing API message:', error);
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -64,6 +55,7 @@ server.listen(3001, () => {
 // Store active connections by user ID
 const userConnections = new Map();
 const groupConnections = new Map(); // groupId -> Set of user connections
+const messageCache = new Map(); // Cache recent messages to prevent duplicates
 
 // Database helper functions
 const db = {
@@ -133,21 +125,59 @@ async function getGroupMembers(groupId) {
   }
 }
 
-// Broadcast message to group members
-function broadcastToGroup(groupId, message, excludeUserId = null) {
-  const groupConn = groupConnections.get(groupId);
-  if (!groupConn) return;
-
-  groupConn.forEach(ws => {
-    if (ws.readyState === WebSocket.OPEN && ws.userId !== excludeUserId) {
-      ws.send(JSON.stringify(message));
+// Check if message is duplicate
+function isDuplicateMessage(messageId) {
+  if (messageCache.has(messageId)) {
+    return true;
+  }
+  
+  // Add to cache with TTL
+  messageCache.set(messageId, Date.now());
+  
+  // Clean up old cache entries (older than 5 minutes)
+  const now = Date.now();
+  for (const [id, timestamp] of messageCache.entries()) {
+    if (now - timestamp > 300000) { // 5 minutes
+      messageCache.delete(id);
     }
-  });
+  }
+  
+  return false;
 }
 
-// Broadcast to all connected users
+// Broadcast message to group members (FIXED: No duplicate broadcasting)
+function broadcastToGroup(groupId, message, excludeUserId = null) {
+  console.log('🔍 Broadcasting to group:', groupId);
+  console.log('🔍 Group connections map:', Array.from(groupConnections.keys()));
+  
+  const groupConn = groupConnections.get(groupId);
+  console.log('🔍 Group connection set:', groupConn);
+  
+  if (!groupConn) {
+    console.log('❌ No group connections found for group:', groupId);
+    return;
+  }
+
+  let sentCount = 0;
+  groupConn.forEach(ws => {
+    console.log('🔍 Checking connection:', ws.userId, 'readyState:', ws.readyState);
+    if (ws.readyState === WebSocket.OPEN && ws.userId !== excludeUserId) {
+      try {
+        ws.send(JSON.stringify(message));
+        sentCount++;
+        console.log('✅ Sent message to:', ws.userId);
+      } catch (error) {
+        console.error('❌ Error sending message to group member:', error);
+      }
+    }
+  });
+  
+  console.log(`📡 Broadcasted to ${sentCount} group members in group ${groupId}`);
+}
+
+// Broadcast to all connected users (FIXED: Only for global events)
 function broadcastToAll(message, excludeUserId = null) {
-  console.log('📡 Broadcasting message:', message.type, 'to', userConnections.size, 'users');
+  console.log('📡 Broadcasting global message:', message.type, 'to', userConnections.size, 'users');
   let sentCount = 0;
   
   userConnections.forEach(ws => {
@@ -156,23 +186,132 @@ function broadcastToAll(message, excludeUserId = null) {
         ws.send(JSON.stringify(message));
         sentCount++;
       } catch (error) {
-        console.error('❌ Error sending message to user:', error);
+        console.error('❌ Error sending global message to user:', error);
       }
     }
   });
   
-  console.log('✅ Sent to', sentCount, 'users');
+  console.log('✅ Sent global message to', sentCount, 'users');
 }
 
-// Broadcast thread updates to all connected users
-function broadcastThreadUpdate(type, data, excludeUserId = null) {
-  const message = {
-    type: type,
-    data: data
-  };
-  
-  console.log(`📝 Broadcasting thread ${type}:`, data.id || data.threadId);
-  broadcastToAll(message, excludeUserId);
+// Handle API messages from Next.js routes
+async function handleAPIMessage(data, res) {
+  try {
+    switch (data.type) {
+      case 'group_message':
+        // Handle group message from API
+        await handleAPIGroupMessage(data.data);
+        break;
+        
+      case 'group_post_created':
+        // Broadcast new group post to group members
+        console.log('📝 Broadcasting group post:', data.data);
+        broadcastToGroup(data.data.group_id, {
+          type: 'group_post_created',
+          data: data.data
+        });
+        break;
+        
+      case 'group_post_deleted':
+        // Broadcast group post deletion to group members
+        console.log('📝 Broadcasting group post deletion:', data.data);
+        broadcastToGroup(data.data.groupId, {
+          type: 'group_post_deleted',
+          data: data.data
+        });
+        break;
+        
+      case 'group_post_comment':
+        // Broadcast new comment to group members
+        console.log('💬 Broadcasting group post comment:', data.data);
+        broadcastToGroup(data.data.group_id, {
+          type: 'group_post_comment',
+          data: data.data
+        });
+        break;
+        
+      case 'group_post_comment_deleted':
+        // Broadcast comment deletion to group members
+        console.log('💬 Broadcasting comment deletion:', data.data);
+        const groupId = await getPostGroupId(data.data.postId);
+        if (groupId) {
+          broadcastToGroup(groupId, {
+            type: 'group_post_comment_deleted',
+            data: data.data
+          });
+        }
+        break;
+        
+      case 'group_post_reaction':
+        // Broadcast reaction to group members
+        console.log('👍 Broadcasting group post reaction:', data.data);
+        broadcastToGroup(data.data.group_id, {
+          type: 'group_post_reaction',
+          data: data.data
+        });
+        break;
+        
+      case 'group_role_assigned':
+        // Broadcast role assignment to group members
+        console.log('👑 Broadcasting role assignment:', data.data);
+        broadcastToGroup(data.data.group_id, {
+          type: 'group_role_assigned',
+          data: data.data
+        });
+        break;
+        
+      case 'notification':
+        // Handle notifications
+        if (data.userId) {
+          console.log('📬 Broadcasting notification to user:', data.userId);
+          broadcastToUser(data.userId, {
+            type: 'notification',
+            notification: data.notification
+          });
+        }
+        break;
+        
+      default:
+        console.log('📨 Unknown API message type:', data.type);
+    }
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true }));
+  } catch (error) {
+    console.error('Error handling API message:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Internal server error' }));
+  }
+}
+
+// Handle group message from API (FIXED: No duplicate database insertion)
+async function handleAPIGroupMessage(messageData) {
+  try {
+    // Check if message is duplicate
+    if (isDuplicateMessage(messageData.id)) {
+      console.log('🚫 Duplicate message detected, skipping:', messageData.id);
+      return;
+    }
+    
+    // Get group members
+    const members = await getGroupMembers(messageData.group_id);
+    if (members.length === 0) {
+      console.log('❌ No members found for group:', messageData.group_id);
+      return;
+    }
+    
+    // Broadcast to group members only (FIXED: No duplicate broadcasting)
+    const message = {
+      type: 'group_message',
+      data: messageData
+    };
+    
+    broadcastToGroup(messageData.group_id, message);
+    console.log(`📨 API Group message broadcasted to group ${messageData.group_id}`);
+    
+  } catch (error) {
+    console.error('Error handling API group message:', error);
+  }
 }
 
 // Handle new connection
@@ -201,6 +340,11 @@ wss.on('connection', async (ws, req) => {
       console.log('📨 Received message:', data.type);
 
       switch (data.type) {
+        case 'register':
+          console.log('📨 WebSocket Server: Received register:', data);
+          await handleRegister(ws, data);
+          break;
+        
         case 'authenticate':
           await handleAuthentication(ws, data);
           break;
@@ -233,19 +377,87 @@ wss.on('connection', async (ws, req) => {
         case 'new_thread':
           // Broadcast new thread to all connected users
           console.log('📝 Broadcasting new thread:', data.data);
-          broadcastThreadUpdate('new_thread', data.data, ws.userId);
+          broadcastToAll({
+            type: 'new_thread',
+            data: data.data
+          }, ws.userId);
           break;
         
         case 'thread_updated':
           // Broadcast thread update to all connected users
           console.log('📝 Broadcasting thread update:', data.data);
-          broadcastThreadUpdate('thread_updated', data.data, ws.userId);
+          broadcastToAll({
+            type: 'thread_updated',
+            data: data.data
+          }, ws.userId);
           break;
         
         case 'thread_deleted':
           // Broadcast thread deletion to all connected users
           console.log('📝 Broadcasting thread deletion:', data.data);
-          broadcastThreadUpdate('thread_deleted', data.data, ws.userId);
+          broadcastToAll({
+            type: 'thread_deleted',
+            data: data.data
+          }, ws.userId);
+          break;
+        
+        case 'group_post_created':
+          // Broadcast new group post to group members
+          console.log('📝 Broadcasting group post:', data.data);
+          broadcastToGroup(data.data.group_id, {
+            type: 'group_post_created',
+            data: data.data
+          }, ws.userId);
+          break;
+        
+        case 'group_post_deleted':
+          // Broadcast group post deletion to group members
+          console.log('📝 Broadcasting group post deletion:', data.data);
+          broadcastToGroup(data.data.groupId, {
+            type: 'group_post_deleted',
+            data: data.data
+          }, ws.userId);
+          break;
+        
+        case 'group_post_comment':
+          // Broadcast new comment to group members
+          console.log('💬 Broadcasting group post comment:', data.data);
+          broadcastToGroup(data.data.group_id, {
+            type: 'group_post_comment',
+            data: data.data
+          }, ws.userId);
+          break;
+        
+        case 'group_post_comment_deleted':
+          // Broadcast comment deletion to group members
+          console.log('💬 Broadcasting comment deletion:', data.data);
+          // Get group ID from post
+          getPostGroupId(data.data.postId).then(groupId => {
+            if (groupId) {
+              broadcastToGroup(groupId, {
+                type: 'group_post_comment_deleted',
+                data: data.data
+              }, ws.userId);
+            }
+          });
+          break;
+        
+        case 'group_post_reaction':
+          // Broadcast reaction to group members
+          console.log('👍 Broadcasting group post reaction:', data.data);
+          broadcastToGroup(data.data.group_id, {
+            type: 'group_post_reaction',
+            data: data.data
+          }, ws.userId);
+          break;
+        
+        case 'group_role_assigned':
+          // Broadcast role assignment to group members
+          console.log('👑 Broadcasting role assignment:', data.data);
+          broadcastToGroup(data.data.group_id, {
+            type: 'group_role_assigned',
+            data: data.data
+          }, ws.userId);
           break;
         
         default:
@@ -290,6 +502,53 @@ const heartbeatInterval = setInterval(() => {
 }, HEARTBEAT_INTERVAL_MS);
 
 // Handle authentication
+// Handle user registration
+async function handleRegister(ws, data) {
+  console.log('🔐 Registering user:', data.userId);
+  
+  const { userId, token } = data;
+  
+  if (!userId) {
+    console.log('❌ No userId provided');
+    ws.send(JSON.stringify({
+      type: 'register_error',
+      data: { message: 'User ID required' }
+    }));
+    return;
+  }
+  
+  // Store user connection
+  ws.userId = userId;
+  ws.username = `User-${userId.substring(0, 8)}`;
+  
+  // Get user info from database
+  try {
+    ws.userInfo = await getUserInfo(userId);
+  } catch (error) {
+    console.log('⚠️ Could not get user info, using fallback');
+    ws.userInfo = {
+      id: userId,
+      username: ws.username,
+      display_name: ws.username,
+      avatar: null
+    };
+  }
+  
+  userConnections.set(userId, ws);
+  
+  console.log('✅ User registered successfully:', userId);
+  console.log('📊 Active connections:', userConnections.size);
+  
+  // Send confirmation
+  ws.send(JSON.stringify({
+    type: 'registered',
+    data: { 
+      userId: userId,
+      message: 'Registration successful' 
+    }
+  }));
+}
+
 async function handleAuthentication(ws, data) {
   const { token } = data;
   
@@ -360,7 +619,7 @@ async function handleJoinGroup(ws, data) {
     return;
   }
 
-  const { groupId } = data;
+  const groupId = data.data?.groupId || data.groupId;
   console.log('🔍 WebSocket Server: groupId from data:', groupId);
   if (!groupId) {
     console.log('❌ WebSocket Server: No groupId, sending Group ID required error');
@@ -373,7 +632,12 @@ async function handleJoinGroup(ws, data) {
 
   // Check if user is member of the group
   const members = await getGroupMembers(groupId);
+  console.log('🔍 WebSocket Server: Group members:', members);
+  console.log('🔍 WebSocket Server: Current user ID:', ws.userId);
+  console.log('🔍 WebSocket Server: Is member?', members.includes(ws.userId));
+  
   if (!members.includes(ws.userId)) {
+    console.log('❌ WebSocket Server: User not a member of group');
     ws.send(JSON.stringify({
       type: 'error',
       data: { message: 'You are not a member of this group' }
@@ -384,20 +648,22 @@ async function handleJoinGroup(ws, data) {
   // Add to group connections
   if (!groupConnections.has(groupId)) {
     groupConnections.set(groupId, new Set());
+    console.log('🔍 Created new group connection set for:', groupId);
   }
   groupConnections.get(groupId).add(ws);
+  console.log('🔍 Added user to group:', groupId, 'total connections:', groupConnections.get(groupId).size);
 
   ws.send(JSON.stringify({
     type: 'joined_group',
     data: { groupId, message: 'Successfully joined group' }
   }));
 
-  console.log(`✅ User ${ws.userInfo.username} joined group ${groupId}`);
+  console.log(`✅ User ${ws.userInfo?.username || ws.userId} joined group ${groupId}`);
 }
 
 // Handle leaving a group
 async function handleLeaveGroup(ws, data) {
-  const { groupId } = data;
+  const { groupId } = data.data || data;
   if (!groupId) return;
 
   const groupConn = groupConnections.get(groupId);
@@ -416,7 +682,7 @@ async function handleLeaveGroup(ws, data) {
   console.log(`✅ User ${ws.userInfo?.username} left group ${groupId}`);
 }
 
-// Handle group message
+// Handle group message (FIXED: No duplicate database insertion)
 async function handleGroupMessage(ws, data) {
   // Ensure we have an authenticated user; if anonymous and token provided, upgrade
   if (!ws.userId || String(ws.userId).startsWith('anonymous')) {
@@ -436,7 +702,7 @@ async function handleGroupMessage(ws, data) {
     return;
   }
 
-  const { groupId, content, messageType = 'text', attachmentUrl } = data;
+  const { groupId, content, messageType = 'text', attachmentUrl } = data.data || data;
   
   if (!groupId || !content) {
     ws.send(JSON.stringify({
@@ -448,7 +714,12 @@ async function handleGroupMessage(ws, data) {
 
   // Check if user is member of the group
   const members = await getGroupMembers(groupId);
+  console.log('🔍 WebSocket Server: Group members:', members);
+  console.log('🔍 WebSocket Server: Current user ID:', ws.userId);
+  console.log('🔍 WebSocket Server: Is member?', members.includes(ws.userId));
+  
   if (!members.includes(ws.userId)) {
+    console.log('❌ WebSocket Server: User not a member of group');
     ws.send(JSON.stringify({
       type: 'error',
       data: { message: 'You are not a member of this group' }
@@ -458,10 +729,10 @@ async function handleGroupMessage(ws, data) {
 
   // Save message to database
   try {
-    // Izveidojam unikālu ziņas ID (timestamp + nejauša rinda)
+    // Generate unique message ID
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     
-    // Ierakstām ziņu datubāzē tabulā group_messages
+    // Insert message into database
     await db.run(`
       INSERT INTO group_messages (id, group_id, sender_id, content, message_type, attachment_url, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -472,35 +743,32 @@ async function handleGroupMessage(ws, data) {
       ws.userInfo = await getUserInfo(ws.userId);
     }
 
-    // Sagatavojam WS ziņas objektu, ko sūtīsim klientiem
+    // Prepare message object for broadcasting
     const message = {
-      id: messageId, // ziņas ID
-      group_id: groupId, // grupas ID
-      sender_id: ws.userId, // sūtītāja ID
-      content: content, // teksta saturs
-      message_type: messageType, // 'text' | 'image' | 'file'
-      attachment_url: attachmentUrl, // ja ir fails/attēls – tā saite
-      created_at: new Date().toISOString(), // izveides laiks ISO formātā
-      username: ws.userInfo?.username || 'Unknown', // sūtītāja lietotājvārds
-      display_name: ws.userInfo?.display_name || 'Unknown User', // sūtītāja vārds uzvārds / display name
-      avatar: ws.userInfo?.avatar || null // sūtītāja avatārs
+      id: messageId,
+      group_id: groupId,
+      sender_id: ws.userId,
+      content: content,
+      message_type: messageType,
+      attachment_url: attachmentUrl,
+      created_at: new Date().toISOString(),
+      username: ws.userInfo?.username || 'Unknown',
+      display_name: ws.userInfo?.display_name || 'Unknown User',
+      avatar: ws.userInfo?.avatar || null
     };
 
-    // Izveidojam WS ziņojumu payload
+    // Broadcast to group members only (FIXED: No duplicate broadcasting)
     const payload = { type: 'group_message', data: message };
     console.log('📨 WebSocket Server: Broadcasting message:', payload);
-    // Sūtām visiem šīs grupas dalībniekiem (izņemot sūtītāju)
     broadcastToGroup(groupId, payload, ws.userId);
-    // Papildus – sūtām visiem savienojumiem kā drošības tīklu; klienti filtrē pēc group_id
-    broadcastToAll(payload, ws.userId);
 
-    // Atsūtām apstiprinājumu pašam sūtītājam, lai UI var nekavējoties atzīmēt piegādi
+    // Send confirmation to sender
     ws.send(JSON.stringify({
       type: 'message_sent',
       data: { messageId, message }
     }));
 
-    console.log(`📨 Message sent in group ${groupId} by ${ws.userInfo.username}`);
+    console.log(`📨 Message sent in group ${groupId} by ${ws.userInfo?.username}`);
 
   } catch (error) {
     console.error('Error saving message:', error);
@@ -515,7 +783,7 @@ async function handleGroupMessage(ws, data) {
 async function handleTyping(ws, data) {
   if (!ws.userId) return;
 
-  const { groupId } = data;
+  const { groupId } = data.data || data;
   if (!groupId) return;
 
   // Check if user is member of the group
@@ -528,8 +796,8 @@ async function handleTyping(ws, data) {
     data: {
       groupId,
       userId: ws.userId,
-      username: ws.userInfo.username,
-      displayName: ws.userInfo.display_name
+      username: ws.userInfo?.username || ws.userId,
+      displayName: ws.userInfo?.display_name || ws.userId
     }
   }, ws.userId);
 }
@@ -538,7 +806,7 @@ async function handleTyping(ws, data) {
 async function handleStopTyping(ws, data) {
   if (!ws.userId) return;
 
-  const { groupId } = data;
+  const { groupId } = data.data || data;
   if (!groupId) return;
 
   // Check if user is member of the group
@@ -551,7 +819,7 @@ async function handleStopTyping(ws, data) {
     data: {
       groupId,
       userId: ws.userId,
-      username: ws.userInfo.username
+      username: ws.userInfo?.username || ws.userId
     }
   }, ws.userId);
 }
@@ -573,13 +841,62 @@ function handleDisconnection(ws) {
   }
 }
 
-// Keep server alive
-process.on('SIGINT', () => {
-  console.log('🛑 Shutting down WebSocket server...');
-  server.close(() => {
-    process.exit(0);
+// Broadcast to specific user
+function broadcastToUser(userId, message) {
+  const userConnections = getUserConnections(userId);
+  if (userConnections.length > 0) {
+    console.log('📡 Broadcasting message to user:', userId, 'connections:', userConnections.length);
+    userConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify(message));
+          console.log('✅ Sent to user:', userId);
+        } catch (error) {
+          console.error('❌ Error sending to user:', userId, error);
+        }
+      }
+    });
+  } else {
+    console.log('⚠️ No connections found for user:', userId);
+  }
+}
+
+// Broadcast to all connected users
+function broadcastToAll(message) {
+  console.log('📡 Broadcasting message to all users:', userConnections.size);
+  userConnections.forEach((ws, userId) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify(message));
+        console.log('✅ Sent to user:', userId);
+      } catch (error) {
+        console.error('❌ Error sending to user:', userId, error);
+      }
+    }
   });
-});
+}
+
+// Get user connections
+function getUserConnections(userId) {
+  const connections = [];
+  userConnections.forEach((ws, id) => {
+    if (id === userId && ws.readyState === WebSocket.OPEN) {
+      connections.push(ws);
+    }
+  });
+  return connections;
+}
+
+// Get group ID from post ID
+async function getPostGroupId(postId) {
+  try {
+    const posts = await db.query('SELECT group_id FROM group_posts WHERE id = ?', [postId]);
+    return posts.length > 0 ? posts[0].group_id : null;
+  } catch (error) {
+    console.error('Error getting post group ID:', error);
+    return null;
+  }
+}
 
 // Health check endpoint
 setInterval(() => {

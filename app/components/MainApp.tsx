@@ -7,10 +7,11 @@ import { useGroup } from '../contexts/GroupContext'
 import { useNotification } from '../contexts/NotificationContext'
 import { useTopicDay } from '../contexts/TopicDayContext'
 import { useToast } from '../contexts/ToastContext'
+import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications'
 import Sidebar from './Sidebar'
 import Feed from './Feed'
 import Profile from './Profile'
-import Notifications from './Notifications'
+import RealtimeNotificationsProvider from './RealtimeNotificationsProvider'
 // import Settings from './Settings' // Temporarily disabled
 import Search from './Search'
 import Groups from './Groups'
@@ -35,6 +36,9 @@ export default function MainApp() {
   const { topicDays } = useTopicDay()
   const { success, error } = useToast()
   
+  // Aktivizē reāllaika notifikācijas
+  useRealtimeNotifications()
+  
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateThread, setShowCreateThread] = useState(false)
@@ -55,7 +59,7 @@ export default function MainApp() {
       case 'profile':
         return <Profile />
       case 'notifications':
-        return <Notifications />
+        return <RealtimeNotificationsProvider />
       case 'search':
         return <Search />
       case 'groups':

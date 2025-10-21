@@ -82,6 +82,27 @@ export async function POST(request: NextRequest) {
       relatedId: relatedId || null
     });
 
+    // Send real-time notification via WebSocket
+    try {
+      const wsResponse = await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'notification',
+          userId: userId,
+          notification: notification
+        })
+      });
+      
+      if (wsResponse.ok) {
+        console.log('✅ Real-time notification sent via WebSocket');
+      } else {
+        console.log('⚠️ Failed to send real-time notification via WebSocket');
+      }
+    } catch (error) {
+      console.error('❌ Error sending real-time notification:', error);
+    }
+
     return NextResponse.json({
       success: true,
       notification: notification

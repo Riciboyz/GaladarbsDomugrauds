@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline'
 import GroupChat from './GroupChat'
 import GroupManagement from './GroupManagement'
+import SimpleGroupChat from './SimpleGroupChat'
 
 export default function Groups() {
   const { groups, createGroup, loadGroups, joinGroupRealtime, leaveGroupRealtime } = useGroup()
@@ -290,6 +291,8 @@ export default function Groups() {
   }
 
   const handleOpenChat = (group: any) => {
+    console.log('🔍 Groups: Opening chat for group:', group)
+    console.log('🔍 Groups: Group ID:', group?.id)
     setSelectedGroup(group)
     setShowChat(true)
   }
@@ -805,15 +808,15 @@ export default function Groups() {
       )}
 
       {/* Group Chat Modal */}
-      {showChat && selectedGroup && (
-        <GroupChat
-          group={selectedGroup}
-          onClose={() => {
-            setShowChat(false)
-            setSelectedGroup(null)
-          }}
-        />
-      )}
+        {showChat && selectedGroup && (
+          <SimpleGroupChat
+            group={selectedGroup}
+            onClose={() => {
+              setShowChat(false)
+              setSelectedGroup(null)
+            }}
+          />
+        )}
 
       {/* Group Management Modal */}
       {showManagement && selectedGroup && (
@@ -994,6 +997,8 @@ export default function Groups() {
           </div>
         </div>
       )}
+
+      {/* Group Posts Modal */}
     </div>
   )
 }

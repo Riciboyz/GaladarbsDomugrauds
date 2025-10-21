@@ -34,23 +34,24 @@ export async function POST(request: NextRequest) {
     
     console.log('🔔 Notification saved to DB:', saved)
 
-    // Fire-and-forget push to Socket.IO notifications server (webhook)
+    // Send real-time notification via WebSocket server
     try {
-      const wsUrl = process.env.NOTIF_WS_HTTP || 'http://localhost:4001/webhook/notify'
+      const wsUrl = 'http://localhost:3001'
       const webhookPayload = {
-        toUserId,
+        type: 'notification',
+        userId: toUserId,
         notification: {
           id: saved.id,
           type: saved.type,
           message: saved.message,
-          fromUserId,
-          toUserId,
+          userId: toUserId,
+          read: false,
           createdAt: saved.createdAt,
-          payload: saved.payload,
+          relatedId: saved.payload?.relatedId || null
         }
       }
       
-      console.log('🔔 Sending webhook to Socket.IO:', wsUrl, webhookPayload)
+      console.log('🔔 Sending notification to WebSocket server:', wsUrl, webhookPayload)
       
       const webhookResponse = await fetch(wsUrl, {
         method: 'POST',
@@ -59,12 +60,12 @@ export async function POST(request: NextRequest) {
       })
       
       if (webhookResponse.ok) {
-        console.log('✅ Webhook sent successfully')
+        console.log('✅ Notification sent to WebSocket server successfully')
       } else {
-        console.error('❌ Webhook failed:', webhookResponse.status)
+        console.error('❌ WebSocket server response failed:', webhookResponse.status)
       }
     } catch (webhookError) {
-      console.error('❌ Webhook error:', webhookError)
+      console.error('❌ WebSocket server error:', webhookError)
     }
 
     return NextResponse.json({ success: true, notification: saved })
@@ -75,17 +76,21 @@ export async function POST(request: NextRequest) {
 }
 
 function buildDefaultMessage(type: string, data?: any): string {
+  const fromUsername = data?.fromUsername || data?.username || 'Someone'
+  
   switch (type) {
     case 'like':
-      return 'Someone liked your post'
+      return `${fromUsername} liked your thread`
+    case 'dislike':
+      return `${fromUsername} disliked your thread`
     case 'comment':
-      return 'Someone commented on your post'
+      return `${fromUsername} commented on your thread`
     case 'follow':
-      return 'You have a new follower'
+      return `${fromUsername} started following you`
     case 'group_invite':
-      return data?.groupName ? `You have been invited to "${data.groupName}"` : 'You have been invited to a group'
+      return data?.groupName ? `${fromUsername} invited you to "${data.groupName}"` : `${fromUsername} invited you to a group`
     default:
-      return 'You have a new notification'
+      return `${fromUsername} sent you a notification`
   }
 }
 

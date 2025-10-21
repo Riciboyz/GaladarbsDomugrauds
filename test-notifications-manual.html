@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Notifications Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .notifications {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            background: white;
+        }
+        .notification {
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #007bff;
+            background: #f8f9fa;
+        }
+        .notification.unread {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .ws-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .ws-status.connected {
+            background: #28a745;
+        }
+        .ws-status.disconnected {
+            background: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Real-Time Notifications Test</h1>
+        
+        <div class="test-section">
+            <h3>WebSocket Connection Status</h3>
+            <p>
+                <span id="ws-status" class="ws-status disconnected"></span>
+                <span id="ws-text">Disconnected</span>
+            </p>
+            <button onclick="connectWebSocket()">Connect WebSocket</button>
+            <button onclick="disconnectWebSocket()">Disconnect</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Authentication</h3>
+            <p>Login as different users to test notifications between them:</p>
+            <button onclick="loginAsUser1()">Login as User 1</button>
+            <button onclick="loginAsUser2()">Login as User 2</button>
+            <button onclick="logout()">Logout</button>
+            <div id="auth-status" class="status info">Not logged in</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Follow Test</h3>
+            <p>Test follow notifications between users:</p>
+            <button onclick="followUser()" id="follow-btn" disabled>Follow User 2</button>
+            <button onclick="unfollowUser()" id="unfollow-btn" disabled>Unfollow User 2</button>
+            <div id="follow-status" class="status info">Login to test follow notifications</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Thread Interactions</h3>
+            <p>Test like/dislike/comment notifications:</p>
+            <button onclick="createTestThread()" id="create-thread-btn" disabled>Create Test Thread</button>
+            <button onclick="likeThread()" id="like-btn" disabled>Like Thread</button>
+            <button onclick="dislikeThread()" id="dislike-btn" disabled>Dislike Thread</button>
+            <button onclick="commentOnThread()" id="comment-btn" disabled>Comment on Thread</button>
+            <div id="thread-status" class="status info">Login and create a thread to test interactions</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Real-Time Notifications</h3>
+            <p>Notifications will appear here in real-time:</p>
+            <div id="notifications" class="notifications">
+                <p style="color: #666; font-style: italic;">No notifications yet...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let currentUser = null;
+        let currentToken = null;
+        let testThreadId = null;
+
+        // WebSocket connection
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+            }
+
+            ws = new WebSocket('ws://localhost:3001');
+            
+            ws.onopen = function() {
+                updateWSStatus(true);
+                addNotification('WebSocket connected successfully', 'info');
+                
+                // Register user if logged in
+                if (currentUser) {
+                    registerUser();
+                }
+            };
+
+            ws.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                console.log('Received WebSocket message:', message);
+                
+                if (message.type === 'notification') {
+                    addNotification(`🔔 ${message.notification.message}`, 'notification');
+                } else if (message.type === 'notification_update') {
+                    addNotification(`🔄 ${message.notification.message}`, 'update');
+                }
+            };
+
+            ws.onclose = function() {
+                updateWSStatus(false);
+                addNotification('WebSocket disconnected', 'error');
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                addNotification('WebSocket error occurred', 'error');
+            };
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function updateWSStatus(connected) {
+            const statusEl = document.getElementById('ws-status');
+            const textEl = document.getElementById('ws-text');
+            
+            if (connected) {
+                statusEl.className = 'ws-status connected';
+                textEl.textContent = 'Connected';
+            } else {
+                statusEl.className = 'ws-status disconnected';
+                textEl.textContent = 'Disconnected';
+            }
+        }
+
+        function registerUser() {
+            if (ws && ws.readyState === WebSocket.OPEN && currentUser) {
+                ws.send(JSON.stringify({
+                    type: 'register',
+                    userId: currentUser.id,
+                    token: currentToken
+                }));
+            }
+        }
+
+        // Authentication
+        async function loginAsUser1() {
+            await login('testuser1', 'password123', 'User 1');
+        }
+
+        async function loginAsUser2() {
+            await login('testuser2', 'password123', 'User 2');
+        }
+
+        async function login(username, password, displayName) {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = { id: data.user.id, username, displayName };
+                    currentToken = data.token;
+                    
+                    document.getElementById('auth-status').innerHTML = 
+                        `<span class="status success">Logged in as ${displayName}</span>`;
+                    
+                    // Enable buttons
+                    document.getElementById('follow-btn').disabled = false;
+                    document.getElementById('unfollow-btn').disabled = false;
+                    document.getElementById('create-thread-btn').disabled = false;
+                    
+                    // Register with WebSocket
+                    registerUser();
+                    
+                    addNotification(`Logged in as ${displayName}`, 'success');
+                } else {
+                    throw new Error('Login failed');
+                }
+            } catch (error) {
+                document.getElementById('auth-status').innerHTML = 
+                    `<span class="status error">Login failed: ${error.message}</span>`;
+            }
+        }
+
+        async function logout() {
+            currentUser = null;
+            currentToken = null;
+            
+            document.getElementById('auth-status').innerHTML = 
+                '<span class="status info">Not logged in</span>';
+            
+            // Disable buttons
+            document.getElementById('follow-btn').disabled = true;
+            document.getElementById('unfollow-btn').disabled = true;
+            document.getElementById('create-thread-btn').disabled = true;
+            document.getElementById('like-btn').disabled = true;
+            document.getElementById('dislike-btn').disabled = true;
+            document.getElementById('comment-btn').disabled = true;
+            
+            addNotification('Logged out', 'info');
+        }
+
+        // Follow/Unfollow
+        async function followUser() {
+            try {
+                const response = await fetch('/api/users/follow', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `auth-token=${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        userId: 'test_user_2',
+                        action: 'follow'
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('follow-status').innerHTML = 
+                        '<span class="status success">Follow action completed</span>';
+                    addNotification('Follow action completed - notification should appear for User 2', 'success');
+                } else {
+                    throw new Error('Follow failed');
+                }
+            } catch (error) {
+                document.getElementById('follow-status').innerHTML = 
+                    `<span class="status error">Follow failed: ${error.message}</span>`;
+            }
+        }
+
+        async function unfollowUser() {
+            try {
+                const response = await fetch('/api/users/follow', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `auth-token=${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        userId: 'test_user_2',
+                        action: 'unfollow'
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('follow-status').innerHTML = 
+                        '<span class="status success">Unfollow action completed</span>';
+                    addNotification('Unfollow action completed', 'success');
+                } else {
+                    throw new Error('Unfollow failed');
+                }
+            } catch (error) {
+                document.getElementById('follow-status').innerHTML = 
+                    `<span class="status error">Unfollow failed: ${error.message}</span>`;
+            }
+        }
+
+        // Thread interactions
+        async function createTestThread() {
+            try {
+                const response = await fetch('/api/threads', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `auth-token=${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        content: 'Test thread for notification testing',
+                        visibility: 'public'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    testThreadId = data.thread.id;
+                    
+                    document.getElementById('thread-status').innerHTML = 
+                        '<span class="status success">Test thread created</span>';
+                    
+                    // Enable interaction buttons
+                    document.getElementById('like-btn').disabled = false;
+                    document.getElementById('dislike-btn').disabled = false;
+                    document.getElementById('comment-btn').disabled = false;
+                    
+                    addNotification('Test thread created - you can now test interactions', 'success');
+                } else {
+                    throw new Error('Thread creation failed');
+                }
+            } catch (error) {
+                document.getElementById('thread-status').innerHTML = 
+                    `<span class="status error">Thread creation failed: ${error.message}</span>`;
+            }
+        }
+
+        async function likeThread() {
+            await interactWithThread('like');
+        }
+
+        async function dislikeThread() {
+            await interactWithThread('dislike');
+        }
+
+        async function commentOnThread() {
+            try {
+                const response = await fetch('/api/threads', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `auth-token=${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        content: 'This is a test comment',
+                        parentId: testThreadId,
+                        visibility: 'public'
+                    })
+                });
+
+                if (response.ok) {
+                    addNotification('Comment posted - notification should appear for thread author', 'success');
+                } else {
+                    throw new Error('Comment failed');
+                }
+            } catch (error) {
+                addNotification(`Comment failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function interactWithThread(action) {
+            try {
+                const response = await fetch('/api/threads', {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cookie': `auth-token=${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        threadId: testThreadId,
+                        action: action
+                    })
+                });
+
+                if (response.ok) {
+                    addNotification(`${action} action completed - notification should appear for thread author`, 'success');
+                } else {
+                    throw new Error(`${action} failed`);
+                }
+            } catch (error) {
+                addNotification(`${action} failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Notification display
+        function addNotification(message, type = 'info') {
+            const notificationsEl = document.getElementById('notifications');
+            
+            // Remove "no notifications" message if it exists
+            const noNotificationsEl = notificationsEl.querySelector('p[style*="italic"]');
+            if (noNotificationsEl) {
+                noNotificationsEl.remove();
+            }
+            
+            const notificationEl = document.createElement('div');
+            notificationEl.className = `notification ${type === 'notification' ? 'unread' : ''}`;
+            notificationEl.innerHTML = `
+                <strong>${new Date().toLocaleTimeString()}</strong><br>
+                ${message}
+            `;
+            
+            notificationsEl.insertBefore(notificationEl, notificationsEl.firstChild);
+            
+            // Keep only last 10 notifications
+            while (notificationsEl.children.length > 10) {
+                notificationsEl.removeChild(notificationsEl.lastChild);
+            }
+        }
+
+        // Auto-connect WebSocket on page load
+        window.onload = function() {
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>

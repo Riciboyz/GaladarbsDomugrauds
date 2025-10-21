@@ -91,6 +91,34 @@ export async function POST(request: NextRequest) {
       topicDayId: topicDayId || null
     });
 
+    // If this is a reply (comment), create notification for the original thread author
+    if (parentId) {
+      try {
+        const parentThread = await threadsDb.getThreadById(parentId);
+        if (parentThread && parentThread.author_id !== decoded.id) {
+          // Get current user info
+          const currentUser = await authDb.getUserById(decoded.id);
+          
+          // Create notification for the original thread author
+          const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'comment',
+              fromUserId: decoded.id,
+              toUserId: parentThread.author_id,
+              data: { 
+                fromUsername: currentUser?.display_name || currentUser?.username || 'Someone',
+                relatedId: parentId
+              }
+            })
+          });
+        }
+      } catch (notificationError) {
+        console.error('Error creating comment notification:', notificationError);
+      }
+    }
+
     // Broadcast new thread via WebSocket
     try {
       const wsResponse = await fetch('http://localhost:3001', {
@@ -102,7 +130,7 @@ export async function POST(request: NextRequest) {
         })
       });
     } catch (wsError) {
-      console.log('WebSocket broadcast failed (server might not be running):', wsError.message);
+      console.log('WebSocket broadcast failed (server might not be running):', (wsError as Error).message);
     }
 
     return NextResponse.json({
@@ -154,12 +182,58 @@ export async function PUT(request: NextRequest) {
     switch (action) {
       case 'like':
         result = await threadsDb.likeThread(threadId, decoded.id);
+        
+        // Create notification for thread author if someone liked their thread
+        if (result && result.author_id !== decoded.id) {
+          try {
+            const currentUser = await authDb.getUserById(decoded.id);
+            
+            const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'like',
+                fromUserId: decoded.id,
+                toUserId: result.author_id,
+                data: { 
+                  fromUsername: currentUser?.display_name || currentUser?.username || 'Someone',
+                  relatedId: threadId
+                }
+              })
+            });
+          } catch (notificationError) {
+            console.error('Error creating like notification:', notificationError);
+          }
+        }
         break;
       case 'unlike':
         result = await threadsDb.unlikeThread(threadId, decoded.id);
         break;
       case 'dislike':
         result = await threadsDb.dislikeThread(threadId, decoded.id);
+        
+        // Create notification for thread author if someone disliked their thread
+        if (result && result.author_id !== decoded.id) {
+          try {
+            const currentUser = await authDb.getUserById(decoded.id);
+            
+            const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'dislike',
+                fromUserId: decoded.id,
+                toUserId: result.author_id,
+                data: { 
+                  fromUsername: currentUser?.display_name || currentUser?.username || 'Someone',
+                  relatedId: threadId
+                }
+              })
+            });
+          } catch (notificationError) {
+            console.error('Error creating dislike notification:', notificationError);
+          }
+        }
         break;
       case 'undislike':
         result = await threadsDb.undislikeThread(threadId, decoded.id);
@@ -182,7 +256,7 @@ export async function PUT(request: NextRequest) {
         })
       });
     } catch (wsError) {
-      console.log('WebSocket broadcast failed (server might not be running):', wsError.message);
+      console.log('WebSocket broadcast failed (server might not be running):', (wsError as Error).message);
     }
 
     return NextResponse.json({
@@ -259,7 +333,7 @@ export async function DELETE(request: NextRequest) {
         })
       });
     } catch (wsError) {
-      console.log('WebSocket broadcast failed (server might not be running):', wsError.message);
+      console.log('WebSocket broadcast failed (server might not be running):', (wsError as Error).message);
     }
 
     return NextResponse.json({

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { io, Socket } from 'socket.io-client'
 import { useUser } from '../contexts/UserContext'
 import { useNotification } from '../contexts/NotificationContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
@@ -15,10 +14,10 @@ export function useRealtimeNotifications() {
   useEffect(() => {
     if (!user) return
 
-    // Poll for new notifications every 3 seconds
+    // Backup polling mechanism - only as fallback if WebSocket fails
     const pollNotifications = async () => {
       try {
-        console.log('🔄 Polling notifications for user:', user.id)
+        console.log('🔄 Backup polling notifications for user:', user.id)
         const response = await fetch(`/api/notifications?userId=${user.id}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
@@ -35,7 +34,7 @@ export function useRealtimeNotifications() {
                 // Check if notification already exists in state
                 const existingNotification = document.querySelector(`[data-notification-id="${notification.id}"]`)
                 if (!existingNotification) {
-                  console.log('📬 Adding new notification from polling:', notification)
+                  console.log('📬 Adding new notification from backup polling:', notification)
                   addNotification({
                     id: notification.id,
                     type: notification.type,
@@ -60,8 +59,8 @@ export function useRealtimeNotifications() {
       }
     }
 
-    // Start polling every 2 minutes (reduced frequency to improve performance)
-    intervalRef.current = setInterval(pollNotifications, 120000)
+    // Start backup polling every 30 seconds (only as fallback)
+    intervalRef.current = setInterval(pollNotifications, 30000)
 
     return () => {
       if (intervalRef.current) {
@@ -70,88 +69,44 @@ export function useRealtimeNotifications() {
     }
   }, [user?.id, addNotification])
 
-  // Handle real-time notifications via Socket.IO
+  // Handle real-time notifications via WebSocket
   useEffect(() => {
     if (!user) return
     
-    console.log('🔌 Starting Socket.IO connection for user:', user.id)
-    let socket: Socket | null = null
+    console.log('🔌 Setting up notification listener for user:', user.id)
     
-    try {
-      socket = io('http://localhost:3001', {
-        transports: ['websocket'],
-        withCredentials: false,
-        timeout: 10000,
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-      })
-
-      socket.on('connect', () => {
-        console.log('🔌 Socket.IO connected successfully')
-        const token = typeof document !== 'undefined'
-          ? document.cookie.split('; ').find(r => r.startsWith('auth-token='))?.split('=')[1]
-          : undefined
-        console.log('🔐 Registering with userId:', user.id, 'token:', token ? 'present' : 'missing')
-        socket?.emit('register', { userId: user.id, token })
-      })
-
-      socket.on('registered', (data) => {
-        console.log('✅ Socket.IO registered successfully:', data)
-      })
-
-      socket.on('auth_error', (err) => {
-        console.error('❌ Socket.IO auth error:', err)
-      })
-
-      socket.on('notification', (n: any) => {
-        console.log('🔔 Socket.IO notification received:', n)
-        if (!n) return
-        
-        // Handle different notification formats
-        const notificationData = n.notification || n
-        const targetUserId = notificationData.toUserId || notificationData.userId || n.toUserId
-        
-        console.log('🔔 Processing notification for user:', user.id, 'target:', targetUserId)
-        
-        // Only add notification if it's for the current user
-        if (targetUserId === user.id) {
-          console.log('🔔 Adding notification to UI:', notificationData)
-          addNotification({
-            id: notificationData.id || `notif_${Date.now()}`,
-            type: notificationData.type || 'notification',
-            message: notificationData.message || 'New notification',
-            userId: targetUserId,
-            read: false,
-            createdAt: new Date(notificationData.createdAt || Date.now())
-          })
-        } else {
-          console.log('🔔 Notification not for current user, ignoring')
-        }
-      })
-
-      socket.on('disconnect', (reason) => {
-        console.log('🔌 Socket.IO disconnected:', reason)
-      })
-
-      socket.on('connect_error', (err) => {
-        console.error('❌ Socket.IO connection error:', err)
-      })
-
-      // Fallback: if no connection after 30 seconds, try again
-      const timeout = setTimeout(() => {
-        if (!socket?.connected) {
-          console.log('🔄 Socket.IO connection timeout, retrying...')
-          socket?.connect()
-        }
-      }, 30000)
-
-      return () => {
-        clearTimeout(timeout)
-        try { socket?.disconnect() } catch {}
+    // Listen for notification events from WebSocket context
+    const handleNotificationEvent = (event: CustomEvent) => {
+      try {
+        const notification = event.detail
+        console.log('📬 Received notification via event:', notification)
+        addNotification(notification)
+      } catch (error) {
+        console.error('❌ Error handling notification event:', error)
       }
-    } catch (e) {
-      console.error('Socket.IO setup error:', e)
+    }
+    
+    // Listen for notification updates (cross-tab synchronization)
+    const handleNotificationUpdate = (event: CustomEvent) => {
+      try {
+        const notification = event.detail
+        console.log('📬 Received notification update via event:', notification)
+        // Only add if it's for the current user
+        if (notification.userId === user.id) {
+          addNotification(notification)
+        }
+      } catch (error) {
+        console.error('❌ Error handling notification update event:', error)
+      }
+    }
+    
+    // Add event listeners for notifications
+    window.addEventListener('notification-received', handleNotificationEvent as EventListener)
+    window.addEventListener('notification-update', handleNotificationUpdate as EventListener)
+    
+    return () => {
+      window.removeEventListener('notification-received', handleNotificationEvent as EventListener)
+      window.removeEventListener('notification-update', handleNotificationUpdate as EventListener)
     }
   }, [user?.id, addNotification])
 

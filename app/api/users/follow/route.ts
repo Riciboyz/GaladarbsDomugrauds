@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 const authDb = require('../../auth/db');
+const fetch = require('node-fetch');
 
 // POST - Follow/Unfollow user
 export async function POST(request: NextRequest) {
@@ -89,13 +90,18 @@ export async function POST(request: NextRequest) {
       try {
         const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications/send`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': `auth-token=${authToken}` // Pievienojam autentifikācijas tokenu
+          },
           body: JSON.stringify({
             type: 'follow',
             fromUserId: decoded.id,
             toUserId: userId,
-            message: `${currentUser.display_name || currentUser.username} started following you`,
-            data: { followerId: decoded.id }
+            data: { 
+              fromUsername: currentUser.display_name || currentUser.username,
+              followerId: decoded.id 
+            }
           })
         })
         

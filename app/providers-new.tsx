@@ -10,6 +10,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import { WeatherProvider } from './contexts/WeatherContext'
 import ToastContainer from './components/Toast-simple'
+// import { RealtimeNotificationsProvider } from './components/RealtimeNotificationsProvider'
 
 function ToastWrapper() {
   const { toasts, removeToast } = useToast()
@@ -25,10 +26,12 @@ export function Providers({ children }: { children: ReactNode }) {
             <ThreadProvider>
               <GroupProvider>
                 <NotificationProvider>
-                  <TopicDayProvider>
-                    {children}
-                    <ToastWrapper />
-                  </TopicDayProvider>
+                  {/* <RealtimeNotificationsProvider> */}
+                    <TopicDayProvider>
+                      {children}
+                      <ToastWrapper />
+                    </TopicDayProvider>
+                  {/* </RealtimeNotificationsProvider> */}
                 </NotificationProvider>
               </GroupProvider>
             </ThreadProvider>

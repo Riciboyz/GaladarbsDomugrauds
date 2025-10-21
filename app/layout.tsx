@@ -6,7 +6,7 @@ import './rainy.scss' // Rainy theme
 import './snowy.scss' // Snowy theme
 import './sunny.scss' // Sunny theme
 import './cloudy.scss' // Cloudy theme
-import { Providers } from './providers-new'
+import { Providers } from './providers'
 import ErrorBoundary from './components/ErrorBoundary'
 import GlobalWeatherTheme from './components/GlobalWeatherTheme'
 

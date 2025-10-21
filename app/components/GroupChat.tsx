@@ -47,6 +47,10 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Debug: Log group data
+  console.log('🔍 GroupChat: Group data:', group)
+  console.log('🔍 GroupChat: Group ID:', group?.id)
+
   // WebSocket connection
   const { 
     isConnected, 
@@ -155,7 +159,14 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
             const normalized = normalize(msgObj)
             console.log('💬 GroupChat: Adding message to chat:', normalized)
             setMessages(prev => {
-              if (prev.some(m => m.id === normalized.id)) {
+              // Check for duplicates more thoroughly
+              const exists = prev.some(m => 
+                m.id === normalized.id || 
+                (m.content === normalized.content && 
+                 m.sender_id === normalized.sender_id && 
+                 Math.abs(new Date(m.created_at).getTime() - new Date(normalized.created_at).getTime()) < 5000)
+              )
+              if (exists) {
                 console.log('💬 GroupChat: Message already exists, skipping')
                 return prev
               }
@@ -263,6 +274,10 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
     if (!newMessage.trim() || !user) return
 
     const messageContent = newMessage.trim()
+    
+    // Debug: Log group ID before sending
+    console.log('🔍 GroupChat: Sending message to group:', group?.id)
+    console.log('🔍 GroupChat: Group object:', group)
     
     // Send via WebSocket if connected, otherwise fallback to API
     if (isConnected) {
@@ -398,47 +413,69 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
         throw new Error(uploadData.error || 'Upload failed')
       }
 
-      // Send file message
-      const messageResponse = await fetch('/api/groups/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          groupId: group.id,
+      // Send file message via WebSocket if connected, otherwise API
+      if (isConnected) {
+        // Send via WebSocket to prevent duplicates
+        sendGroupMessage(group.id, `${fileIcon} ${file.name}`, messageType, uploadData.url)
+        
+        // Add optimistic message for instant feedback
+        const optimisticMsg: Message = {
+          id: `tmp_${Date.now()}`,
+          group_id: group.id,
+          sender_id: user.id,
           content: `${fileIcon} ${file.name}`,
-          messageType: messageType,
-          attachmentUrl: uploadData.url
+          message_type: messageType,
+          attachment_url: uploadData.url,
+          created_at: new Date().toISOString(),
+          username: user.username,
+          display_name: user.displayName,
+          avatar: user.avatar
+        }
+        setMessages(prev => [...prev, optimisticMsg])
+        success('File Sent', 'File uploaded and sent successfully!')
+      } else {
+        // Fallback to API
+        const messageResponse = await fetch('/api/groups/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            groupId: group.id,
+            content: `${fileIcon} ${file.name}`,
+            messageType: messageType,
+            attachmentUrl: uploadData.url
+          })
         })
-      })
 
-      const messageData = await messageResponse.json()
-      
-      if (!messageResponse.ok) {
-        throw new Error(messageData.error || 'Failed to send file')
-      }
+        const messageData = await messageResponse.json()
+        
+        if (!messageResponse.ok) {
+          throw new Error(messageData.error || 'Failed to send file')
+        }
 
-      // Clear input and append locally for instant feedback
-      e.target.value = ''
-      const localMsg: Message = {
-        id: messageData.messageId,
-        group_id: group.id,
-        sender_id: user.id,
-        content: `${fileIcon} ${file.name}`,
-        message_type: messageType,
-        attachment_url: uploadData.url,
-        created_at: new Date().toISOString(),
-        username: user.username,
-        display_name: user.displayName,
-        avatar: user.avatar
+        // Add the new message to the list
+        const newMsg: Message = {
+          id: messageData.messageId,
+          group_id: group.id,
+          sender_id: user.id,
+          content: `${fileIcon} ${file.name}`,
+          message_type: messageType,
+          attachment_url: uploadData.url,
+          created_at: new Date().toISOString(),
+          username: user.username,
+          display_name: user.displayName,
+          avatar: user.avatar
+        }
+        setMessages(prev => [...prev, newMsg])
+        success('File Sent', 'File uploaded and sent successfully!')
       }
-      setMessages(prev => [...prev, localMsg])
-      success('File Sent', 'File uploaded and sent successfully!')
       
     } catch (error) {
       console.error('Error uploading file:', error)
       showError('Upload Failed', 'Failed to upload file. Please try again.')
     } finally {
       setIsUploading(false)
+      e.target.value = '' // Clear input
     }
   }
 

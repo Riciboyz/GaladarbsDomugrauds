@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNotification } from '../contexts/NotificationContext'
 import { useUser } from '../contexts/UserContext'
-import { useToast } from '../contexts/ToastContext'
+import { useWebSocket } from '../contexts/WebSocketContext'
 import { 
   BellIcon,
   HeartIcon,
@@ -13,25 +13,51 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline'
 
-export default function Notifications() {
+export default function RealtimeNotificationsProvider() {
   const { notifications, markNotificationAsRead, markAllAsRead } = useNotification()
   const { user } = useUser()
-  const { success, error: showError } = useToast()
+  const { isConnected } = useWebSocket()
+  const [lastNotificationCount, setLastNotificationCount] = useState(0)
 
-
+  // Filter notifications for current user
   const filteredNotifications = notifications.filter(notification => {
-    // Only show notifications for current user - check both userId and user_id fields
     const notificationUserId = notification.userId || notification.user_id
-    if (notificationUserId !== user?.id) return false
-    
-    // Only show unread notifications (hide read ones)
-    return !notification.read && !notification.is_read
+    return notificationUserId === user?.id
   })
 
-  const unreadCount = notifications.filter(n => {
-    const notificationUserId = n.userId || n.user_id
-    return !n.read && !n.is_read && notificationUserId === user?.id
-  }).length
+  const unreadCount = filteredNotifications.filter(n => !n.read && !n.is_read).length
+
+  // Auto-refresh when new notifications arrive
+  useEffect(() => {
+    if (unreadCount > lastNotificationCount) {
+      console.log('🔔 New notification detected! Count increased from', lastNotificationCount, 'to', unreadCount)
+      // Force re-render by updating state
+      setLastNotificationCount(unreadCount)
+    }
+  }, [unreadCount, lastNotificationCount])
+
+  // Listen for WebSocket notification events
+  useEffect(() => {
+    if (!user) return
+
+    const handleNotificationEvent = (event: CustomEvent) => {
+      console.log('🔔 RealtimeNotificationsProvider: Received notification event:', event.detail)
+      // The notification will be automatically added to context via useRealtimeNotifications hook
+    }
+
+    const handleNotificationUpdate = (event: CustomEvent) => {
+      console.log('🔔 RealtimeNotificationsProvider: Received notification update:', event.detail)
+      // Cross-tab synchronization
+    }
+
+    window.addEventListener('notification-received', handleNotificationEvent as EventListener)
+    window.addEventListener('notification-update', handleNotificationUpdate as EventListener)
+
+    return () => {
+      window.removeEventListener('notification-received', handleNotificationEvent as EventListener)
+      window.removeEventListener('notification-update', handleNotificationUpdate as EventListener)
+    }
+  }, [user?.id])
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -83,16 +109,24 @@ export default function Notifications() {
     }
   }
 
+  if (!user) return null
+
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Ultra-Minimal Header */}
+      {/* Header with connection status */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="heading-1 text-gray-900">Notifications</h1>
-            <p className="body-regular text-gray-600 mt-1">
-              {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="body-regular text-gray-600">
+                {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
+              </p>
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-xs text-gray-500">
+                {isConnected ? 'Live updates' : 'Offline'}
+              </span>
+            </div>
           </div>
           {unreadCount > 0 && (
             <button
@@ -114,13 +148,14 @@ export default function Notifications() {
               No notifications yet
             </h3>
             <p className="body-regular text-gray-600">
-              When you get notifications, they'll appear here
+              When you get notifications, they'll appear here automatically
             </p>
           </div>
-        ) : filteredNotifications.length > 0 ? (
+        ) : (
           filteredNotifications.map((notification) => (
             <div
               key={notification.id}
+              data-notification-id={notification.id}
               className={`card-elevated transition-all duration-200 ${
                 !notification.read && !notification.is_read ? 'bg-blue-50/50 border-blue-200' : 'bg-gray-50/50 border-gray-200'
               }`}
@@ -167,12 +202,6 @@ export default function Notifications() {
               </div>
             </div>
           ))
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">
-              No notifications found
-            </p>
-          </div>
         )}
       </div>
     </div>

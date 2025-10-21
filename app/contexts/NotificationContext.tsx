@@ -137,7 +137,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const addNotification = (notification: Notification) => {
     console.log('🔔 Adding notification:', notification)
-    setNotifications(prev => [notification, ...prev])
+    setNotifications(prev => {
+      // Check if notification already exists to prevent duplicates
+      const exists = prev.some(n => n.id === notification.id)
+      if (exists) {
+        console.log('🔔 Notification already exists, skipping duplicate')
+        return prev
+      }
+      
+      // Add new notification at the beginning
+      const newNotifications = [notification, ...prev]
+      console.log('🔔 Total notifications after adding:', newNotifications.length)
+      return newNotifications
+    })
   }
 
   const markNotificationAsRead = async (notificationId: string) => {

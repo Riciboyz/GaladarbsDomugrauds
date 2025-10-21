@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Chat System Test</h1>
+    
+    <div class="status info">
+        <strong>Status:</strong> <span id="status">Not connected</span>
+    </div>
+    
+    <div>
+        <button onclick="connectWebSocket()">Connect WebSocket</button>
+        <button onclick="disconnectWebSocket()">Disconnect</button>
+        <button onclick="testMessage()">Send Test Message</button>
+    </div>
+    
+    <div>
+        <input type="text" id="message-input" placeholder="Type a message..." value="Test message">
+        <button onclick="sendMessage()">Send Message</button>
+    </div>
+    
+    <div>
+        <h3>Messages:</h3>
+        <div id="messages" class="log"></div>
+    </div>
+    
+    <div>
+        <h3>Log:</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus() {
+            const statusDiv = document.getElementById('status');
+            if (isConnected) {
+                statusDiv.textContent = 'Connected';
+                statusDiv.parentElement.className = 'status success';
+            } else {
+                statusDiv.textContent = 'Disconnected';
+                statusDiv.parentElement.className = 'status error';
+            }
+        }
+
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('WebSocket already connected');
+                return;
+            }
+
+            log('Connecting to WebSocket...');
+            ws = new WebSocket('ws://localhost:3001');
+            
+            ws.onopen = () => {
+                isConnected = true;
+                updateStatus();
+                log('✅ WebSocket connected');
+                
+                // Register user
+                ws.send(JSON.stringify({
+                    type: 'register',
+                    userId: 'test-user-123'
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                log(`📨 Received: ${message.type}`);
+                
+                if (message.type === 'group_message') {
+                    addMessage(message.data);
+                }
+            };
+            
+            ws.onclose = () => {
+                isConnected = false;
+                updateStatus();
+                log('❌ WebSocket disconnected');
+            };
+            
+            ws.onerror = (error) => {
+                log(`❌ WebSocket error: ${error}`);
+            };
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function testMessage() {
+            if (!isConnected) {
+                log('❌ Not connected to WebSocket');
+                return;
+            }
+
+            log('Sending test message...');
+            ws.send(JSON.stringify({
+                type: 'group_message',
+                data: {
+                    groupId: 'test-group-123',
+                    content: 'Test message from client',
+                    messageType: 'text'
+                }
+            }));
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            
+            if (!content) {
+                log('❌ Please enter a message');
+                return;
+            }
+
+            if (!isConnected) {
+                log('❌ Not connected to WebSocket');
+                return;
+            }
+
+            log(`Sending message: ${content}`);
+            ws.send(JSON.stringify({
+                type: 'group_message',
+                data: {
+                    groupId: 'test-group-123',
+                    content: content,
+                    messageType: 'text'
+                }
+            }));
+            
+            input.value = '';
+        }
+
+        function addMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+            messagesDiv.innerHTML += `[${timestamp}] ${message.content}<br>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Initialize
+        updateStatus();
+        log('Chat test initialized');
+    </script>
+</body>
+</html>

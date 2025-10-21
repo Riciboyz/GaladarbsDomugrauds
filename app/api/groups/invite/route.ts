@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
 
     // Create notification for invitee using unified API
     try {
+      const inviter = await authDb.getUserById(decoded.id);
       const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,8 +84,11 @@ export async function POST(request: NextRequest) {
           type: 'group_invite',
           fromUserId: decoded.id,
           toUserId: inviteeId,
-          message: `You've been invited to join "${group.name}"`,
-          data: { groupId, groupName: group.name }
+          data: { 
+            fromUsername: inviter?.display_name || inviter?.username,
+            groupId, 
+            groupName: group.name 
+          }
         })
       })
       

@@ -73,12 +73,19 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           } catch {}
         }, 25000)
         
-        // Authenticate if user is logged in
+        // Register user for notifications and authenticate if user is logged in
         if (user) {
           const token = document.cookie
             .split('; ')
             .find(row => row.startsWith('auth-token='))
             ?.split('=')[1]
+          
+          console.log('🔐 WebSocketProvider: Registering user for notifications:', user.id)
+          websocket.send(JSON.stringify({
+            type: 'register',
+            userId: user.id,
+            token: token || undefined
+          }))
           
           if (token) {
             console.log('🔐 WebSocketProvider: Authenticating with token:', token.substring(0, 20) + '...')
@@ -92,6 +99,9 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         } else {
           console.log('🔐 WebSocketProvider: No user logged in')
         }
+        
+        // Store WebSocket instance globally for other hooks to use
+        ;(window as any).__websocket = websocket
       }
       
       websocket.onmessage = (event) => {
@@ -133,6 +143,23 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               break
             case 'pong':
               // Heartbeat response, don't log
+              break
+            case 'notification':
+              console.log('📬 WebSocketProvider: Notification received:', message.notification)
+              // Dispatch notification event for other components
+              window.dispatchEvent(new CustomEvent('notification-received', { 
+                detail: message.notification 
+              }))
+              break
+            case 'notification_update':
+              console.log('📬 WebSocketProvider: Notification update received:', message.notification)
+              // Dispatch notification update event for cross-tab synchronization
+              window.dispatchEvent(new CustomEvent('notification-update', { 
+                detail: message.notification 
+              }))
+              break
+            case 'registered':
+              console.log('✅ WebSocketProvider: User registered for notifications')
               break
             default:
               console.log('📨 WebSocketProvider: Unknown message type:', message.type, message.data)
