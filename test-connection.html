@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test DomuGrauds Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 DomuGrauds Connection Test</h1>
+    
+    <div class="container">
+        <h2>📊 Connection Status</h2>
+        <div id="nextjsStatus" class="status info">Testing Next.js (port 3000)...</div>
+        <div id="websocketStatus" class="status info">Testing WebSocket (port 3001)...</div>
+        <div id="apiStatus" class="status info">Testing API endpoints...</div>
+    </div>
+
+    <div class="container">
+        <h2>🎯 Test Actions</h2>
+        <button onclick="testNextJS()">Test Next.js</button>
+        <button onclick="testWebSocket()">Test WebSocket</button>
+        <button onclick="testAPI()">Test API</button>
+        <button onclick="testAll()">Test All</button>
+    </div>
+
+    <div class="container">
+        <h2>📋 Test Results</h2>
+        <div id="testResults" class="log">Ready to test...\n</div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = message;
+        }
+
+        async function testNextJS() {
+            log('🔍 Testing Next.js server...');
+            try {
+                const response = await fetch('http://localhost:3000');
+                if (response.ok) {
+                    updateStatus('nextjsStatus', 'success', '✅ Next.js server is running on port 3000');
+                    log('✅ Next.js server is responding');
+                } else {
+                    updateStatus('nextjsStatus', 'error', '❌ Next.js server error: ' + response.status);
+                    log('❌ Next.js server error: ' + response.status);
+                }
+            } catch (error) {
+                updateStatus('nextjsStatus', 'error', '❌ Next.js server not reachable');
+                log('❌ Next.js server error: ' + error.message);
+            }
+        }
+
+        function testWebSocket() {
+            log('🔍 Testing WebSocket server...');
+            try {
+                const ws = new WebSocket('ws://localhost:3001');
+                
+                ws.onopen = () => {
+                    updateStatus('websocketStatus', 'success', '✅ WebSocket server is running on port 3001');
+                    log('✅ WebSocket connection established');
+                    ws.close();
+                };
+
+                ws.onerror = (error) => {
+                    updateStatus('websocketStatus', 'error', '❌ WebSocket server not reachable');
+                    log('❌ WebSocket connection failed: ' + error);
+                };
+
+                ws.onclose = () => {
+                    log('🔌 WebSocket connection closed');
+                };
+
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        updateStatus('websocketStatus', 'error', '❌ WebSocket connection timeout');
+                        log('❌ WebSocket connection timeout');
+                        ws.close();
+                    }
+                }, 5000);
+
+            } catch (error) {
+                updateStatus('websocketStatus', 'error', '❌ WebSocket error: ' + error.message);
+                log('❌ WebSocket error: ' + error.message);
+            }
+        }
+
+        async function testAPI() {
+            log('🔍 Testing API endpoints...');
+            
+            const endpoints = [
+                '/api/daily-topic',
+                '/api/groups/invite',
+                '/api/notifications'
+            ];
+
+            let successCount = 0;
+            let totalCount = endpoints.length;
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`http://localhost:3000${endpoint}`);
+                    if (response.ok) {
+                        log(`✅ ${endpoint} - OK`);
+                        successCount++;
+                    } else {
+                        log(`❌ ${endpoint} - Error: ${response.status}`);
+                    }
+                } catch (error) {
+                    log(`❌ ${endpoint} - Error: ${error.message}`);
+                }
+            }
+
+            if (successCount === totalCount) {
+                updateStatus('apiStatus', 'success', `✅ All API endpoints working (${successCount}/${totalCount})`);
+            } else if (successCount > 0) {
+                updateStatus('apiStatus', 'warning', `⚠️ Some API endpoints working (${successCount}/${totalCount})`);
+            } else {
+                updateStatus('apiStatus', 'error', `❌ No API endpoints working (${successCount}/${totalCount})`);
+            }
+        }
+
+        async function testAll() {
+            log('🚀 Starting comprehensive test...');
+            await testNextJS();
+            testWebSocket();
+            await testAPI();
+            log('✅ Test completed!');
+        }
+
+        // Auto-test on load
+        window.onload = () => {
+            log('🚀 Starting auto-test...');
+            testAll();
+        };
+    </script>
+</body>
+</html>

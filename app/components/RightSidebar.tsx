@@ -5,7 +5,7 @@ import { useUser } from '../contexts/UserContext'
 import { useNotification } from '../contexts/NotificationContext'
 import { useThread } from '../contexts/ThreadContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
-import { CalendarDaysIcon, SparklesIcon, ArrowTopRightOnSquareIcon, UserPlusIcon } from '@heroicons/react/24/outline'
+import { CalendarDaysIcon, SparklesIcon, ArrowTopRightOnSquareIcon, UserPlusIcon, BellIcon } from '@heroicons/react/24/outline'
 import WeatherWidget from './WeatherWidget'
 
 interface RightSidebarProps {
@@ -71,6 +71,34 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
       .slice(0, 5)
   }, [users, user])
 
+  // Listen for real-time topic submission updates
+  useEffect(() => {
+    const handleTopicSubmissionCreated = (event: CustomEvent) => {
+      const data = event.detail
+      console.log('📝 RightSidebar: New submission created:', data)
+      
+      // Reload today's top to show new submissions
+      // This will trigger a re-render with updated threads
+    }
+
+    const handleTopicSubmissionNotification = (event: CustomEvent) => {
+      const data = event.detail
+      console.log('📬 RightSidebar: Notification received:', data)
+      
+      // Reload today's top to show new submissions
+      // This will trigger a re-render with updated threads
+    }
+
+    // Add event listeners
+    window.addEventListener('topic_submission_created', handleTopicSubmissionCreated as EventListener)
+    window.addEventListener('topic_submission_notification', handleTopicSubmissionNotification as EventListener)
+
+    return () => {
+      window.removeEventListener('topic_submission_created', handleTopicSubmissionCreated as EventListener)
+      window.removeEventListener('topic_submission_notification', handleTopicSubmissionNotification as EventListener)
+    }
+  }, [])
+
   const todaysTop = useMemo(() => {
     if (!todayTopic) return [] as { id: string; title: string; score: number }[]
     const related = threads.filter(t => t.topicDayId === todayTopic.id)
@@ -116,7 +144,10 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
                   <CalendarDaysIcon className="h-5 w-5" />
                   <span className="text-sm font-semibold">Today’s Topic</span>
                 </div>
-                <h3 className="mt-2 font-playfair text-xl leading-snug text-gray-900">
+                <h3 
+                  className="mt-2 font-playfair text-xl leading-snug text-gray-900 cursor-pointer hover:text-brand-green-700 transition-colors"
+                  onClick={() => todayTopic && onOpenTopicSubmission?.(todayTopic.id)}
+                >
                   {todayTopic.title || 'Daily Thoughts'}
                 </h3>
                 {todayTopic.description && (
@@ -178,6 +209,23 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
               </div>
             </div>
           </section>
+
+          {/* Notifications */}
+          {unreadCount > 0 && (
+            <section className="rounded-3xl bg-white/70 backdrop-blur-md border border-gray-100 shadow-dg-md overflow-hidden">
+              <div className="p-5">
+                <div className="flex items-center gap-2 text-gray-800">
+                  <BellIcon className="h-5 w-5" />
+                  <span className="text-sm font-semibold">Notifications</span>
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unreadCount}</span>
+                </div>
+                <p className="mt-2 text-sm text-gray-600">You have {unreadCount} unread notifications</p>
+                <button className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                  View all notifications
+                </button>
+              </div>
+            </section>
+          )}
 
           {/* Footer mini links */}
           <section className="rounded-3xl bg-white/50 border border-gray-100">

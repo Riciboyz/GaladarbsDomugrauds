@@ -186,6 +186,20 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             detail: message.data 
           }))
           break
+        case 'topic_submission_created':
+          console.log('📝 WebSocketProvider: Topic submission created:', message.data)
+          // Dispatch topic submission created event
+          window.dispatchEvent(new CustomEvent('topic_submission_created', { 
+            detail: message.data 
+          }))
+          break
+        case 'topic_submission_notification':
+          console.log('📬 WebSocketProvider: Topic submission notification:', message.data)
+          // Dispatch topic submission notification event
+          window.dispatchEvent(new CustomEvent('topic_submission_notification', { 
+            detail: message.data 
+          }))
+          break
             case 'notification_update':
               console.log('📬 WebSocketProvider: Notification update received:', message.notification)
               // Dispatch notification update event for cross-tab synchronization

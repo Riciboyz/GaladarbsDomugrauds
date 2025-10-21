@@ -54,6 +54,40 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
     loadSubmissions()
   }, [topicId])
 
+  // Listen for real-time topic submission updates
+  useEffect(() => {
+    if (!topicId) return
+
+    const handleTopicSubmissionCreated = (event: CustomEvent) => {
+      const data = event.detail
+      console.log('📝 TopicSubmission: New submission created:', data)
+      
+      if (data.topicId === topicId) {
+        // Reload submissions to show the new one
+        loadSubmissions()
+        success('New Submission', 'Someone just shared their take on this topic!')
+      }
+    }
+
+    const handleTopicSubmissionNotification = (event: CustomEvent) => {
+      const data = event.detail
+      console.log('📬 TopicSubmission: Notification received:', data)
+      
+      if (data.topicId === topicId) {
+        success('New Submission', `${data.createdBy} shared their take on this topic!`)
+      }
+    }
+
+    // Add event listeners
+    window.addEventListener('topic_submission_created', handleTopicSubmissionCreated as EventListener)
+    window.addEventListener('topic_submission_notification', handleTopicSubmissionNotification as EventListener)
+
+    return () => {
+      window.removeEventListener('topic_submission_created', handleTopicSubmissionCreated as EventListener)
+      window.removeEventListener('topic_submission_notification', handleTopicSubmissionNotification as EventListener)
+    }
+  }, [topicId, success])
+
   // Real-time updates for submissions
   const { lastMessage } = useWebSocket()
   useEffect(() => {

@@ -15,6 +15,9 @@ import RealtimeNotificationsProvider from './RealtimeNotificationsProvider'
 // import Settings from './Settings' // Temporarily disabled
 import Search from './Search'
 import Groups from './Groups'
+import RightSidebar from './RightSidebar'
+import DailyTopicBanner from './DailyTopicBanner'
+import TopicSubmission from './TopicSubmission'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import SimpleCreateThread from './SimpleCreateThread'
 import { 
@@ -42,6 +45,7 @@ export default function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateThread, setShowCreateThread] = useState(false)
+  const [currentTopicId, setCurrentTopicId] = useState<string | null>(null)
 
   const tabs = [
     { id: 'home', label: 'Home', icon: HomeIcon },
@@ -51,6 +55,11 @@ export default function MainApp() {
     { id: 'groups', label: 'Groups', icon: UserGroupIcon },
     // { id: 'settings', label: 'Settings', icon: Cog6ToothIcon }, // Temporarily disabled
   ]
+
+  const handleOpenTopicSubmission = (topicId: string) => {
+    setCurrentTopicId(topicId)
+    setActiveTab('topic-submission' as Tab)
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -64,6 +73,13 @@ export default function MainApp() {
         return <Search />
       case 'groups':
         return <Groups />
+      case 'topic-submission':
+        return currentTopicId ? (
+          <TopicSubmission 
+            topicId={currentTopicId} 
+            onBack={() => setActiveTab('home')} 
+          />
+        ) : <Feed />
       // case 'settings':
       //   return <Settings />
       default:
@@ -87,11 +103,16 @@ export default function MainApp() {
         {/* Ultra-Minimal Sidebar */}
         <Sidebar activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as Tab)} tabs={tabs} />
         
-        {/* Ultra-Clean Main Content */}
+        {/* Main Content + Right Sidebar */}
         <div className="flex-1 ml-72">
           <div className="min-h-screen">
             <div className="container-padding py-8">
-              {renderContent()}
+              <div className="mx-auto max-w-6xl flex gap-6">
+                <div className="flex-1 max-w-2xl">
+                  {renderContent()}
+                </div>
+                <RightSidebar onOpenTopicSubmission={handleOpenTopicSubmission} />
+              </div>
             </div>
           </div>
         </div>

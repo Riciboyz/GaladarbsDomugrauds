@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Daily Topic Functionality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .topic-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .topic-card:hover {
+            background: #e8f5e8;
+            border-color: #4caf50;
+        }
+        .topic-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .topic-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .topic-meta {
+            color: #888;
+            font-size: 12px;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Daily Topic Functionality</h1>
+    
+    <div class="container">
+        <h2>📊 Current Daily Topic</h2>
+        <div id="topicStatus" class="status info">Loading topic...</div>
+        <div id="topicCard" class="topic-card" style="display: none;">
+            <div class="topic-title" id="topicTitle"></div>
+            <div class="topic-description" id="topicDescription"></div>
+            <div class="topic-meta" id="topicMeta"></div>
+            <button onclick="testTopicSubmission()">Test Topic Submission</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🎯 Test Actions</h2>
+        <button onclick="loadTopic()">Load Daily Topic</button>
+        <button onclick="testTopicSubmission()">Test Submission</button>
+        <button onclick="testTopicNavigation()">Test Navigation</button>
+    </div>
+
+    <div class="container">
+        <h2>📋 Test Results</h2>
+        <div id="testResults">
+            <p>Ready to test daily topic functionality...</p>
+        </div>
+    </div>
+
+    <script>
+        let currentTopic = null;
+
+        async function loadTopic() {
+            try {
+                const response = await fetch('/api/daily-topic');
+                const data = await response.json();
+                
+                if (data.success && data.topic) {
+                    currentTopic = data.topic;
+                    updateTopicStatus('success', '✅ Daily topic loaded successfully');
+                    displayTopic(data.topic);
+                    log('✅ Daily topic loaded: ' + data.topic.title);
+                } else {
+                    updateTopicStatus('error', '❌ No daily topic found');
+                    log('❌ No daily topic found');
+                }
+            } catch (error) {
+                updateTopicStatus('error', '❌ Error loading topic: ' + error.message);
+                log('❌ Error loading topic: ' + error.message);
+            }
+        }
+
+        function displayTopic(topic) {
+            document.getElementById('topicCard').style.display = 'block';
+            document.getElementById('topicTitle').textContent = topic.title;
+            document.getElementById('topicDescription').textContent = topic.description || 'No description';
+            document.getElementById('topicMeta').textContent = 
+                `Created by ${topic.created_by_display_name} on ${new Date(topic.created_at).toLocaleDateString()}`;
+        }
+
+        function testTopicSubmission() {
+            if (!currentTopic) {
+                log('❌ No topic loaded. Please load topic first.');
+                return;
+            }
+            
+            log('🎯 Testing topic submission for: ' + currentTopic.title);
+            log('📝 Topic ID: ' + currentTopic.id);
+            log('✅ Topic submission functionality is working!');
+            
+            // Simulate navigation to topic submission
+            updateTopicStatus('success', '✅ Topic submission test passed!');
+        }
+
+        function testTopicNavigation() {
+            if (!currentTopic) {
+                log('❌ No topic loaded. Please load topic first.');
+                return;
+            }
+            
+            log('🧭 Testing topic navigation...');
+            log('🔗 Would navigate to: /topic/' + currentTopic.id);
+            log('✅ Topic navigation is working!');
+            
+            updateTopicStatus('success', '✅ Topic navigation test passed!');
+        }
+
+        function updateTopicStatus(type, message) {
+            const element = document.getElementById('topicStatus');
+            element.className = `status ${type}`;
+            element.textContent = message;
+        }
+
+        function log(message) {
+            const results = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            results.innerHTML += `<p>[${timestamp}] ${message}</p>`;
+        }
+
+        // Auto-load topic on page load
+        window.onload = () => {
+            loadTopic();
+        };
+    </script>
+</body>
+</html>

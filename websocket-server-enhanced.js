@@ -271,6 +271,15 @@ async function handleAPIMessage(data, res) {
         }
         break;
         
+      case 'topic_submission_created':
+        // Handle topic submission created
+        console.log('📝 Broadcasting topic submission:', data.data);
+        broadcastToAll({
+          type: 'topic_submission_created',
+          data: data.data
+        });
+        break;
+        
       default:
         console.log('📨 Unknown API message type:', data.type);
     }
@@ -384,6 +393,10 @@ wss.on('connection', async (ws, req) => {
         
         case 'invite_expired':
           await handleInviteExpired(ws, data);
+          break;
+        
+        case 'topic_submission_created':
+          await handleTopicSubmissionCreated(ws, data);
           break;
         
         case 'new_thread':
@@ -986,6 +999,69 @@ async function handleInviteExpired(ws, data) {
     }));
   } catch (error) {
     console.error('Error handling invite expiration:', error);
+  }
+}
+
+async function handleTopicSubmissionCreated(ws, data) {
+  if (!ws.userId) return;
+
+  const { topicId, submissionId, userId, id, user_id } = data.data || data;
+  const actualSubmissionId = submissionId || id;
+  const actualUserId = userId || user_id;
+  
+  if (!topicId || !actualSubmissionId) return;
+
+  try {
+    console.log(`📝 Topic submission created: ${actualSubmissionId} for topic: ${topicId}`);
+    
+    // Broadcast to all connected users about new topic submission
+    broadcastToAll({
+      type: 'topic_submission_created',
+      data: {
+        topicId,
+        submissionId: actualSubmissionId,
+        userId: actualUserId,
+        createdBy: ws.userInfo?.username || ws.userId,
+        ...data.data // Include all original data
+      }
+    });
+    
+    // Also broadcast to users following the topic creator
+    if (actualUserId) {
+      const followers = await getFollowers(actualUserId);
+      followers.forEach(followerId => {
+        const followerWs = userConnections.get(followerId);
+        if (followerWs) {
+          followerWs.send(JSON.stringify({
+            type: 'topic_submission_notification',
+            data: {
+              topicId,
+              submissionId: actualSubmissionId,
+              userId: actualUserId,
+              createdBy: ws.userInfo?.username || ws.userId,
+              ...data.data // Include all original data
+            }
+          }));
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error handling topic submission created:', error);
+  }
+}
+
+// Get followers of a user
+async function getFollowers(userId) {
+  try {
+    const followers = await db.query('SELECT following FROM users WHERE id = ?', [userId]);
+    if (followers.length > 0 && followers[0].following) {
+      return JSON.parse(followers[0].following);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error getting followers:', error);
+    return [];
   }
 }
 

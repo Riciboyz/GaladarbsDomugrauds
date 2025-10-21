@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Topic not found or not available today' }, { status: 404 });
     }
 
-    // Check if user already submitted for this topic
+    // Check if user already submitted for this topic (optional - allow multiple submissions)
+    // Commented out to allow multiple submissions per user per topic
+    /*
     const existingSubmission = await db.query(
       'SELECT id FROM topic_submissions WHERE topic_id = ? AND user_id = ?', 
       [topicId, decoded.id]
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
     if (existingSubmission.rows && existingSubmission.rows.length > 0) {
       return NextResponse.json({ success: false, error: 'You have already submitted for this topic' }, { status: 400 });
     }
+    */
 
     const submissionId = uuidv4();
     const createdAt = new Date().toISOString();
