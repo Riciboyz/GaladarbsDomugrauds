@@ -193,6 +193,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Clean up expired invitations first
+    await cleanupExpiredInvitations()
+
     const invitations = await listInvitations(decoded.id)
     return NextResponse.json({ success: true, invitations })
   } catch (error) {
@@ -245,10 +248,12 @@ async function upsertInvitation({ groupId, inviterId, inviteeId }: { groupId: st
         return
       }
       const now = new Date().toISOString()
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes from now
+      
       if (row) {
         // Update existing to pending and inviter
-        const update = 'UPDATE group_invitations SET inviter_id = ?, status = \"pending\", responded_at = NULL WHERE id = ?'
-        db.run(update, [inviterId, row.id], function(updateErr: any) {
+        const update = 'UPDATE group_invitations SET inviter_id = ?, status = \"pending\", responded_at = NULL, expires_at = ? WHERE id = ?'
+        db.run(update, [inviterId, expiresAt, row.id], function(updateErr: any) {
           db.close()
           if (updateErr) {
             reject(updateErr)
@@ -258,8 +263,8 @@ async function upsertInvitation({ groupId, inviterId, inviteeId }: { groupId: st
         })
       } else {
         const id = `invite_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
-        const insert = 'INSERT INTO group_invitations (id, group_id, inviter_id, invitee_id, status, created_at) VALUES (?, ?, ?, ?, \"pending\", CURRENT_TIMESTAMP)'
-        db.run(insert, [id, groupId, inviterId, inviteeId], function(insertErr: any) {
+        const insert = 'INSERT INTO group_invitations (id, group_id, inviter_id, invitee_id, status, created_at, expires_at) VALUES (?, ?, ?, ?, \"pending\", CURRENT_TIMESTAMP, ?)'
+        db.run(insert, [id, groupId, inviterId, inviteeId, expiresAt], function(insertErr: any) {
           db.close()
           if (insertErr) {
             reject(insertErr)
@@ -351,13 +356,14 @@ async function listInvitations(userId: string) {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbPath)
     const query = `
-      SELECT gi.id, gi.group_id, gi.inviter_id, gi.status, gi.created_at, gi.responded_at,
+      SELECT gi.id, gi.group_id, gi.inviter_id, gi.status, gi.created_at, gi.responded_at, gi.expires_at,
              g.name as group_name, g.avatar as group_avatar,
              u.username as inviter_username, u.display_name as inviter_display_name, u.avatar as inviter_avatar
       FROM group_invitations gi
       JOIN groups g ON gi.group_id = g.id
       JOIN users u ON gi.inviter_id = u.id
-      WHERE gi.invitee_id = ?
+      WHERE gi.invitee_id = ? 
+        AND (gi.status != 'pending' OR gi.expires_at > datetime('now'))
       ORDER BY gi.created_at DESC
     `
     db.all(query, [userId], (err: any, rows: any[]) => {
@@ -390,6 +396,37 @@ async function createNotification(userId: string, type: string, message: string,
       }
       db.close()
       resolve(this.lastID)
+    })
+  })
+}
+
+// Clean up expired invitations
+async function cleanupExpiredInvitations() {
+  const sqlite3 = require('sqlite3').verbose()
+  const path = require('path')
+  const dbPath = path.join(process.cwd(), 'threads_app.db')
+  
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbPath)
+    
+    const query = `
+      DELETE FROM group_invitations 
+      WHERE status = 'pending' AND expires_at < datetime('now')
+    `
+    
+    db.run(query, function(err: any) {
+      if (err) {
+        console.error('❌ Error cleaning up expired invitations:', err)
+        reject(err)
+        return
+      }
+      
+      if (this.changes > 0) {
+        console.log(`🧹 Cleaned up ${this.changes} expired invitations`)
+      }
+      
+      db.close()
+      resolve(this.changes)
     })
   })
 }

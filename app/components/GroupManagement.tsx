@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useUser } from '../contexts/UserContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNotification } from '../contexts/NotificationContext'
+import { useWebSocket } from '../contexts/WebSocketContext'
 import { 
   UserGroupIcon,
   UsersIcon,
@@ -26,6 +27,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
   const { user, users } = useUser()
   const { success, error: showError } = useToast()
   const { addNotification } = useNotification()
+  const { sendMessage } = useWebSocket()
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMemberManagement, setShowMemberManagement] = useState(false)
@@ -43,6 +45,38 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       loadGroupMembers()
     }
   }, [showMemberManagement])
+
+  // Listen for real-time member changes
+  useEffect(() => {
+    if (!group?.id) return
+
+    const handleMemberAdded = (event: CustomEvent) => {
+      const data = event.detail
+      if (data.groupId === group.id) {
+        console.log('📨 GroupManagement: Member added:', data)
+        loadGroupMembers() // Reload members
+        success('Member Added', 'New member added to group!')
+      }
+    }
+
+    const handleMemberRemoved = (event: CustomEvent) => {
+      const data = event.detail
+      if (data.groupId === group.id) {
+        console.log('📨 GroupManagement: Member removed:', data)
+        loadGroupMembers() // Reload members
+        success('Member Removed', 'Member removed from group!')
+      }
+    }
+
+    // Add event listeners
+    window.addEventListener('member_added', handleMemberAdded as EventListener)
+    window.addEventListener('member_removed', handleMemberRemoved as EventListener)
+
+    return () => {
+      window.removeEventListener('member_added', handleMemberAdded as EventListener)
+      window.removeEventListener('member_removed', handleMemberRemoved as EventListener)
+    }
+  }, [group?.id])
 
   const loadGroupMembers = async () => {
     try {
@@ -117,28 +151,82 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
     }
   }
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!user) return
+  const addMember = async (userId: string) => {
+    if (!group?.id || !user?.id) return
 
     try {
-      const response = await fetch(`/api/groups/members?groupId=${group.id}&userId=${memberId}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      // Send via WebSocket for real-time updates
+      if (sendMessage) {
+        sendMessage({
+          type: 'add_group_member',
+          data: {
+            groupId: group.id,
+            userId: userId
+          }
+        })
+      }
+
+      // Also update via API as backup
+      const response = await fetch('/api/groups/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          groupId: group.id,
+          userId: userId 
+        })
       })
 
       const data = await response.json()
       
       if (response.ok) {
-        success('Member removed successfully!')
+        success('Member Added', 'Member added successfully!')
         loadGroupMembers()
-        onUpdate()
+      } else {
+        throw new Error(data.error || 'Failed to add member')
+      }
+    } catch (error) {
+      console.error('Error adding member:', error)
+      showError('Add Member', 'Failed to add member. Please try again.')
+    }
+  }
+
+  const removeMember = async (userId: string) => {
+    if (!group?.id || !user?.id) return
+
+    try {
+      // Send via WebSocket for real-time updates
+      if (sendMessage) {
+        sendMessage({
+          type: 'remove_group_member',
+          data: {
+            groupId: group.id,
+            userId: userId
+          }
+        })
+      }
+
+      // Also update via API as backup
+      const response = await fetch(`/api/groups/members?groupId=${group.id}&userId=${userId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        success('Member Removed', 'Member removed successfully!')
+        loadGroupMembers()
       } else {
         throw new Error(data.error || 'Failed to remove member')
       }
     } catch (error) {
       console.error('Error removing member:', error)
-      showError('Failed to remove member. Please try again.')
+      showError('Remove Member', 'Failed to remove member. Please try again.')
     }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    await removeMember(memberId)
   }
 
   const handleInviteUser = async (e: React.FormEvent) => {

@@ -54,6 +54,7 @@ export default function Groups() {
   })
   const [pendingInvites, setPendingInvites] = useState<any[]>([])
   const [loadingInvites, setLoadingInvites] = useState(false)
+  const [inviteTimers, setInviteTimers] = useState<{[key: string]: number}>({})
 
   // Persist tab selection so refresh keeps the same view
   useEffect(() => {
@@ -99,6 +100,58 @@ export default function Groups() {
     }
     loadInvites()
   }, [])
+
+  // Listen for invite expiration via WebSocket
+  useEffect(() => {
+    if (!user) return
+
+    const handleInviteExpired = (event: CustomEvent) => {
+      const data = event.detail
+      console.log('⏰ Invite expired:', data)
+      
+      // Remove expired invite from state
+      setPendingInvites(prev => prev.filter(inv => inv.id !== data.invitationId))
+      
+      // Remove timer
+      setInviteTimers(prev => {
+        const newTimers = { ...prev }
+        delete newTimers[data.invitationId]
+        return newTimers
+      })
+      
+      // Show notification
+      showError('Invite Expired', 'The group invitation has expired.')
+    }
+
+    // Add event listener
+    window.addEventListener('invite_expired', handleInviteExpired as EventListener)
+
+    return () => {
+      window.removeEventListener('invite_expired', handleInviteExpired as EventListener)
+    }
+  }, [user, showError])
+
+  // Update invite timers
+  useEffect(() => {
+    if (pendingInvites.length === 0) return
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime()
+      const newTimers: {[key: string]: number} = {}
+      
+      pendingInvites.forEach(invite => {
+        if (invite.expires_at) {
+          const expiresAt = new Date(invite.expires_at).getTime()
+          const timeLeft = Math.max(0, Math.floor((expiresAt - now) / 1000))
+          newTimers[invite.id] = timeLeft
+        }
+      })
+      
+      setInviteTimers(newTimers)
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [pendingInvites])
 
   // Counts for tabs
   const privateCount = user
@@ -434,6 +487,11 @@ export default function Groups() {
                     <div>
                       <div className="text-sm font-medium text-gray-900">{inv.group_name || 'Group invite'}</div>
                       <div className="text-xs text-gray-500">Invited by {inv.inviter_display_name || inv.inviter_username}</div>
+                      {inviteTimers[inv.id] !== undefined && (
+                        <div className="text-xs text-orange-600 font-medium">
+                          Expires in {Math.floor(inviteTimers[inv.id] / 60)}:{(inviteTimers[inv.id] % 60).toString().padStart(2, '0')}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Group Invite Expiration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .invite-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+        .timer {
+            color: #e67e22;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .expired {
+            color: #e74c3c;
+            background: #fdf2f2;
+            border-color: #e74c3c;
+        }
+        .accepted {
+            color: #27ae60;
+            background: #f0f9f0;
+            border-color: #27ae60;
+        }
+        .declined {
+            color: #95a5a6;
+            background: #f8f9fa;
+            border-color: #95a5a6;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .status {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Group Invite Expiration System</h1>
+    
+    <div class="container">
+        <h2>📋 Test Instructions</h2>
+        <ol>
+            <li><strong>Create Invite:</strong> Click "Create Test Invite" to create a 5-minute invite</li>
+            <li><strong>Watch Timer:</strong> See the countdown timer on the invite card</li>
+            <li><strong>Test Actions:</strong> Try Accept/Decline buttons</li>
+            <li><strong>Wait for Expiry:</strong> Wait 5 minutes to see auto-expiration</li>
+            <li><strong>Real-time Updates:</strong> All changes happen instantly via WebSocket</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <h2>🎯 Test Controls</h2>
+        <button onclick="createTestInvite()">Create Test Invite</button>
+        <button onclick="clearAllInvites()">Clear All Invites</button>
+        <button onclick="simulateExpiry()">Simulate Expiry (for testing)</button>
+        <div class="status" id="connectionStatus">Disconnected</div>
+    </div>
+
+    <div class="container">
+        <h2>📨 Pending Invites</h2>
+        <div id="invitesList">
+            <p>No invites yet. Click "Create Test Invite" to start testing.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 Event Log</h2>
+        <div id="eventLog" class="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let invites = [];
+        let timers = {};
+
+        // WebSocket connection
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket('ws://localhost:3001');
+                
+                ws.onopen = () => {
+                    log('✅ WebSocket connected');
+                    updateConnectionStatus('Connected');
+                    
+                    // Register test user
+                    ws.send(JSON.stringify({
+                        type: 'register',
+                        userId: 'test-user-' + Date.now()
+                    }));
+                };
+
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    log(`📨 Received: ${message.type}`);
+                    
+                    if (message.type === 'invite_expired') {
+                        handleInviteExpired(message.data);
+                    }
+                };
+
+                ws.onclose = () => {
+                    log('❌ WebSocket disconnected');
+                    updateConnectionStatus('Disconnected');
+                    setTimeout(connectWebSocket, 3000);
+                };
+
+                ws.onerror = (error) => {
+                    log('❌ WebSocket error: ' + error);
+                };
+            } catch (error) {
+                log('❌ Failed to connect: ' + error);
+            }
+        }
+
+        // Create test invite
+        async function createTestInvite() {
+            try {
+                const response = await fetch('/api/groups/invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        groupId: 'test-group-' + Date.now(),
+                        inviteeId: 'test-user-' + Date.now()
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Test invite created');
+                    loadInvites();
+                } else {
+                    log('❌ Failed to create invite: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Error creating invite: ' + error);
+            }
+        }
+
+        // Load invites
+        async function loadInvites() {
+            try {
+                const response = await fetch('/api/groups/invite');
+                const data = await response.json();
+                
+                if (data.success) {
+                    invites = data.invitations || [];
+                    updateInvitesDisplay();
+                    startTimers();
+                } else {
+                    log('❌ Failed to load invites: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Error loading invites: ' + error);
+            }
+        }
+
+        // Update invites display
+        function updateInvitesDisplay() {
+            const container = document.getElementById('invitesList');
+            
+            if (invites.length === 0) {
+                container.innerHTML = '<p>No invites yet. Click "Create Test Invite" to start testing.</p>';
+                return;
+            }
+
+            container.innerHTML = invites.map(invite => {
+                const timeLeft = timers[invite.id] || 0;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = (timeLeft % 60).toString().padStart(2, '0');
+                
+                let statusClass = '';
+                let statusText = '';
+                
+                if (invite.status === 'accepted') {
+                    statusClass = 'accepted';
+                    statusText = '✅ Accepted';
+                } else if (invite.status === 'declined') {
+                    statusClass = 'declined';
+                    statusText = '❌ Declined';
+                } else if (timeLeft <= 0) {
+                    statusClass = 'expired';
+                    statusText = '⏰ Expired';
+                } else {
+                    statusText = `⏳ Pending (${minutes}:${seconds})`;
+                }
+
+                return `
+                    <div class="invite-card ${statusClass}">
+                        <h3>${invite.group_name || 'Test Group'}</h3>
+                        <p>Invited by: ${invite.inviter_display_name || invite.inviter_username}</p>
+                        <p>Created: ${new Date(invite.created_at).toLocaleString()}</p>
+                        ${invite.expires_at ? `<p>Expires: ${new Date(invite.expires_at).toLocaleString()}</p>` : ''}
+                        <div class="status">${statusText}</div>
+                        ${invite.status === 'pending' && timeLeft > 0 ? `
+                            <button onclick="acceptInvite('${invite.id}')">Accept</button>
+                            <button onclick="declineInvite('${invite.id}')">Decline</button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Start timers for all invites
+        function startTimers() {
+            // Clear existing timers
+            Object.values(timers).forEach(timer => clearInterval(timer));
+            timers = {};
+
+            invites.forEach(invite => {
+                if (invite.status === 'pending' && invite.expires_at) {
+                    const timer = setInterval(() => {
+                        const now = new Date().getTime();
+                        const expiresAt = new Date(invite.expires_at).getTime();
+                        const timeLeft = Math.max(0, Math.floor((expiresAt - now) / 1000));
+                        
+                        timers[invite.id] = timeLeft;
+                        updateInvitesDisplay();
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(timer);
+                            delete timers[invite.id];
+                            log(`⏰ Invite ${invite.id} expired`);
+                        }
+                    }, 1000);
+                    
+                    timers[invite.id] = timer;
+                }
+            });
+        }
+
+        // Accept invite
+        async function acceptInvite(inviteId) {
+            try {
+                const response = await fetch('/api/groups/invite', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        invitationId: inviteId,
+                        status: 'accepted'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Invite accepted');
+                    loadInvites();
+                } else {
+                    log('❌ Failed to accept invite: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Error accepting invite: ' + error);
+            }
+        }
+
+        // Decline invite
+        async function declineInvite(inviteId) {
+            try {
+                const response = await fetch('/api/groups/invite', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        invitationId: inviteId,
+                        status: 'declined'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('❌ Invite declined');
+                    loadInvites();
+                } else {
+                    log('❌ Failed to decline invite: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Error declining invite: ' + error);
+            }
+        }
+
+        // Handle invite expiration
+        function handleInviteExpired(data) {
+            log(`⏰ Invite expired via WebSocket: ${data.invitationId}`);
+            loadInvites(); // Reload to update display
+        }
+
+        // Simulate expiry (for testing)
+        function simulateExpiry() {
+            invites.forEach(invite => {
+                if (invite.status === 'pending') {
+                    // Set expires_at to 1 second ago
+                    invite.expires_at = new Date(Date.now() - 1000).toISOString();
+                }
+            });
+            updateInvitesDisplay();
+            log('🧪 Simulated expiry for all pending invites');
+        }
+
+        // Clear all invites
+        function clearAllInvites() {
+            invites = [];
+            Object.values(timers).forEach(timer => clearInterval(timer));
+            timers = {};
+            updateInvitesDisplay();
+            log('🧹 Cleared all invites');
+        }
+
+        // Update connection status
+        function updateConnectionStatus(status) {
+            document.getElementById('connectionStatus').textContent = status;
+        }
+
+        // Log function
+        function log(message) {
+            const logElement = document.getElementById('eventLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Initialize
+        connectWebSocket();
+        loadInvites();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadInvites, 30000);
+    </script>
+</body>
+</html>

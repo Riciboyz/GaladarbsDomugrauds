@@ -151,6 +151,41 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
                 detail: message.notification 
               }))
               break
+            case 'member_added':
+              console.log('👥 WebSocketProvider: Member added:', message.data)
+              // Dispatch member added event
+              window.dispatchEvent(new CustomEvent('member_added', { 
+                detail: message.data 
+              }))
+              break
+            case 'member_removed':
+              console.log('👥 WebSocketProvider: Member removed:', message.data)
+              // Dispatch member removed event
+              window.dispatchEvent(new CustomEvent('member_removed', { 
+                detail: message.data 
+              }))
+              break
+            case 'added_to_group':
+              console.log('👥 WebSocketProvider: Added to group:', message.data)
+              // Dispatch added to group event
+              window.dispatchEvent(new CustomEvent('added_to_group', { 
+                detail: message.data 
+              }))
+              break
+        case 'removed_from_group':
+          console.log('👥 WebSocketProvider: Removed from group:', message.data)
+          // Dispatch removed from group event
+          window.dispatchEvent(new CustomEvent('removed_from_group', { 
+            detail: message.data 
+          }))
+          break
+        case 'invite_expired':
+          console.log('⏰ WebSocketProvider: Invite expired:', message.data)
+          // Dispatch invite expired event
+          window.dispatchEvent(new CustomEvent('invite_expired', { 
+            detail: message.data 
+          }))
+          break
             case 'notification_update':
               console.log('📬 WebSocketProvider: Notification update received:', message.notification)
               // Dispatch notification update event for cross-tab synchronization

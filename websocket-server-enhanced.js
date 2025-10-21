@@ -374,6 +374,18 @@ wss.on('connection', async (ws, req) => {
           ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
           break;
         
+        case 'add_group_member':
+          await handleAddGroupMember(ws, data);
+          break;
+        
+        case 'remove_group_member':
+          await handleRemoveGroupMember(ws, data);
+          break;
+        
+        case 'invite_expired':
+          await handleInviteExpired(ws, data);
+          break;
+        
         case 'new_thread':
           // Broadcast new thread to all connected users
           console.log('📝 Broadcasting new thread:', data.data);
@@ -824,6 +836,159 @@ async function handleStopTyping(ws, data) {
   }, ws.userId);
 }
 
+// Handle adding group member
+async function handleAddGroupMember(ws, data) {
+  if (!ws.userId) return;
+
+  const { groupId, userId } = data.data || data;
+  if (!groupId || !userId) return;
+
+  try {
+    // Check if user is group creator or admin
+    const group = await db.query('SELECT created_by FROM groups WHERE id = ?', [groupId]);
+    if (group.length === 0) return;
+    
+    if (group[0].created_by !== ws.userId) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        data: { message: 'Only group creator can add members' }
+      }));
+      return;
+    }
+
+    // Add member to group
+    const members = await getGroupMembers(groupId);
+    if (!members.includes(userId)) {
+      members.push(userId);
+      await db.run('UPDATE groups SET members = ? WHERE id = ?', [JSON.stringify(members), groupId]);
+      
+      console.log(`✅ Added member ${userId} to group ${groupId}`);
+      
+      // Broadcast to all group members
+      broadcastToGroup(groupId, {
+        type: 'member_added',
+        data: {
+          groupId,
+          userId,
+          addedBy: ws.userId
+        }
+      });
+      
+      // Notify the added user if they're connected
+      const userWs = userConnections.get(userId);
+      if (userWs) {
+        userWs.send(JSON.stringify({
+          type: 'added_to_group',
+          data: {
+            groupId,
+            addedBy: ws.userId
+          }
+        }));
+      }
+    }
+  } catch (error) {
+    console.error('Error adding group member:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      data: { message: 'Failed to add member' }
+    }));
+  }
+}
+
+// Handle removing group member
+async function handleRemoveGroupMember(ws, data) {
+  if (!ws.userId) return;
+
+  const { groupId, userId } = data.data || data;
+  if (!groupId || !userId) return;
+
+  try {
+    // Check if user is group creator or admin
+    const group = await db.query('SELECT created_by FROM groups WHERE id = ?', [groupId]);
+    if (group.length === 0) return;
+    
+    if (group[0].created_by !== ws.userId) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        data: { message: 'Only group creator can remove members' }
+      }));
+      return;
+    }
+
+    // Remove member from group
+    const members = await getGroupMembers(groupId);
+    const updatedMembers = members.filter(id => id !== userId);
+    
+    if (updatedMembers.length !== members.length) {
+      await db.run('UPDATE groups SET members = ? WHERE id = ?', [JSON.stringify(updatedMembers), groupId]);
+      
+      console.log(`✅ Removed member ${userId} from group ${groupId}`);
+      
+      // Broadcast to all group members
+      broadcastToGroup(groupId, {
+        type: 'member_removed',
+        data: {
+          groupId,
+          userId,
+          removedBy: ws.userId
+        }
+      });
+      
+      // Remove from group connections if they're connected
+      const groupConn = groupConnections.get(groupId);
+      if (groupConn) {
+        const userWs = userConnections.get(userId);
+        if (userWs) {
+          groupConn.delete(userWs);
+        }
+      }
+      
+      // Notify the removed user if they're connected
+      const userWs = userConnections.get(userId);
+      if (userWs) {
+        userWs.send(JSON.stringify({
+          type: 'removed_from_group',
+          data: {
+            groupId,
+            removedBy: ws.userId
+          }
+        }));
+      }
+    }
+  } catch (error) {
+    console.error('Error removing group member:', error);
+    ws.send(JSON.stringify({
+      type: 'error',
+      data: { message: 'Failed to remove member' }
+    }));
+  }
+}
+
+async function handleInviteExpired(ws, data) {
+  if (!ws.userId) return;
+
+  const { invitationId, groupId } = data.data || data;
+  if (!invitationId) return;
+
+  try {
+    // Delete expired invitation from database
+    await db.run('DELETE FROM group_invitations WHERE id = ? AND status = ?', [invitationId, 'pending']);
+    
+    console.log(`⏰ Invite expired: ${invitationId}`);
+    
+    // Notify the invitee that the invitation has expired
+    ws.send(JSON.stringify({
+      type: 'invite_expired',
+      data: {
+        invitationId,
+        groupId
+      }
+    }));
+  } catch (error) {
+    console.error('Error handling invite expiration:', error);
+  }
+}
+
 // Handle disconnection
 function handleDisconnection(ws) {
   if (ws.userId) {
@@ -902,3 +1067,42 @@ async function getPostGroupId(postId) {
 setInterval(() => {
   console.log(`📊 Active connections: ${userConnections.size}, Groups: ${groupConnections.size}`);
 }, 30000); // Log every 30 seconds
+
+// Auto-cleanup expired invitations every minute
+setInterval(async () => {
+  try {
+    const expiredInvites = await db.query(`
+      SELECT id, invitee_id, group_id 
+      FROM group_invitations 
+      WHERE status = 'pending' AND expires_at < datetime('now')
+    `);
+    
+    if (expiredInvites.length > 0) {
+      console.log(`⏰ Found ${expiredInvites.length} expired invitations`);
+      
+      // Delete expired invitations
+      await db.run(`
+        DELETE FROM group_invitations 
+        WHERE status = 'pending' AND expires_at < datetime('now')
+      `);
+      
+      // Notify users about expired invitations
+      expiredInvites.forEach(invite => {
+        const userWs = userConnections.get(invite.invitee_id);
+        if (userWs) {
+          userWs.send(JSON.stringify({
+            type: 'invite_expired',
+            data: {
+              invitationId: invite.id,
+              groupId: invite.group_id
+            }
+          }));
+        }
+      });
+      
+      console.log(`🧹 Cleaned up ${expiredInvites.length} expired invitations`);
+    }
+  } catch (error) {
+    console.error('❌ Error in auto-cleanup:', error);
+  }
+}, 60000); // Run every minute

@@ -135,6 +135,10 @@ export async function DELETE(request: NextRequest) {
 
     // Remove user from group
     const updatedMembers = members.filter((id: string) => id !== userId);
+    console.log('🔍 Removing member:', userId, 'from group:', groupId);
+    console.log('🔍 Original members:', members);
+    console.log('🔍 Updated members:', updatedMembers);
+    
     await updateGroupMembers(groupId, updatedMembers);
 
     return NextResponse.json({
@@ -197,13 +201,16 @@ async function updateGroupMembers(groupId: string, members: string[]) {
     const db = new sqlite3.Database(dbPath);
     
     const query = 'UPDATE groups SET members = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+    console.log('🔍 Updating group members:', groupId, 'with:', members);
     
     db.run(query, [JSON.stringify(members), groupId], function(err: any) {
       if (err) {
+        console.error('❌ Error updating group members:', err);
         reject(err);
         return;
       }
       
+      console.log('✅ Group members updated successfully, changes:', this.changes);
       db.close();
       resolve(this.changes);
     });
