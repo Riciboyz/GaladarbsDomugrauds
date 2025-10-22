@@ -280,6 +280,78 @@ async function handleAPIMessage(data, res) {
         });
         break;
         
+      case 'topic_submission_notification':
+        // Handle topic submission notification to followers
+        console.log('📬 Broadcasting topic submission notification:', data.data);
+        await handleTopicSubmissionNotification(data.data);
+        break;
+        
+      case 'group_invite_notification':
+        // Handle group invite notification
+        console.log('📬 Broadcasting group invite notification:', data.data);
+        broadcastToUser(data.userId, {
+          type: 'group_invite_notification',
+          data: data.data
+        });
+        break;
+        
+      case 'member_added':
+        // Handle member added to group
+        console.log('👥 Broadcasting member added:', data.data);
+        broadcastToGroup(data.groupId, {
+          type: 'member_added',
+          data: data.data
+        });
+        break;
+        
+      case 'member_removed':
+        // Handle member removed from group
+        console.log('👥 Broadcasting member removed:', data.data);
+        broadcastToGroup(data.groupId, {
+          type: 'member_removed',
+          data: data.data
+        });
+        break;
+        
+      case 'group_created':
+        // Handle group creation notification to followers
+        console.log('🏗️ Broadcasting group creation notification:', data.data);
+        await handleGroupCreationNotification(data.data);
+        break;
+        
+      case 'profile_updated':
+        // Handle profile update notification to followers
+        console.log('👤 Broadcasting profile update notification:', data.data);
+        await handleProfileUpdateNotification(data.data);
+        break;
+        
+      case 'new_thread':
+        // Handle new thread from API
+        console.log('📝 Broadcasting new thread from API:', data.data);
+        broadcastToAll({
+          type: 'new_thread',
+          data: data.data
+        });
+        break;
+        
+      case 'thread_updated':
+        // Handle thread update from API
+        console.log('📝 Broadcasting thread update from API:', data.data);
+        broadcastToAll({
+          type: 'thread_updated',
+          data: data.data
+        });
+        break;
+        
+      case 'thread_deleted':
+        // Handle thread deletion from API
+        console.log('📝 Broadcasting thread deletion from API:', data.data);
+        broadcastToAll({
+          type: 'thread_deleted',
+          data: data.data
+        });
+        break;
+        
       default:
         console.log('📨 Unknown API message type:', data.type);
     }
@@ -1084,10 +1156,10 @@ function handleDisconnection(ws) {
 
 // Broadcast to specific user
 function broadcastToUser(userId, message) {
-  const userConnections = getUserConnections(userId);
-  if (userConnections.length > 0) {
-    console.log('📡 Broadcasting message to user:', userId, 'connections:', userConnections.length);
-    userConnections.forEach(ws => {
+  const connections = getUserConnections(userId);
+  if (connections.length > 0) {
+    console.log('📡 Broadcasting message to user:', userId, 'connections:', connections.length);
+    connections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
         try {
           ws.send(JSON.stringify(message));
@@ -1136,6 +1208,94 @@ async function getPostGroupId(postId) {
   } catch (error) {
     console.error('Error getting post group ID:', error);
     return null;
+  }
+}
+
+// Handle topic submission notification to followers
+async function handleTopicSubmissionNotification(data) {
+  try {
+    const { followers, createdBy, createdById, submissionId, topicId, content, imageUrl, avatar } = data;
+    
+    if (followers && followers.length > 0) {
+      followers.forEach(followerId => {
+        const followerWs = userConnections.get(followerId);
+        if (followerWs) {
+          followerWs.send(JSON.stringify({
+            type: 'topic_submission_notification',
+            data: {
+              submissionId,
+              topicId,
+              content,
+              imageUrl,
+              createdBy,
+              createdById,
+              avatar
+            }
+          }));
+        }
+      });
+      console.log(`📬 Topic submission notification sent to ${followers.length} followers`);
+    }
+  } catch (error) {
+    console.error('Error handling topic submission notification:', error);
+  }
+}
+
+// Handle group creation notification to followers
+async function handleGroupCreationNotification(data) {
+  try {
+    const { followers, creatorName, creatorId, groupId, groupName, description, isPrivate, avatar } = data;
+    
+    if (followers && followers.length > 0) {
+      followers.forEach(followerId => {
+        const followerWs = userConnections.get(followerId);
+        if (followerWs) {
+          followerWs.send(JSON.stringify({
+            type: 'group_created',
+            data: {
+              groupId,
+              groupName,
+              description,
+              isPrivate,
+              creatorName,
+              creatorId,
+              avatar
+            }
+          }));
+        }
+      });
+      console.log(`🏗️ Group creation notification sent to ${followers.length} followers`);
+    }
+  } catch (error) {
+    console.error('Error handling group creation notification:', error);
+  }
+}
+
+// Handle profile update notification to followers
+async function handleProfileUpdateNotification(data) {
+  try {
+    const { followers, userId, username, displayName, avatar, changes } = data;
+    
+    if (followers && followers.length > 0) {
+      followers.forEach(followerId => {
+        const followerWs = userConnections.get(followerId);
+        if (followerWs) {
+          followerWs.send(JSON.stringify({
+            type: 'profile_updated',
+            data: {
+              userId,
+              username,
+              displayName,
+              avatar,
+              changes
+            }
+          }));
+        }
+      });
+      console.log(`👤 Profile update notification sent to ${followers.length} followers`);
+    }
+  } catch (error) {
+    console.error('Error handling profile update notification:', error);
   }
 }
 

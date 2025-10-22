@@ -103,6 +103,39 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString()
     };
 
+    // Send real-time notification to followers about new group creation
+    try {
+      const creator = await authDb.getUserById(decoded.id);
+      const followers = JSON.parse(creator?.followers || '[]');
+      
+      if (followers.length > 0) {
+        const wsResponse = await fetch('http://localhost:3001', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'group_created',
+            userId: decoded.id,
+            data: {
+              groupId: groupId,
+              groupName: name.trim(),
+              description: description?.trim() || '',
+              isPrivate: isPrivate,
+              creatorName: creator?.display_name || creator?.displayName || creator?.username,
+              creatorId: decoded.id,
+              avatar: avatar || null,
+              followers: followers
+            }
+          })
+        });
+        
+        if (wsResponse.ok) {
+          console.log('✅ Real-time group creation notification sent to followers via WebSocket');
+        }
+      }
+    } catch (wsError) {
+      console.error('❌ Error sending real-time group creation notification:', wsError);
+    }
+
     return NextResponse.json({
       success: true,
       group: newGroup,

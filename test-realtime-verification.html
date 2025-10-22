@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Features Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-section {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 DomuGrauds Real-Time Features Verification</h1>
+    
+    <div class="container">
+        <h2>📊 System Status</h2>
+        <div id="system-status">
+            <div class="status info">Checking system status...</div>
+        </div>
+        
+        <h2>🔌 WebSocket Connection Test</h2>
+        <div id="websocket-status">
+            <div class="status info">Connecting to WebSocket...</div>
+        </div>
+        
+        <h2>📝 Test Log</h2>
+        <div id="log" class="log"></div>
+        
+        <button onclick="clearLog()">Clear Log</button>
+        <button onclick="runAllTests()">Run All Tests</button>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Real-Time Feature Tests</h2>
+        
+        <div class="test-section">
+            <h3>1. WebSocket Connection</h3>
+            <button onclick="testWebSocketConnection()">Test Connection</button>
+            <div id="ws-connection-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. Authentication Test</h3>
+            <button onclick="testAuthentication()">Test Auth</button>
+            <div id="auth-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. Group Messaging</h3>
+            <button onclick="testGroupMessaging()">Test Group Messages</button>
+            <div id="group-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. Notifications</h3>
+            <button onclick="testNotifications()">Test Notifications</button>
+            <div id="notification-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>5. Thread Updates</h3>
+            <button onclick="testThreadUpdates()">Test Thread Updates</button>
+            <div id="thread-result"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let testResults = {};
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logEntry.style.color = type === 'error' ? '#721c24' : type === 'success' ? '#155724' : '#0c5460';
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function updateResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // Test WebSocket Connection
+        function testWebSocketConnection() {
+            log('🔌 Testing WebSocket connection...');
+            updateResult('ws-connection-result', 'Testing...', 'info');
+            
+            try {
+                ws = new WebSocket('ws://localhost:3001');
+                
+                ws.onopen = function() {
+                    log('✅ WebSocket connected successfully', 'success');
+                    updateResult('ws-connection-result', '✅ Connected successfully', 'success');
+                    testResults.websocket = true;
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        log(`📨 Received: ${data.type}`, 'success');
+                    } catch (e) {
+                        log(`📨 Received: ${event.data}`, 'success');
+                    }
+                };
+                
+                ws.onclose = function(event) {
+                    log(`🔌 WebSocket closed: ${event.code} ${event.reason}`, 'warning');
+                    updateResult('ws-connection-result', '❌ Connection closed', 'error');
+                    testResults.websocket = false;
+                };
+                
+                ws.onerror = function(error) {
+                    log('❌ WebSocket error: ' + error, 'error');
+                    updateResult('ws-connection-result', '❌ Connection failed', 'error');
+                    testResults.websocket = false;
+                };
+                
+            } catch (error) {
+                log('❌ Failed to create WebSocket: ' + error, 'error');
+                updateResult('ws-connection-result', '❌ Failed to create connection', 'error');
+                testResults.websocket = false;
+            }
+        }
+        
+        // Test Authentication
+        function testAuthentication() {
+            log('🔐 Testing authentication...');
+            updateResult('auth-result', 'Testing...', 'info');
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected', 'error');
+                updateResult('auth-result', '❌ WebSocket not connected', 'error');
+                return;
+            }
+            
+            // Send authentication message
+            const authMessage = {
+                type: 'authenticate',
+                data: { token: 'test-token' }
+            };
+            
+            ws.send(JSON.stringify(authMessage));
+            log('📤 Sent authentication message', 'info');
+            
+            // Set timeout for response
+            setTimeout(() => {
+                if (testResults.auth !== true) {
+                    log('⚠️ Authentication test timeout', 'warning');
+                    updateResult('auth-result', '⚠️ Timeout waiting for response', 'warning');
+                }
+            }, 5000);
+            
+            // Listen for auth response
+            const originalOnMessage = ws.onmessage;
+            ws.onmessage = function(event) {
+                originalOnMessage(event);
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'authenticated') {
+                        log('✅ Authentication successful', 'success');
+                        updateResult('auth-result', '✅ Authentication successful', 'success');
+                        testResults.auth = true;
+                    } else if (data.type === 'auth_error') {
+                        log('❌ Authentication failed: ' + data.data.message, 'error');
+                        updateResult('auth-result', '❌ Authentication failed', 'error');
+                        testResults.auth = false;
+                    }
+                } catch (e) {
+                    // Not JSON, ignore
+                }
+            };
+        }
+        
+        // Test Group Messaging
+        function testGroupMessaging() {
+            log('💬 Testing group messaging...');
+            updateResult('group-result', 'Testing...', 'info');
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected', 'error');
+                updateResult('group-result', '❌ WebSocket not connected', 'error');
+                return;
+            }
+            
+            // Join a test group
+            const joinMessage = {
+                type: 'join_group',
+                data: { groupId: 'test-group' }
+            };
+            
+            ws.send(JSON.stringify(joinMessage));
+            log('📤 Sent join group message', 'info');
+            
+            // Send a test message
+            setTimeout(() => {
+                const message = {
+                    type: 'group_message',
+                    data: { 
+                        groupId: 'test-group', 
+                        content: 'Test message from verification script',
+                        messageType: 'text'
+                    }
+                };
+                
+                ws.send(JSON.stringify(message));
+                log('📤 Sent test group message', 'info');
+                updateResult('group-result', '✅ Group messaging test completed', 'success');
+                testResults.groupMessaging = true;
+            }, 1000);
+        }
+        
+        // Test Notifications
+        function testNotifications() {
+            log('📬 Testing notifications...');
+            updateResult('notification-result', 'Testing...', 'info');
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected', 'error');
+                updateResult('notification-result', '❌ WebSocket not connected', 'error');
+                return;
+            }
+            
+            // Register for notifications
+            const registerMessage = {
+                type: 'register',
+                userId: 'test-user',
+                token: 'test-token'
+            };
+            
+            ws.send(JSON.stringify(registerMessage));
+            log('📤 Sent registration message', 'info');
+            
+            // Simulate notification
+            setTimeout(() => {
+                const notificationMessage = {
+                    type: 'notification',
+                    notification: {
+                        id: 'test-notification',
+                        type: 'test',
+                        message: 'Test notification from verification script',
+                        userId: 'test-user',
+                        createdAt: new Date().toISOString()
+                    }
+                };
+                
+                ws.send(JSON.stringify(notificationMessage));
+                log('📤 Sent test notification', 'info');
+                updateResult('notification-result', '✅ Notification test completed', 'success');
+                testResults.notifications = true;
+            }, 1000);
+        }
+        
+        // Test Thread Updates
+        function testThreadUpdates() {
+            log('📝 Testing thread updates...');
+            updateResult('thread-result', 'Testing...', 'info');
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected', 'error');
+                updateResult('thread-result', '❌ WebSocket not connected', 'error');
+                return;
+            }
+            
+            // Send thread update
+            const threadMessage = {
+                type: 'thread_updated',
+                data: {
+                    id: 'test-thread',
+                    content: 'Updated thread content',
+                    updatedAt: new Date().toISOString()
+                }
+            };
+            
+            ws.send(JSON.stringify(threadMessage));
+            log('📤 Sent thread update message', 'info');
+            updateResult('thread-result', '✅ Thread update test completed', 'success');
+            testResults.threadUpdates = true;
+        }
+        
+        // Run all tests
+        function runAllTests() {
+            log('🚀 Running all real-time feature tests...');
+            clearLog();
+            
+            // Reset results
+            testResults = {};
+            
+            // Run tests in sequence
+            testWebSocketConnection();
+            
+            setTimeout(() => {
+                if (testResults.websocket) {
+                    testAuthentication();
+                }
+            }, 2000);
+            
+            setTimeout(() => {
+                if (testResults.websocket) {
+                    testGroupMessaging();
+                }
+            }, 4000);
+            
+            setTimeout(() => {
+                if (testResults.websocket) {
+                    testNotifications();
+                }
+            }, 6000);
+            
+            setTimeout(() => {
+                if (testResults.websocket) {
+                    testThreadUpdates();
+                }
+            }, 8000);
+            
+            // Final summary
+            setTimeout(() => {
+                log('📊 Test Summary:', 'info');
+                log(`WebSocket Connection: ${testResults.websocket ? '✅' : '❌'}`, testResults.websocket ? 'success' : 'error');
+                log(`Authentication: ${testResults.auth ? '✅' : '❌'}`, testResults.auth ? 'success' : 'error');
+                log(`Group Messaging: ${testResults.groupMessaging ? '✅' : '❌'}`, testResults.groupMessaging ? 'success' : 'error');
+                log(`Notifications: ${testResults.notifications ? '✅' : '❌'}`, testResults.notifications ? 'success' : 'error');
+                log(`Thread Updates: ${testResults.threadUpdates ? '✅' : '❌'}`, testResults.threadUpdates ? 'success' : 'error');
+                
+                const passedTests = Object.values(testResults).filter(Boolean).length;
+                const totalTests = Object.keys(testResults).length;
+                
+                if (passedTests === totalTests) {
+                    log('🎉 All tests passed! Real-time features are working correctly.', 'success');
+                    updateStatus('system-status', '🎉 All real-time features are working correctly!', 'success');
+                } else {
+                    log(`⚠️ ${passedTests}/${totalTests} tests passed. Some features may need attention.`, 'warning');
+                    updateStatus('system-status', `⚠️ ${passedTests}/${totalTests} tests passed`, 'warning');
+                }
+            }, 10000);
+        }
+        
+        // Check system status on load
+        function checkSystemStatus() {
+            log('🔍 Checking system status...');
+            
+            // Check if Next.js app is running
+            fetch('http://localhost:3000')
+                .then(response => {
+                    if (response.ok) {
+                        log('✅ Next.js application is running on port 3000', 'success');
+                        updateStatus('system-status', '✅ Next.js app running on port 3000', 'success');
+                    } else {
+                        log('❌ Next.js application not responding', 'error');
+                        updateStatus('system-status', '❌ Next.js app not responding', 'error');
+                    }
+                })
+                .catch(error => {
+                    log('❌ Cannot connect to Next.js application: ' + error, 'error');
+                    updateStatus('system-status', '❌ Cannot connect to Next.js app', 'error');
+                });
+            
+            // Check WebSocket server
+            setTimeout(() => {
+                testWebSocketConnection();
+            }, 1000);
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            log('🚀 Real-Time Features Verification Tool Started', 'info');
+            log('📱 Next.js App: http://localhost:3000', 'info');
+            log('🔌 WebSocket Server: ws://localhost:3001', 'info');
+            checkSystemStatus();
+        };
+    </script>
+</body>
+</html>

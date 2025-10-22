@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Timing Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 5px; height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Notification Timing Test</h1>
+    
+    <div id="status" class="status info">Connecting to WebSocket...</div>
+    
+    <div>
+        <button onclick="testNotification()">Send Test Notification</button>
+        <button onclick="checkRegistration()">Check Registration Status</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div id="log" class="log"></div>
+
+    <script>
+        let ws = null;
+        let userId = null;
+        let isRegistered = false;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function getCurrentUser() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.user) {
+                        userId = data.user.id;
+                        log(`👤 Current user: ${data.user.email} (${userId})`);
+                        return true;
+                    }
+                }
+                log('❌ No user logged in');
+                return false;
+            } catch (error) {
+                log(`❌ Error getting user: ${error.message}`);
+                return false;
+            }
+        }
+
+        function connectWebSocket() {
+            log('🔌 Connecting to WebSocket server...');
+            ws = new WebSocket('ws://localhost:3001');
+
+            ws.onopen = async function() {
+                log('✅ WebSocket connected!');
+                updateStatus('Connected to WebSocket', 'success');
+                
+                // Get current user first
+                const hasUser = await getCurrentUser();
+                if (hasUser && userId) {
+                    // Register user for notifications
+                    log('🔐 Registering user for notifications...');
+                    ws.send(JSON.stringify({
+                        type: 'register',
+                        userId: userId
+                    }));
+                } else {
+                    log('❌ Cannot register - no user logged in');
+                }
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    log(`📨 Received: ${message.type}`);
+                    
+                    if (message.type === 'registered') {
+                        isRegistered = true;
+                        log('✅ User registered successfully!');
+                        updateStatus('User registered and ready for notifications', 'success');
+                    } else if (message.type === 'notification') {
+                        log(`🔔 NOTIFICATION RECEIVED: ${message.notification.message}`);
+                        updateStatus('Notification received!', 'success');
+                    }
+                } catch (error) {
+                    log(`❌ Error parsing message: ${error.message}`);
+                }
+            };
+
+            ws.onclose = function() {
+                log('❌ WebSocket disconnected');
+                updateStatus('Disconnected', 'error');
+                isRegistered = false;
+            };
+
+            ws.onerror = function(error) {
+                log(`❌ WebSocket error: ${error}`);
+                updateStatus('Connection error', 'error');
+            };
+        }
+
+        function checkRegistration() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                if (isRegistered) {
+                    log('✅ User is registered and ready for notifications');
+                } else {
+                    log('❌ User is NOT registered yet');
+                }
+            } else {
+                log('❌ WebSocket not connected');
+            }
+        }
+
+        async function testNotification() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected');
+                return;
+            }
+            
+            if (!userId) {
+                log('❌ No user logged in');
+                const hasUser = await getCurrentUser();
+                if (!hasUser) {
+                    log('❌ Please login first');
+                    return;
+                }
+            }
+
+            if (!isRegistered) {
+                log('❌ User not registered yet - registering now...');
+                ws.send(JSON.stringify({
+                    type: 'register',
+                    userId: userId
+                }));
+                // Wait a moment for registration
+                setTimeout(() => {
+                    if (isRegistered) {
+                        sendTestNotification();
+                    } else {
+                        log('❌ Registration failed - cannot send notification');
+                    }
+                }, 1000);
+                return;
+            }
+
+            sendTestNotification();
+        }
+
+        function sendTestNotification() {
+            log('🧪 Sending test notification...');
+            
+            // Send notification via Next.js API
+            fetch('/api/notifications/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    type: 'test',
+                    toUserId: userId,
+                    message: 'Test notification from timing test',
+                    fromUserId: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    log('✅ Test notification sent successfully');
+                } else {
+                    log(`❌ Failed to send notification: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                log(`❌ Error sending notification: ${error.message}`);
+            });
+        }
+
+        // Connect on page load
+        connectWebSocket();
+    </script>
+</body>
+</html>

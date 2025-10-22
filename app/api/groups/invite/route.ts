@@ -94,6 +94,30 @@ export async function POST(request: NextRequest) {
       
       if (notificationResponse.ok) {
         console.log('🔔 Group invitation notification sent successfully')
+        
+        // Send real-time notification via WebSocket
+        try {
+          const wsResponse = await fetch('http://localhost:3001', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'group_invite_notification',
+              userId: inviteeId,
+              data: {
+                groupId,
+                groupName: group.name,
+                inviterName: inviter?.display_name || inviter?.username,
+                inviterId: decoded.id
+              }
+            })
+          })
+          
+          if (wsResponse.ok) {
+            console.log('✅ Real-time group invite notification sent via WebSocket')
+          }
+        } catch (wsError) {
+          console.error('❌ Error sending real-time group invite notification:', wsError)
+        }
       }
     } catch (notificationError) {
       console.error('Error sending group invitation notification:', notificationError)
@@ -161,6 +185,32 @@ export async function PUT(request: NextRequest) {
       if (!members.includes(decoded.id)) {
         members.push(decoded.id)
         await updateGroupMembers(invitation.group_id, members)
+        
+        // Send real-time notification to group members about new member
+        try {
+          const user = await authDb.getUserById(decoded.id);
+          const wsResponse = await fetch('http://localhost:3001', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'member_added',
+              groupId: invitation.group_id,
+              data: {
+                userId: decoded.id,
+                username: user?.username,
+                displayName: user?.display_name || user?.displayName,
+                avatar: user?.avatar,
+                groupName: group.name
+              }
+            })
+          })
+          
+          if (wsResponse.ok) {
+            console.log('✅ Real-time member added notification sent via WebSocket')
+          }
+        } catch (wsError) {
+          console.error('❌ Error sending real-time member added notification:', wsError)
+        }
       }
     }
 

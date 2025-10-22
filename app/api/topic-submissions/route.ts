@@ -115,6 +115,29 @@ export async function POST(request: NextRequest) {
           data: submissionPayload
         })
       });
+      
+      // Send notifications to followers about the topic submission
+      const followers = JSON.parse(author?.followers || '[]');
+      if (followers.length > 0) {
+        await fetch('http://localhost:3001', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'topic_submission_notification',
+            userId: decoded.id,
+            data: {
+              submissionId: submissionId,
+              topicId: topicId,
+              content: content?.trim() || '',
+              imageUrl: imageUrl || '',
+              createdBy: author?.display_name || author?.displayName || author?.username,
+              createdById: decoded.id,
+              avatar: author?.avatar,
+              followers: followers
+            }
+          })
+        });
+      }
     } catch (wsError) {
       console.log('WS broadcast for topic submission failed (non-critical):', (wsError as any).message || wsError);
     }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useUser } from '../contexts/UserContext'
 import { useThread } from '../contexts/ThreadContext'
 import { useGroup } from '../contexts/GroupContext'
@@ -20,6 +20,7 @@ import DailyTopicBanner from './DailyTopicBanner'
 import TopicSubmission from './TopicSubmission'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import SimpleCreateThread from './SimpleCreateThread'
+import QuickSearchBar from './QuickSearchBar'
 import { 
   HomeIcon, 
   UserIcon, 
@@ -29,7 +30,7 @@ import {
   UserGroupIcon
 } from '@heroicons/react/24/outline'
 
-type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' // | 'settings' // Temporarily disabled
+type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-profile' | 'topic-submission' // | 'settings' // Temporarily disabled
 
 export default function MainApp() {
   const { user } = useUser()
@@ -46,6 +47,8 @@ export default function MainApp() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateThread, setShowCreateThread] = useState(false)
   const [currentTopicId, setCurrentTopicId] = useState<string | null>(null)
+  const [viewedUserId, setViewedUserId] = useState<string | null>(null)
+  const quickSearchRef = useRef<{ focus: () => void }>(null)
 
   const tabs = [
     { id: 'home', label: 'Home', icon: HomeIcon },
@@ -61,29 +64,48 @@ export default function MainApp() {
     setActiveTab('topic-submission' as Tab)
   }
 
+  const handleUserProfileClick = (userId: string) => {
+    setViewedUserId(userId)
+    setActiveTab('user-profile' as Tab)
+  }
+
+  const handleQuickSearch = () => {
+    quickSearchRef.current?.focus()
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <Feed />
+        return <Feed onUserClick={handleUserProfileClick} />
       case 'profile':
         return <Profile />
       case 'notifications':
         return <RealtimeNotificationsProvider />
       case 'search':
-        return <Search />
+        return <Search onUserClick={handleUserProfileClick} />
       case 'groups':
         return <Groups />
+      case 'user-profile':
+        return viewedUserId ? (
+          <Profile 
+            userId={viewedUserId} 
+            onBack={() => {
+              setViewedUserId(null)
+              setActiveTab('home')
+            }} 
+          />
+        ) : <Feed onUserClick={handleUserProfileClick} />
       case 'topic-submission':
         return currentTopicId ? (
           <TopicSubmission 
             topicId={currentTopicId} 
             onBack={() => setActiveTab('home')} 
           />
-        ) : <Feed />
+        ) : <Feed onUserClick={handleUserProfileClick} />
       // case 'settings':
       //   return <Settings />
       default:
-        return <Feed />
+        return <Feed onUserClick={handleUserProfileClick} />
     }
   }
 
@@ -91,12 +113,12 @@ export default function MainApp() {
     <div className="min-h-screen bg-gray-50">
       <KeyboardShortcuts
         onNewThread={() => setShowCreateThread(true)}
-        onSearch={() => setActiveTab('search')}
+        onSearch={handleQuickSearch}
         onHome={() => setActiveTab('home')}
         onProfile={() => setActiveTab('profile')}
         onNotifications={() => setActiveTab('notifications')}
         onGroups={() => setActiveTab('groups')}
-        // onSettings={() => setActiveTab('settings')} // Temporarily disabled
+        onSettings={() => {}} // Temporarily disabled
       />
       
       <div className="flex min-h-screen">

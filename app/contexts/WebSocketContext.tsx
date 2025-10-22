@@ -200,6 +200,27 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             detail: message.data 
           }))
           break
+        case 'group_invite_notification':
+          console.log('📬 WebSocketProvider: Group invite notification:', message.data)
+          // Dispatch group invite notification event
+          window.dispatchEvent(new CustomEvent('group_invite_notification', { 
+            detail: message.data 
+          }))
+          break
+        case 'group_created':
+          console.log('🏗️ WebSocketProvider: Group created notification:', message.data)
+          // Dispatch group created event
+          window.dispatchEvent(new CustomEvent('group_created', { 
+            detail: message.data 
+          }))
+          break
+        case 'profile_updated':
+          console.log('👤 WebSocketProvider: Profile updated notification:', message.data)
+          // Dispatch profile updated event
+          window.dispatchEvent(new CustomEvent('profile_updated', { 
+            detail: message.data 
+          }))
+          break
             case 'notification_update':
               console.log('📬 WebSocketProvider: Notification update received:', message.notification)
               // Dispatch notification update event for cross-tab synchronization

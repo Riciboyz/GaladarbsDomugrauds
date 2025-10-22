@@ -66,6 +66,33 @@ export async function POST(request: NextRequest) {
     if (!members.includes(userId)) {
       members.push(userId);
       await updateGroupMembers(groupId, members);
+      
+      // Send real-time notification to group members about new member
+      try {
+        const user = await authDb.getUserById(userId);
+        const wsResponse = await fetch('http://localhost:3001', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'member_added',
+            groupId: groupId,
+            data: {
+              userId: userId,
+              username: user?.username,
+              displayName: user?.display_name || user?.displayName,
+              avatar: user?.avatar,
+              groupName: group.name,
+              addedBy: decoded.id
+            }
+          })
+        });
+        
+        if (wsResponse.ok) {
+          console.log('✅ Real-time member added notification sent via WebSocket');
+        }
+      } catch (wsError) {
+        console.error('❌ Error sending real-time member added notification:', wsError);
+      }
     }
 
     return NextResponse.json({
@@ -140,6 +167,34 @@ export async function DELETE(request: NextRequest) {
     console.log('🔍 Updated members:', updatedMembers);
     
     await updateGroupMembers(groupId, updatedMembers);
+
+    // Send real-time notification to group members about member removal
+    try {
+      const user = await authDb.getUserById(userId);
+      const wsResponse = await fetch('http://localhost:3001', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'member_removed',
+          groupId: groupId,
+          data: {
+            userId: userId,
+            username: user?.username,
+            displayName: user?.display_name || user?.displayName,
+            avatar: user?.avatar,
+            groupName: group.name,
+            removedBy: decoded.id,
+            wasSelfRemoval: isRemovingSelf
+          }
+        })
+      });
+      
+      if (wsResponse.ok) {
+        console.log('✅ Real-time member removed notification sent via WebSocket');
+      }
+    } catch (wsError) {
+      console.error('❌ Error sending real-time member removed notification:', wsError);
+    }
 
     return NextResponse.json({
       success: true,

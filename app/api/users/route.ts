@@ -83,6 +83,42 @@ export async function PUT(request: NextRequest) {
       bio
     });
 
+    // Send real-time notification to followers about profile update
+    try {
+      const user = await authDb.getUserById(decoded.id);
+      const followers = JSON.parse(user?.followers || '[]');
+      
+      if (followers.length > 0) {
+        const wsResponse = await fetch('http://localhost:3001', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'profile_updated',
+            userId: decoded.id,
+            data: {
+              userId: decoded.id,
+              username: updatedUser.username,
+              displayName: updatedUser.display_name || updatedUser.displayName,
+              avatar: updatedUser.avatar,
+              followers: followers,
+              changes: {
+                username: username ? 'updated' : 'unchanged',
+                displayName: displayName ? 'updated' : 'unchanged',
+                avatar: avatar ? 'updated' : 'unchanged',
+                bio: bio ? 'updated' : 'unchanged'
+              }
+            }
+          })
+        });
+        
+        if (wsResponse.ok) {
+          console.log('✅ Real-time profile update notification sent to followers via WebSocket');
+        }
+      }
+    } catch (wsError) {
+      console.error('❌ Error sending real-time profile update notification:', wsError);
+    }
+
     return NextResponse.json({
       success: true,
       user: {
