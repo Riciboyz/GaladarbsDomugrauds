@@ -221,13 +221,20 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             detail: message.data 
           }))
           break
-            case 'notification_update':
-              console.log('📬 WebSocketProvider: Notification update received:', message.notification)
-              // Dispatch notification update event for cross-tab synchronization
-              window.dispatchEvent(new CustomEvent('notification-update', { 
-                detail: message.notification 
-              }))
-              break
+        case 'notification':
+          console.log('📬 WebSocketProvider: Notification received:', message.notification)
+          // Dispatch notification event
+          window.dispatchEvent(new CustomEvent('notification-received', { 
+            detail: message.notification 
+          }))
+          break
+        case 'notification_update':
+          console.log('📬 WebSocketProvider: Notification update received:', message.notification)
+          // Dispatch notification update event for cross-tab synchronization
+          window.dispatchEvent(new CustomEvent('notification-update', { 
+            detail: message.notification 
+          }))
+          break
             case 'registered':
               console.log('✅ WebSocketProvider: User registered for notifications')
               break

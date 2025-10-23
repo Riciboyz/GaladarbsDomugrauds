@@ -1307,11 +1307,12 @@ setInterval(() => {
 // Auto-cleanup expired invitations every minute
 setInterval(async () => {
   try {
+    const now = new Date().toISOString();
     const expiredInvites = await db.query(`
       SELECT id, invitee_id, group_id 
       FROM group_invitations 
-      WHERE status = 'pending' AND expires_at < datetime('now')
-    `);
+      WHERE status = 'pending' AND expires_at < ?
+    `, [now]);
     
     if (expiredInvites.length > 0) {
       console.log(`⏰ Found ${expiredInvites.length} expired invitations`);
@@ -1319,8 +1320,8 @@ setInterval(async () => {
       // Delete expired invitations
       await db.run(`
         DELETE FROM group_invitations 
-        WHERE status = 'pending' AND expires_at < datetime('now')
-      `);
+        WHERE status = 'pending' AND expires_at < ?
+      `, [now]);
       
       // Notify users about expired invitations
       expiredInvites.forEach(invite => {

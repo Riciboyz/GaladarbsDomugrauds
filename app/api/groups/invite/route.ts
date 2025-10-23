@@ -461,10 +461,12 @@ async function cleanupExpiredInvitations() {
     
     const query = `
       DELETE FROM group_invitations 
-      WHERE status = 'pending' AND expires_at < datetime('now')
+      WHERE status = 'pending' AND expires_at < ?
     `
     
-    db.run(query, function(err: any) {
+    const now = new Date().toISOString()
+    
+    db.run(query, [now], function(err: any) {
       if (err) {
         console.error('❌ Error cleaning up expired invitations:', err)
         reject(err)

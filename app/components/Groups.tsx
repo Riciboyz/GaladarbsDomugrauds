@@ -362,37 +362,57 @@ export default function Groups() {
 
   const acceptInvite = async (invitationId: string) => {
     try {
+      console.log('🔍 Accept invite attempt:', { invitationId, user: user?.id })
+      
       const res = await fetch('/api/groups/invite', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ invitationId, status: 'accepted' })
       })
+      
+      console.log('🔍 Accept invite response status:', res.status)
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to accept invite')
+      console.log('🔍 Accept invite response data:', data)
+      
+      if (!res.ok) {
+        console.error('❌ Accept invite failed:', data.error)
+        throw new Error(data.error || 'Failed to accept invite')
+      }
+      
       setPendingInvites(prev => prev.filter(inv => inv.id !== invitationId))
       await loadGroups()
       success('Joined group!', 'You have joined the group.')
     } catch (e) {
-      console.error(e)
+      console.error('❌ Accept invite error:', e)
       showError('Error', 'Could not accept the invite')
     }
   }
 
   const declineInvite = async (invitationId: string) => {
     try {
+      console.log('🔍 Decline invite attempt:', { invitationId, user: user?.id })
+      
       const res = await fetch('/api/groups/invite', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ invitationId, status: 'declined' })
       })
+      
+      console.log('🔍 Decline invite response status:', res.status)
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to decline invite')
+      console.log('🔍 Decline invite response data:', data)
+      
+      if (!res.ok) {
+        console.error('❌ Decline invite failed:', data.error)
+        throw new Error(data.error || 'Failed to decline invite')
+      }
+      
       setPendingInvites(prev => prev.filter(inv => inv.id !== invitationId))
       success('Invite declined', 'Invitation was declined.')
     } catch (e) {
-      console.error(e)
+      console.error('❌ Decline invite error:', e)
       showError('Error', 'Could not decline the invite')
     }
   }
