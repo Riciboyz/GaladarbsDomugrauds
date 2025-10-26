@@ -1,211 +1,347 @@
-# 🧵 Threads App - Renovated & Simplified
+# DomuGrauds - Social Platform
 
-A clean, modern social media application built with Next.js 14, featuring real-time messaging, user interactions, and a beautiful UI. This is a renovated version with simplified architecture and improved performance.
+A modern social platform built with Next.js frontend and Express.js backend, featuring real-time communication, group management, and weather integration.
 
-## ✨ Key Improvements
+## 🏗️ Architecture
 
-### 🏗️ Architecture Renovation
-- **Modular Context System**: Split large providers into focused, reusable contexts
-- **Simplified Database**: Single SQLite configuration for easy setup
-- **Clean API Routes**: Consistent error handling and response format
-- **Better Component Structure**: Removed duplicate code and improved reusability
+The application has been split into separate frontend and backend components with a clear API contract:
 
-### 🎯 Core Features
-- **🔐 Authentication**: JWT-based secure login/registration
-- **💬 Threads**: Create, like, comment, and share threads
-- **👥 User Management**: Profiles, following, and user discovery
-- **🔍 Search**: Full-text search across threads
-- **📱 Responsive Design**: Modern UI with Tailwind CSS
-- **⚡ Performance**: Optimized with Next.js 14 and React 18
+- **Frontend**: Next.js application with React components
+- **Backend**: Express.js API server with WebSocket support
+- **Database**: SQLite database
+- **Real-time**: Socket.IO for WebSocket communication
+
+## 📁 Project Structure
+
+```
+DomuGrauds/
+├── frontend/                 # Next.js frontend application
+│   ├── app/                  # Next.js app directory
+│   ├── lib/                  # API client and utilities
+│   ├── package.json          # Frontend dependencies
+│   └── Dockerfile           # Frontend Docker configuration
+├── backend/                  # Express.js backend application
+│   ├── routes/              # API route handlers
+│   ├── middleware/          # Express middleware
+│   ├── database/            # Database configuration and queries
+│   ├── package.json         # Backend dependencies
+│   └── Dockerfile          # Backend Docker configuration
+├── scripts/                 # Deployment scripts
+├── docker-compose.yml       # Docker Compose configuration
+├── nginx.conf              # Nginx reverse proxy configuration
+└── README.md               # This file
+```
+
+
+## ⚠️ Migration System Update
+
+**IMPORTANT**: All database migrations have been consolidated into the backend system.
+
+### Before (Legacy)
+- Multiple migration systems
+- PostgreSQL and SQLite migrations
+- Scattered migration files
+
+### After (Consolidated)
+- Single migration system in backend
+- SQLite-only migrations
+- Centralized migration management
+
+### Migration Commands
+```bash
+cd backend
+npm run db:migrate      # Run migrations
+npm run db:status       # Check status  
+npm run db:drift-check  # Check for drift
+npm run db:baseline     # Create baseline
+```
+
+See `backend/database/MIGRATION_GUIDE.md` for complete documentation.
+
+
+## ⚠️ Migration System Update
+
+**IMPORTANT**: All database migrations have been consolidated into the backend system.
+
+### Before (Legacy)
+- Multiple migration systems
+- PostgreSQL and SQLite migrations
+- Scattered migration files
+
+### After (Consolidated)
+- Single migration system in backend
+- SQLite-only migrations
+- Centralized migration management
+
+### Migration Commands
+```bash
+cd backend
+npm run db:migrate      # Run migrations
+npm run db:status       # Check status  
+npm run db:drift-check  # Check for drift
+npm run db:baseline     # Create baseline
+```
+
+See `backend/database/MIGRATION_GUIDE.md` for complete documentation.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
 
-### Installation
+- Node.js 18+ 
+- Docker and Docker Compose (for containerized deployment)
+- Git
 
-1. **Clone and setup**
+### Development Setup
+
+1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd threads-app
+   cd DomuGrauds
+   ```
+
+2. **Backend Setup**
+   ```bash
+   cd backend
    npm install
-   ```
-
-2. **Initialize database**
-   ```bash
    npm run db:init
-   ```
-
-3. **Start development**
-   ```bash
    npm run dev
    ```
 
-4. **Open application**
-   Navigate to `http://localhost:3000`
+3. **Frontend Setup**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-### Test Login
-Use the quick login feature with:
-- Email: `testuser1@example.com`
-- Password: `password123`
+4. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:3001
+   - API Documentation: http://localhost:3001/api-docs
 
-## 📁 New Project Structure
+### Production Deployment
 
-```
-app/
-├── contexts/                 # Modular context system
-│   ├── UserContext.tsx      # User management
-│   ├── ThreadContext.tsx    # Thread operations
-│   ├── GroupContext.tsx     # Group functionality
-│   ├── NotificationContext.tsx # Notifications
-│   ├── TopicDayContext.tsx  # Topic days
-│   └── ToastContext.tsx     # Toast notifications
-├── components/              # React components
-│   ├── MainApp-new.tsx     # Main application
-│   ├── AuthPage-new.tsx    # Authentication
-│   ├── Toast-simple.tsx    # Simplified toast
-│   └── ...                 # Other UI components
-├── api/                    # API routes
-│   ├── auth/               # Authentication endpoints
-│   │   ├── db.js          # Auth database functions
-│   │   ├── login-new/     # Login endpoint
-│   │   ├── register-new/  # Registration endpoint
-│   │   ├── me-new/        # Current user endpoint
-│   │   └── logout-new/    # Logout endpoint
-│   ├── threads-new/       # Thread management
-│   │   ├── db.js         # Thread database functions
-│   │   ├── route.ts      # CRUD operations
-│   │   └── search/       # Search endpoint
-│   └── users-new/        # User management
-│       ├── route.ts      # User operations
-│       └── follow/       # Follow/unfollow
-├── providers-new.tsx      # Simplified providers
-├── page-new.tsx          # Main page
-└── layout-new.tsx        # App layout
+#### Using Docker Compose (Recommended)
 
-database/
-├── db.js                 # Simplified database config
-├── init.js              # Database initialization
-└── sqlite-schema.sql    # Database schema
-```
+1. **Set environment variables**
+   ```bash
+   export JWT_SECRET="your-super-secret-jwt-key"
+   export NEXT_PUBLIC_API_URL="http://your-domain.com"
+   export NEXT_PUBLIC_WS_URL="ws://your-domain.com"
+   ```
 
-## 🛠 Available Scripts
+2. **Deploy all services**
+   ```bash
+   ./scripts/deploy-full.sh
+   ```
+
+#### Individual Service Deployment
+
+- **Backend only**: `./scripts/deploy-backend.sh`
+- **Frontend only**: `./scripts/deploy-frontend.sh`
+
+## 📚 API Documentation
+
+The backend provides comprehensive API documentation using Swagger/OpenAPI:
+
+- **Development**: http://localhost:3001/api-docs
+- **Production**: http://your-domain.com/api-docs
+
+### Key API Endpoints
+
+#### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user
+
+#### Threads
+- `GET /api/threads` - Get all threads
+- `POST /api/threads` - Create new thread
+- `PUT /api/threads/:id` - Like/unlike thread
+- `DELETE /api/threads/:id` - Delete thread
+
+#### Users
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get user by ID
+- `POST /api/users/follow` - Follow a user
+
+#### Groups
+- `GET /api/groups` - Get all groups
+- `POST /api/groups` - Create a group
+- `POST /api/groups/join` - Join a group
+
+#### Notifications
+- `GET /api/notifications` - Get user notifications
+- `POST /api/notifications/read-all` - Mark all as read
+
+## 🔌 WebSocket Events
+
+### Client to Server
+- `authenticate` - Authenticate user
+- `join_group` - Join a group room
+- `leave_group` - Leave a group room
+- `new_thread` - Create new thread
+- `thread_updated` - Update thread
+- `typing_start` - Start typing indicator
+- `typing_stop` - Stop typing indicator
+
+### Server to Client
+- `thread_created` - New thread created
+- `thread_updated` - Thread updated
+- `notification_received` - New notification
+- `user_typing` - User typing indicator
+
+## 🛠️ Development
+
+### Backend Development
 
 ```bash
-# Development
-npm run dev              # Start development server
-npm run build           # Build for production
-npm run start           # Start production server
-
-# Database
-npm run db:init         # Initialize database with sample data
-npm run db:reset        # Reset database (removes all data)
+cd backend
+npm run dev          # Start development server
+npm run db:init      # Initialize database
+npm run db:reset     # Reset database
+npm test            # Run tests
 ```
 
-## 🎨 New Context System
+### Frontend Development
 
-### UserContext
-Manages user authentication, profiles, and user data.
-
-```typescript
-const { user, users, updateUser, loadUsersFromAPI } = useUser();
+```bash
+cd frontend
+npm run dev         # Start development server
+npm run build       # Build for production
+npm run start       # Start production server
+npm run lint        # Run linter
 ```
 
-### ThreadContext
-Handles thread creation, updates, and interactions.
+### Environment Variables
 
-```typescript
-const { threads, addThread, updateThread, searchThreads } = useThread();
+#### Backend (.env)
+```env
+PORT=3001
+NODE_ENV=development
+JWT_SECRET=your-jwt-secret
+DATABASE_PATH=../threads_app.db
+CORS_ORIGIN=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+EMAIL_FROM=noreply@domugrauds.com
+RESEND_API_KEY=your-resend-api-key
 ```
 
-### ToastContext
-Simple notification system for user feedback.
-
-```typescript
-const { success, error, info, warning } = useToast();
+#### Frontend (.env.local)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_WS_URL=http://localhost:3001
 ```
 
-## 🔒 Security Features
+## 🐳 Docker Configuration
 
-- **JWT Authentication**: Secure token-based authentication
-- **Password Hashing**: bcrypt for password security
-- **Input Validation**: Comprehensive input sanitization
-- **Session Management**: Secure session handling
-- **SQL Injection Prevention**: Parameterized queries
+### Services
 
-## 📊 Database Schema
+- **backend**: Express.js API server
+- **frontend**: Next.js application
+- **nginx**: Reverse proxy and load balancer
 
-### Simplified SQLite Setup
-- **No installation required**: Works out of the box
-- **Proper relationships**: Foreign keys and constraints
-- **Indexed queries**: Optimized for performance
-- **Sample data**: Pre-loaded test users and threads
+### Volumes
 
-### Core Tables
-- **users**: User accounts and profiles
-- **threads**: Threads and replies with attachments
-- **user_sessions**: Secure session management
-- **notifications**: User notifications (future feature)
+- `./threads_app.db:/app/data/threads_app.db` - Database persistence
+- `./uploads:/app/uploads` - File uploads
 
-## 🌐 API Endpoints
+### Ports
+
+- `3000` - Frontend
+- `3001` - Backend API
+- `80` - Nginx (HTTP)
+- `443` - Nginx (HTTPS)
+
+## 🔧 Configuration
+
+### Database
+
+The application uses SQLite for simplicity. For production, consider migrating to PostgreSQL or MySQL:
+
+1. Update database configuration in `backend/database/`
+2. Modify connection strings
+3. Run database migrations
 
 ### Authentication
-- `POST /api/auth/login-new` - User login
-- `POST /api/auth/register-new` - User registration
-- `POST /api/auth/logout-new` - User logout
-- `GET /api/auth/me-new` - Get current user
 
-### Threads
-- `GET /api/threads-new` - Get all threads
-- `POST /api/threads-new` - Create new thread
-- `PUT /api/threads-new` - Like/unlike thread
-- `DELETE /api/threads-new` - Delete thread
-- `GET /api/threads-new/search` - Search threads
+- JWT tokens for API authentication
+- HTTP-only cookies for web authentication
+- Optional 2FA via email
 
-### Users
-- `GET /api/users-new` - Get all users
-- `PUT /api/users-new` - Update user profile
-- `POST /api/users-new/follow` - Follow/unfollow user
+### File Uploads
 
-## 🧪 Testing the Renovated App
+- Local file storage in `uploads/` directory
+- Support for images and documents
+- Configurable file size limits
 
-1. **Start the app**: `npm run dev`
-2. **Initialize database**: `npm run db:init`
-3. **Quick login**: Use the test credentials
-4. **Create threads**: Test the simplified thread creation
-5. **Follow users**: Test the follow/unfollow functionality
-6. **Search**: Try searching for threads
+## 📊 Monitoring
 
-## 🔄 Migration from Old Version
+### Health Checks
 
-To use the renovated version:
+- Backend: `GET /health`
+- Docker health checks configured
+- Service status monitoring
 
-1. **Replace files**: Use the new files (with -new suffix)
-2. **Update imports**: Components now use specific contexts
-3. **Database**: Run `npm run db:init` to setup SQLite
-4. **Test**: Verify all features work with the new architecture
+### Logging
 
-## 📈 Performance Improvements
+- Structured logging with Morgan
+- Error tracking and reporting
+- WebSocket connection monitoring
 
-- **Reduced bundle size**: Removed unused dependencies
-- **Faster loading**: Simplified context structure
-- **Better caching**: Optimized API responses
-- **Cleaner code**: Improved maintainability
+## 🚀 Deployment Options
+
+### 1. Docker Compose (Recommended)
+- Single command deployment
+- Automatic service orchestration
+- Built-in reverse proxy
+
+### 2. Kubernetes
+- Container orchestration
+- Auto-scaling capabilities
+- Production-ready deployment
+
+### 3. Cloud Platforms
+- AWS ECS/Fargate
+- Google Cloud Run
+- Azure Container Instances
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
----
+## 🆘 Support
 
-**Status**: ✅ **Renovated & Ready** - Simplified architecture with improved performance and maintainability
+For support and questions:
+- Create an issue in the repository
+- Check the API documentation
+- Review the deployment logs
+
+## 🔄 Migration from Monolith
+
+This project was migrated from a monolithic Next.js application to a microservices architecture:
+
+### Changes Made:
+1. **Separated concerns**: Frontend and backend are now independent
+2. **API contract**: Clear REST API with OpenAPI documentation
+3. **Real-time communication**: WebSocket server integrated with backend
+4. **Independent deployment**: Each service can be deployed separately
+5. **Containerization**: Docker support for easy deployment
+6. **Reverse proxy**: Nginx configuration for production
+
+### Benefits:
+- **Scalability**: Services can be scaled independently
+- **Maintainability**: Clear separation of concerns
+- **Development**: Teams can work on frontend/backend independently
+- **Deployment**: Flexible deployment strategies
+- **Testing**: Easier to test individual components
