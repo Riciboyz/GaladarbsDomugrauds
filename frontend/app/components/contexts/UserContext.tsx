@@ -111,9 +111,22 @@ const mockUsers: User[] = [
 ]
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  // Default mock user so everything works without authentication
+  const defaultUser: User = {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    username: 'testuser',
+    displayName: 'Test User',
+    email: 'testuser@example.com',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    bio: 'Welcome to DomuGrauds! This is a test account.',
+    followers: [],
+    following: [],
+    createdAt: new Date()
+  };
+  
+  const [user, setUser] = useState<User | null>(defaultUser)
   const [users, setUsers] = useState<User[]>(mockUsers)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Load user from session on mount
   useEffect(() => {
@@ -255,6 +268,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const followUser = async (userId: string): Promise<boolean> => {
     if (!user) return false
     
+    const currentUserId = user.id;
+    
     try {
       const response = await fetch('/api/users/follow', {
         method: 'POST',
@@ -273,14 +288,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
           // Update current user's following list
           const updatedUser = {
             ...user,
-            following: [...user.following, userId]
+            following: [...(user.following || []), userId]
           }
           setUser(updatedUser)
           
           // Update the target user's followers list
           setUsers(prev => prev.map(u => 
             u.id === userId 
-              ? { ...u, followers: [...u.followers, user.id] }
+              ? { ...u, followers: [...(u.followers || []), currentUserId] }
               : u
           ))
           
@@ -296,6 +311,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const unfollowUser = async (userId: string): Promise<boolean> => {
     if (!user) return false
+    
+    const currentUserId = user.id;
     
     try {
       const response = await fetch('/api/users/follow', {
@@ -315,14 +332,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
           // Update current user's following list
           const updatedUser = {
             ...user,
-            following: user.following.filter(id => id !== userId)
+            following: (user.following || []).filter(id => id !== userId)
           }
           setUser(updatedUser)
           
           // Update the target user's followers list
           setUsers(prev => prev.map(u => 
             u.id === userId 
-              ? { ...u, followers: u.followers.filter(id => id !== user.id) }
+              ? { ...u, followers: (u.followers || []).filter(id => id !== currentUserId) }
               : u
           ))
           

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNotification } from '../../contexts/NotificationContext'
 import { useUser } from '../../contexts/UserContext'
-import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications'
+import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications'
 
 export default function NotificationsWidget() {
   const { notifications, markNotificationAsRead, loadNotificationsFromAPI } = useNotification() as any

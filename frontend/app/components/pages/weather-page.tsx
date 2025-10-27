@@ -1,7 +1,7 @@
 'use client';
 
 import { useWeather } from '../contexts/WeatherContext';
-import WeatherWidget from '../legacy/WeatherWidget';
+import WeatherWidget from '../../features/weather/WeatherWidget';
 
 export default function WeatherPage() {
   const { weatherData, weatherTheme, isLoading, error, fetchWeather, setWeatherTheme } = useWeather();

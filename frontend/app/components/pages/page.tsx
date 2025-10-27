@@ -1,7 +1,7 @@
 'use client'
 
 import { useUser } from '../contexts/UserContext'
-import AuthPage from '../legacy/AuthPage'
+import AuthPage from '../../features/auth/AuthPage'
 import MainApp from '../MainApp'
 
 export default function Home() {

@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useTopicDay } from '../../contexts/TopicDayContext'
-import Button from '../../legacy/Button'
-import Input from '../../legacy/Input'
+import Button from './Button'
+import Input from './Input'
 import { 
   CalendarIcon,
   PlusIcon,

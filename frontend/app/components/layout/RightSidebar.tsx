@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext'
 import { useThread } from '../contexts/ThreadContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
 import { CalendarDaysIcon, SparklesIcon, ArrowTopRightOnSquareIcon, UserPlusIcon, BellIcon } from '@heroicons/react/24/outline'
-import WeatherWidget from '../legacy/WeatherWidget'
+import WeatherWidget from '../features/weather/WeatherWidget'
 
 interface RightSidebarProps {
   onOpenTopicSubmission?: (topicId: string) => void

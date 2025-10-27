@@ -2,7 +2,7 @@
 
 import React, { Component, ReactNode } from 'react'
 import { ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
-import Button from '../legacy/Button'
+import Button from '../ui/Button'
 
 interface Props {
   children: ReactNode

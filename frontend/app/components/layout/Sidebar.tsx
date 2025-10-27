@@ -12,7 +12,7 @@ import {
   MagnifyingGlassIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline'
-import ThemeToggle from '../legacy/ThemeToggle'
+import ThemeToggle from '../../features/settings/ThemeToggle'
 
 interface Tab {
   id: string

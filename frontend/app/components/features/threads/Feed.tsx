@@ -8,8 +8,8 @@ import { useWebSocket } from '../../contexts/WebSocketContext'
 import { useLoading } from '../../hooks/useLoading'
 import ThreadCard from './ThreadCard'
 import SimpleCreateThread from './SimpleCreateThread'
-import LoadingState, { ThreadLoadingSkeleton } from '../../legacy/LoadingState'
-import Button from '../../legacy/Button'
+import LoadingState, { ThreadLoadingSkeleton } from '../../utility/LoadingState'
+import Button from '../../ui/Button'
 import { 
   FireIcon,
   CalendarDaysIcon,

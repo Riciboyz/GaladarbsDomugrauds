@@ -282,4 +282,29 @@ class ApiClient {
 // Create singleton instance
 const apiClient = new ApiClient();
 
+// Helper function for components that need to make direct fetch calls
+export const getApiUrl = (endpoint: string) => {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  return `${API_URL}${endpoint}`;
+};
+
+export const getAuthHeaders = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+};
+
+export const getFetchOptions = (options: RequestInit = {}) => {
+  return {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...(options.headers || {}),
+    },
+    credentials: 'include' as RequestCredentials,
+  };
+};
+
 export default apiClient;

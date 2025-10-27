@@ -7,8 +7,8 @@ import './components/styles/snowy.scss' // Snowy theme
 import './components/styles/sunny.scss' // Sunny theme
 import './components/styles/cloudy.scss' // Cloudy theme
 import { Providers } from './components/lib/providers'
-import ErrorBoundary from './components/legacy/ErrorBoundary'
-import GlobalWeatherTheme from './components/legacy/GlobalWeatherTheme'
+import ErrorBoundary from './components/feedback/ErrorBoundary'
+import GlobalWeatherTheme from './components/features/weather/GlobalWeatherTheme'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair', weight: ['500','600','700','800'] })

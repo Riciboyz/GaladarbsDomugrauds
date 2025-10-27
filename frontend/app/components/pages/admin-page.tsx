@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import AdminPanel from '../legacy/AdminPanel'
+import AdminPanel from '../../features/admin/AdminPanel'
 
 export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)

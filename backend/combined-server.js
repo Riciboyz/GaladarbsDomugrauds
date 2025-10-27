@@ -5,6 +5,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+require('dotenv').config();
 
 const app = express();
 const server = createServer(app);
@@ -29,11 +30,13 @@ app.use(express.json());
 app.set('trust proxy', 1);
 
 // Database connection
-const dbPath = path.join(process.cwd(), '..', 'threads_app.db');
+const dbPath = process.env.DATABASE_PATH 
+  ? path.resolve(process.cwd(), process.env.DATABASE_PATH)
+  : path.join(process.cwd(), '..', 'threads_app.db');
 const db = new sqlite3.Database(dbPath);
 
-// JWT Secret (in production, use environment variable)
-const JWT_SECRET = 'your-secret-key';
+// JWT Secret from environment
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-this';
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -197,7 +200,7 @@ app.get('/api/threads', (req, res) => {
   const offset = (page - 1) * limit;
 
   db.all(
-    `SELECT t.*, u.username, u.display_name, u.avatar as avatar_url 
+    `SELECT t.*, u.id as user_id, u.username, u.display_name, u.avatar as avatar_url 
      FROM threads t 
      JOIN users u ON t.author_id = u.id 
      ORDER BY t.created_at DESC 
@@ -209,12 +212,35 @@ app.get('/api/threads', (req, res) => {
         return res.status(500).json({ error: 'Database error', details: err.message });
       }
       console.log('Threads query successful, found', rows.length, 'threads');
-      res.json({ 
-        success: true, 
-        threads: rows,
-      });
+      
+      // Transform to match frontend expectations with nested author object
+      const threads = rows.map(row => ({
+        id: row.id,
+        authorId: row.author_id,
+        content: row.content,
+        parentId: row.parent_id,
+        groupId: row.group_id,
+        topicDayId: row.topic_day_id,
+        visibility: row.visibility,
+        attachments: row.attachments,
+        likes: row.likes,
+        dislikes: row.dislikes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        author: {
+          id: row.user_id,
+          username: row.username,
+          displayName: row.display_name,
+          avatarUrl: row.avatar_url
+        }
+      }));
+      
       // Set cache control headers to prevent stale data
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.json({ 
+        success: true, 
+        threads: threads,
+      });
     }
   );
 });
@@ -243,7 +269,7 @@ app.post('/api/threads', (req, res) => {
       
       // Fetch the full thread with user info to match GET response format
       db.get(
-        `SELECT t.*, u.username, u.display_name, u.avatar as avatar_url 
+        `SELECT t.*, u.id as user_id, u.username, u.display_name, u.avatar as avatar_url 
          FROM threads t 
          JOIN users u ON t.author_id = u.id 
          WHERE t.id = ?`,
@@ -254,12 +280,34 @@ app.post('/api/threads', (req, res) => {
             return res.status(500).json({ error: 'Database error' });
           }
           
+          // Transform to match frontend expectations
+          const thread = {
+            id: row.id,
+            authorId: row.author_id,
+            content: row.content,
+            parentId: row.parent_id,
+            groupId: row.group_id,
+            topicDayId: row.topic_day_id,
+            visibility: row.visibility,
+            attachments: row.attachments,
+            likes: row.likes,
+            dislikes: row.dislikes,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+            author: {
+              id: row.user_id,
+              username: row.username,
+              displayName: row.display_name,
+              avatarUrl: row.avatar_url
+            }
+          };
+          
           // Broadcast to all connected clients via WebSocket
-          io.emit('thread_created', row);
+          io.emit('thread_created', thread);
           
           res.json({ 
             success: true, 
-            thread: row
+            thread: thread
           });
         }
       );
@@ -267,10 +315,112 @@ app.post('/api/threads', (req, res) => {
   );
 });
 
-// Like/Unlike thread
-app.post('/api/threads/:id/like', authenticateToken, (req, res) => {
+// Like/Unlike/Dislike thread - PUT endpoint for frontend compatibility
+app.put('/api/threads', (req, res) => {
+  const { threadId, userId, action } = req.body;
+  
+  if (!threadId || !userId || !action) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  db.get('SELECT * FROM threads WHERE id = ?', [threadId], (err, row) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (!row) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+    
+    try {
+      let likes = JSON.parse(row.likes || '[]');
+      let dislikes = JSON.parse(row.dislikes || '[]');
+      
+      if (action === 'like') {
+        if (!likes.includes(userId)) {
+          likes.push(userId);
+          // Remove from dislikes if present
+          dislikes = dislikes.filter(id => id !== userId);
+        }
+      } else if (action === 'unlike') {
+        likes = likes.filter(id => id !== userId);
+      } else if (action === 'dislike') {
+        if (!dislikes.includes(userId)) {
+          dislikes.push(userId);
+          // Remove from likes if present
+          likes = likes.filter(id => id !== userId);
+        }
+      } else if (action === 'undislike') {
+        dislikes = dislikes.filter(id => id !== userId);
+      }
+      
+      db.run(
+        'UPDATE threads SET likes = ?, dislikes = ? WHERE id = ?',
+        [JSON.stringify(likes), JSON.stringify(dislikes), threadId],
+        function(err) {
+          if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+          }
+          
+          // Fetch updated thread with author info
+          db.get(
+            `SELECT t.*, u.id as user_id, u.username, u.display_name, u.avatar as avatar_url 
+             FROM threads t 
+             JOIN users u ON t.author_id = u.id 
+             WHERE t.id = ?`,
+            [threadId],
+            (err, updatedRow) => {
+              if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Database error' });
+              }
+              
+              const thread = {
+                id: updatedRow.id,
+                authorId: updatedRow.author_id,
+                content: updatedRow.content,
+                parentId: updatedRow.parent_id,
+                groupId: updatedRow.group_id,
+                topicDayId: updatedRow.topic_day_id,
+                visibility: updatedRow.visibility,
+                attachments: updatedRow.attachments,
+                likes: updatedRow.likes,
+                dislikes: updatedRow.dislikes,
+                createdAt: updatedRow.created_at,
+                updatedAt: updatedRow.updated_at,
+                author: {
+                  id: updatedRow.user_id,
+                  username: updatedRow.username,
+                  displayName: updatedRow.display_name,
+                  avatarUrl: updatedRow.avatar_url
+                }
+              };
+              
+              // Broadcast update via WebSocket
+              io.emit('thread_updated', thread);
+              
+              res.json({ success: true, thread });
+            }
+          );
+        }
+      );
+    } catch (error) {
+      console.error('JSON parse error:', error);
+      return res.status(500).json({ error: 'Database error' });
+    }
+  });
+});
+
+// Like/Unlike thread - POST endpoint (legacy, kept for compatibility)
+app.post('/api/threads/:id/like', (req, res) => {
   const threadId = req.params.id;
-  const userId = req.user.id;
+  const userId = req.user?.id || req.body.userId;
+  
+  if (!userId) {
+    return res.status(401).json({ error: 'User ID required' });
+  }
   
   db.get('SELECT likes FROM threads WHERE id = ?', [threadId], (err, row) => {
     if (err) {
@@ -322,6 +472,204 @@ app.get('/api/users', (req, res) => {
       return res.status(500).json({ error: 'Database error', details: err.message });
     }
     res.json({ success: true, users: rows });
+  });
+});
+
+// Get user followers
+app.get('/api/users/followers', (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) {
+    return res.json({ success: true, followers: [] });
+  }
+  
+  db.all(
+    `SELECT u.id, u.username, u.display_name, u.avatar as avatar_url 
+     FROM users u 
+     INNER JOIN followers f ON u.id = f.follower_id 
+     WHERE f.following_id = ?`,
+    [userId],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.json({ success: true, followers: [] });
+      }
+      res.json({ success: true, followers: rows || [] });
+    }
+  );
+});
+
+// Get user following
+app.get('/api/users/following', (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) {
+    return res.json({ success: true, following: [] });
+  }
+  
+  db.all(
+    `SELECT u.id, u.username, u.display_name, u.avatar as avatar_url 
+     FROM users u 
+     INNER JOIN followers f ON u.id = f.following_id 
+     WHERE f.follower_id = ?`,
+    [userId],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.json({ success: true, following: [] });
+      }
+      res.json({ success: true, following: rows || [] });
+    }
+  );
+});
+
+// Follow/Unfollow user
+app.post('/api/users/follow', (req, res) => {
+  const { userId } = req.body;
+  const currentUserId = req.user?.id || '550e8400-e29b-41d4-a716-446655440000';
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID required' });
+  }
+  
+  // Check if already following
+  db.get(
+    'SELECT * FROM followers WHERE follower_id = ? AND following_id = ?',
+    [currentUserId, userId],
+    (err, row) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (row) {
+        // Unfollow
+        db.run(
+          'DELETE FROM followers WHERE follower_id = ? AND following_id = ?',
+          [currentUserId, userId],
+          (err) => {
+            if (err) {
+              console.error('Database error:', err);
+              return res.status(500).json({ error: 'Database error' });
+            }
+            res.json({ success: true, message: 'Unfollowed user', following: false });
+          }
+        );
+      } else {
+        // Follow
+        db.run(
+          'INSERT INTO followers (follower_id, following_id, created_at) VALUES (?, ?, datetime("now"))',
+          [currentUserId, userId],
+          (err) => {
+            if (err) {
+              console.error('Database error:', err);
+              return res.status(500).json({ error: 'Database error' });
+            }
+            res.json({ success: true, message: 'Followed user', following: true });
+          }
+        );
+      }
+    }
+  );
+});
+
+// Get user by ID
+app.get('/api/users/:id', (req, res) => {
+  const userId = req.params.id;
+  
+  db.get(
+    'SELECT id, username, display_name, email, avatar as avatar_url, bio, created_at FROM users WHERE id = ?',
+    [userId],
+    (err, row) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (!row) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json({ success: true, user: row });
+    }
+  );
+});
+
+// Update user profile
+app.put('/api/users/:id', (req, res) => {
+  const userId = req.params.id;
+  const { displayName, bio, avatar } = req.body;
+  
+  const updates = [];
+  const values = [];
+  
+  if (displayName !== undefined) {
+    updates.push('display_name = ?');
+    values.push(displayName);
+  }
+  if (bio !== undefined) {
+    updates.push('bio = ?');
+    values.push(bio);
+  }
+  if (avatar !== undefined) {
+    updates.push('avatar = ?');
+    values.push(avatar);
+  }
+  
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+  
+  values.push(userId);
+  
+  db.run(
+    `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+    values,
+    function(err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      // Fetch updated user
+      db.get(
+        'SELECT id, username, display_name, email, avatar as avatar_url, bio FROM users WHERE id = ?',
+        [userId],
+        (err, row) => {
+          if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({ success: true, user: row });
+        }
+      );
+    }
+  );
+});
+
+// Get daily topic
+app.get('/api/daily-topic', (req, res) => {
+  res.json({ success: true, topic: null });
+});
+
+// Get auth/me
+app.get('/api/auth/me', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Not authenticated' });
+  }
+  
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, error: 'Invalid token' });
+    }
+    
+    db.get('SELECT id, username, email, display_name, avatar FROM users WHERE id = ?', [user.id], (err, row) => {
+      if (err || !row) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+      res.json({ success: true, user: row });
+    });
   });
 });
 
@@ -428,11 +776,7 @@ app.post('/api/groups/:id/leave', authenticateToken, (req, res) => {
 
 // Get notifications
 app.get('/api/notifications', (req, res) => {
-  const userId = req.user?.id || req.query.userId;
-  
-  if (!userId) {
-    return res.json({ success: true, notifications: [] });
-  }
+  const userId = req.user?.id || req.query.userId || '550e8400-e29b-41d4-a716-446655440000';
   
   db.all(
     'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC',
@@ -447,111 +791,99 @@ app.get('/api/notifications', (req, res) => {
   );
 });
 
-// Get groups
-app.get('/api/groups', (req, res) => {
-  db.all('SELECT * FROM groups ORDER BY created_at DESC', (err, rows) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error', details: err.message });
-    }
-    res.json({ success: true, groups: rows });
-  });
-});
-
-// Get daily topic
-app.get('/api/daily-topic', (req, res) => {
-  db.get(
-    'SELECT * FROM topic_days WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1',
-    (err, row) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ error: 'Database error', details: err.message });
-      }
-      res.json({ success: true, topic: row });
-    }
-  );
-});
-
-// Auth routes
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
+// Send notification
+app.post('/api/notifications/send', (req, res) => {
+  const { type, fromUserId, toUserId, message, data } = req.body;
   
-  db.get(
-    'SELECT * FROM users WHERE email = ?',
-    [email],
-    (err, user) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ error: 'Database error', details: err.message });
-      }
-      
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-      
-      // Simple password check (in production, use bcrypt)
-      if (user.password_hash !== password) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-      
-      const token = jwt.sign(
-        { id: user.id, email: user.email },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-      
-      res.json({
-        success: true,
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-          display_name: user.display_name,
-          email: user.email,
-          avatar_url: user.avatar
-        }
-      });
-    }
-  );
-});
-
-// Get current user (optional auth)
-app.get('/api/auth/me', (req, res) => {
-  const userId = req.user?.id || req.query.userId;
-  
-  if (!userId) {
-    return res.json({ success: true, user: null });
+  if (!type || !toUserId || !message) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
   
-  db.get(
-    'SELECT id, username, display_name, email, avatar as avatar_url FROM users WHERE id = ?',
-    [userId],
-    (err, user) => {
+  const notificationId = require('crypto').randomUUID();
+  const dataJson = data ? JSON.stringify(data) : '{}';
+  
+  db.run(
+    `INSERT INTO notifications (id, user_id, type, from_user_id, message, data, is_read, created_at) 
+     VALUES (?, ?, ?, ?, ?, ?, 0, datetime('now'))`,
+    [notificationId, toUserId, type, fromUserId, message, dataJson],
+    function(err) {
       if (err) {
         console.error('Database error:', err);
-        return res.status(500).json({ error: 'Database error', details: err.message });
+        return res.status(500).json({ error: 'Database error' });
       }
       
-      if (!user) {
-        return res.json({ success: true, user: null });
-      }
+      const notification = {
+        id: notificationId,
+        user_id: toUserId,
+        type,
+        from_user_id: fromUserId,
+        message,
+        data: dataJson,
+        is_read: false,
+        created_at: new Date().toISOString()
+      };
       
-      res.json({ success: true, user });
+      // Broadcast via WebSocket
+      io.emit('new_notification', notification);
+      
+      res.json({ success: true, notification });
     }
   );
 });
+
+// Mark notification as read
+app.post('/api/notifications/:id/read', (req, res) => {
+  const notificationId = req.params.id;
+  
+  db.run(
+    'UPDATE notifications SET is_read = 1 WHERE id = ?',
+    [notificationId],
+    function(err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ success: true, message: 'Notification marked as read' });
+    }
+  );
+});
+
+// Mark all notifications as read
+app.post('/api/notifications/read-all', (req, res) => {
+  const userId = req.user?.id || req.body.userId || '550e8400-e29b-41d4-a716-446655440000';
+  
+  db.run(
+    'UPDATE notifications SET is_read = 1 WHERE user_id = ?',
+    [userId],
+    function(err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ success: true, message: 'All notifications marked as read' });
+    }
+  );
+});
+
 
 // Weather API
 app.get('/api/weather', (req, res) => {
-  // Mock weather data
+  // Mock weather data matching frontend expectations
   res.json({ 
-    success: true, 
-    weather: {
-      temperature: 20,
-      condition: 'sunny',
-      humidity: 65,
-      windSpeed: 10,
-      location: 'Valmiera'
+    success: true,
+    current: {
+      temperature_2m: 15,
+      weather_code: 3,
+      is_day: 1,
+      wind_speed_10m: 10,
+      relative_humidity_2m: 65,
+      rain: 0,
+      snowfall: 0
+    },
+    location: {
+      latitude: 57.31,
+      longitude: 25.27,
+      name: 'Rezekne'
     }
   });
 });
@@ -587,3 +919,4 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+

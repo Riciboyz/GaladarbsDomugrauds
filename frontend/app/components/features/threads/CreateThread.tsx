@@ -5,11 +5,11 @@ import { useThread } from '../../contexts/ThreadContext'
 import { useUser } from '../../contexts/UserContext'
 import { useNotification } from '../../contexts/NotificationContext'
 import { useToast } from '../../contexts/ToastContext'
-import Button from '../../legacy/Button'
-import Input from '../../legacy/Input'
+import Button from '../../ui/Button'
+import Input from '../../ui/Input'
 import { XMarkIcon, PhotoIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
-import EmojiPicker from '../../legacy/EmojiPicker'
-import HashtagInput from '../../legacy/HashtagInput'
+import EmojiPicker from '../../forms/EmojiPicker'
+import HashtagInput from '../../forms/HashtagInput'
 
 interface CreateThreadProps {
   onClose: () => void

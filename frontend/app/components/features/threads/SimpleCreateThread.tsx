@@ -5,9 +5,9 @@ import { useUser } from '../../contexts/UserContext'
 import { useThread } from '../../contexts/ThreadContext'
 import { useWebSocket } from '../../contexts/WebSocketContext'
 import { useToast } from '../../contexts/ToastContext'
-import Button from '../../legacy/Button'
-import Input from '../../legacy/Input'
-import EmojiPicker from '../../legacy/EmojiPicker'
+import Button from '../../ui/Button'
+import Input from '../../ui/Input'
+import EmojiPicker from '../../forms/EmojiPicker'
 import { 
   XMarkIcon, 
   PhotoIcon, 

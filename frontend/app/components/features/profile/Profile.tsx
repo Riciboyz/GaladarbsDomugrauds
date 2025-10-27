@@ -6,7 +6,7 @@ import { useUser } from '../../contexts/UserContext'
 import { useThread } from '../../contexts/ThreadContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useWebSocket } from '../../contexts/WebSocketContext'
-import ThreadCard from '../../legacy/ThreadCard'
+import ThreadCard from '../threads/ThreadCard'
 import { 
   UserIcon,
   CalendarIcon,

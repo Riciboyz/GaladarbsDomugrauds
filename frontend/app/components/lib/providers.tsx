@@ -9,7 +9,7 @@ import { TopicDayProvider } from '../contexts/TopicDayContext'
 import { ToastProvider, useToast } from '../contexts/ToastContext'
 import { WebSocketProvider } from '../contexts/WebSocketContext'
 import { WeatherProvider } from '../contexts/WeatherContext'
-import ToastContainer from '../legacy/Toast-simple'
+import ToastContainer from '../feedback/Toast-simple'
 
 function ToastWrapper() {
   const { toasts, removeToast } = useToast()
