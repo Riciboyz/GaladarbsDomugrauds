@@ -13,6 +13,8 @@ const nextConfig = {
       ...config.watchOptions,
       ignored: ['**/node_modules', '**/.git', '**/.next'],
     }
+    // Reduce ChunkLoadError timeouts on slower disks / Windows Defender scans
+    config.output = { ...config.output, chunkLoadTimeout: 120000 }
     return config
   },
   // Proxy API requests to backend
