@@ -1,54 +1,37 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useUser } from './contexts/UserContext'
-import { useThread } from './contexts/ThreadContext'
-import { useGroup } from './contexts/GroupContext'
-import { useNotification } from './contexts/NotificationContext'
-import { useTopicDay } from './contexts/TopicDayContext'
-import { useToast } from './contexts/ToastContext'
 import { useRealtimeNotifications } from './hooks/useRealtimeNotifications'
 import Sidebar from './layout/Sidebar'
 import Feed from './features/threads/Feed'
 import Profile from './features/profile/Profile'
 import RealtimeNotificationsProvider from './features/notifications/RealtimeNotificationsProvider'
-// import Settings from './Settings' // Temporarily disabled
 import Search from './features/search/Search'
 import Groups from './features/groups/Groups'
 import RightSidebar from './layout/RightSidebar'
-import DailyTopicBanner from './features/topics/DailyTopicBanner'
 import TopicSubmission from './features/topics/TopicSubmission'
 import KeyboardShortcuts from './utility/KeyboardShortcuts'
 import SimpleCreateThread from './features/threads/SimpleCreateThread'
-import QuickSearchBar from './features/search/QuickSearchBar'
 import { 
   HomeIcon, 
   UserIcon, 
   BellIcon,
   MagnifyingGlassIcon,
-  // Cog6ToothIcon, // Temporarily disabled
   UserGroupIcon
 } from '@heroicons/react/24/outline'
 
-type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-profile' | 'topic-submission' // | 'settings' // Temporarily disabled
+type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-profile' | 'topic-submission'
 
 export default function MainApp() {
   const { user } = useUser()
-  const { threads } = useThread()
-  const { groups } = useGroup()
-  const { notifications } = useNotification()
-  const { topicDays } = useTopicDay()
-  const { success, error } = useToast()
   
-  // Aktivizē reāllaika notifikācijas
   useRealtimeNotifications()
   
   const [activeTab, setActiveTab] = useState<Tab>('home')
-  const [searchQuery, setSearchQuery] = useState('')
   const [showCreateThread, setShowCreateThread] = useState(false)
   const [currentTopicId, setCurrentTopicId] = useState<string | null>(null)
   const [viewedUserId, setViewedUserId] = useState<string | null>(null)
-  const quickSearchRef = useRef<{ focus: () => void }>(null)
 
   const tabs = [
     { id: 'home', label: 'Home', icon: HomeIcon },
@@ -56,7 +39,6 @@ export default function MainApp() {
     { id: 'notifications', label: 'Notifications', icon: BellIcon },
     { id: 'search', label: 'Search', icon: MagnifyingGlassIcon },
     { id: 'groups', label: 'Groups', icon: UserGroupIcon },
-    // { id: 'settings', label: 'Settings', icon: Cog6ToothIcon }, // Temporarily disabled
   ]
 
   const handleOpenTopicSubmission = (topicId: string) => {
@@ -67,10 +49,6 @@ export default function MainApp() {
   const handleUserProfileClick = (userId: string) => {
     setViewedUserId(userId)
     setActiveTab('user-profile' as Tab)
-  }
-
-  const handleQuickSearch = () => {
-    quickSearchRef.current?.focus()
   }
 
   const renderContent = () => {
@@ -102,8 +80,6 @@ export default function MainApp() {
             onBack={() => setActiveTab('home')} 
           />
         ) : <Feed onUserClick={handleUserProfileClick} />
-      // case 'settings':
-      //   return <Settings />
       default:
         return <Feed onUserClick={handleUserProfileClick} />
     }
@@ -113,19 +89,17 @@ export default function MainApp() {
     <div className="min-h-screen bg-gray-50">
       <KeyboardShortcuts
         onNewThread={() => setShowCreateThread(true)}
-        onSearch={handleQuickSearch}
+        onSearch={() => setActiveTab('search')}
         onHome={() => setActiveTab('home')}
         onProfile={() => setActiveTab('profile')}
         onNotifications={() => setActiveTab('notifications')}
         onGroups={() => setActiveTab('groups')}
-        onSettings={() => {}} // Temporarily disabled
+        onSettings={() => {}}
       />
       
       <div className="flex min-h-screen">
-        {/* Ultra-Minimal Sidebar */}
         <Sidebar activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as Tab)} tabs={tabs} />
         
-        {/* Main Content + Right Sidebar */}
         <div className="flex-1 ml-72">
           <div className="min-h-screen">
             <div className="container-padding py-8">
@@ -140,7 +114,6 @@ export default function MainApp() {
         </div>
       </div>
       
-      {/* Ultra-Minimal Create Thread Modal */}
       {showCreateThread && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <SimpleCreateThread onClose={() => setShowCreateThread(false)} />

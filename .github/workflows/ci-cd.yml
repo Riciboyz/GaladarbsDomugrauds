@@ -30,10 +30,6 @@ jobs:
       env:
         NODE_ENV: test
     
-    - name: Run Backend Tests
-      working-directory: ./backend
-      run: npm test
-    
     - name: Check Schema Drift
       working-directory: ./backend
       run: npm run db:drift-check

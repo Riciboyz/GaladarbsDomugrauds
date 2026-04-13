@@ -7,7 +7,7 @@ import { useWebSocket } from '../../contexts/WebSocketContext'
 import { useToast } from '../../contexts/ToastContext'
 import Button from '../../ui/Button'
 import Input from '../../ui/Input'
-import EmojiPicker from '../../forms/EmojiPicker'
+import EmojiPicker from '../../ui/EmojiPicker'
 import { 
   XMarkIcon, 
   PhotoIcon, 

@@ -17,7 +17,6 @@ import {
   Cog6ToothIcon,
   EllipsisHorizontalIcon
 } from '@heroicons/react/24/outline'
-import GroupChat from './GroupChat'
 import GroupManagement from './GroupManagement'
 import SimpleGroupChat from './SimpleGroupChat'
 

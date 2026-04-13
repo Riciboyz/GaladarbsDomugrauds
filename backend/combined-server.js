@@ -866,28 +866,6 @@ app.post('/api/notifications/read-all', (req, res) => {
 });
 
 
-// Weather API
-app.get('/api/weather', (req, res) => {
-  // Mock weather data matching frontend expectations
-  res.json({ 
-    success: true,
-    current: {
-      temperature_2m: 15,
-      weather_code: 3,
-      is_day: 1,
-      wind_speed_10m: 10,
-      relative_humidity_2m: 65,
-      rain: 0,
-      snowfall: 0
-    },
-    location: {
-      latitude: 57.31,
-      longitude: 25.27,
-      name: 'Rezekne'
-    }
-  });
-});
-
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
