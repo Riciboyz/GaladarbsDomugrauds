@@ -2,10 +2,23 @@ const { Router } = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../middleware/auth');
+const { JWT_SECRET, getTokenFromRequest, isBanned } = require('../middleware/auth');
+const { touchLastActive } = require('../helpers/audit');
+const { safeJsonParse } = require('../helpers/utils');
 
 module.exports = function (db) {
   const router = Router();
+
+  function authCookieOptions() {
+    const isProd = process.env.NODE_ENV === 'production';
+    return {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000
+    };
+  }
 
   router.post('/register', (req, res) => {
     const { username, email, password, display_name } = req.body;
@@ -23,11 +36,13 @@ module.exports = function (db) {
         [userId, username, email, hashedPassword, display_name || username],
         function (insertErr) {
           if (insertErr) return res.status(500).json({ error: 'Database error' });
+          touchLastActive(db, userId, () => {});
           const token = jwt.sign({ id: userId, username, email }, JWT_SECRET, { expiresIn: '24h' });
+          res.cookie('auth-token', token, authCookieOptions());
           res.json({
             success: true,
             token,
-            user: { id: userId, username, email, displayName: display_name || username }
+            user: { id: userId, username, email, displayName: display_name || username, role: 'user' }
           });
         }
       );
@@ -51,7 +66,13 @@ module.exports = function (db) {
       }
       if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
+      if (row.deleted_at) return res.status(403).json({ error: 'Account deleted' });
+      if (isBanned(row)) return res.status(403).json({ error: 'Account suspended' });
+
+      touchLastActive(db, row.id, () => {});
+
       const token = jwt.sign({ id: row.id, username: row.username, email: row.email }, JWT_SECRET, { expiresIn: '24h' });
+      res.cookie('auth-token', token, authCookieOptions());
       res.json({
         success: true,
         token,
@@ -60,13 +81,15 @@ module.exports = function (db) {
           username: row.username,
           email: row.email,
           displayName: row.display_name,
-          avatar: row.avatar
+          avatar: row.avatar,
+          role: row.role || 'user'
         }
       });
     });
   });
 
   router.post('/logout', (_req, res) => {
+    res.clearCookie('auth-token', { path: '/' });
     res.json({ success: true });
   });
 
@@ -75,18 +98,24 @@ module.exports = function (db) {
   });
 
   router.get('/me', (req, res) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = getTokenFromRequest(req);
     if (!token) {
       return res.status(401).json({ success: false, error: 'Not authenticated' });
     }
     jwt.verify(token, JWT_SECRET, (err, user) => {
       if (err) return res.status(403).json({ success: false, error: 'Invalid token' });
       db.get(
-        'SELECT id, username, email, display_name, avatar FROM users WHERE id = ?',
+        `SELECT id, username, email, display_name, avatar, bio, followers, following, role, created_at,
+                deleted_at, banned_until, muted_until
+         FROM users WHERE id = ?`,
         [user.id],
         (e, row) => {
           if (e || !row) return res.status(404).json({ success: false, error: 'User not found' });
+          if (row.deleted_at) return res.status(403).json({ success: false, error: 'Account deleted' });
+          if (isBanned(row)) return res.status(403).json({ success: false, error: 'Account suspended' });
+          touchLastActive(db, row.id, () => {});
+          const followers = safeJsonParse(row.followers, []);
+          const following = safeJsonParse(row.following, []);
           res.json({
             success: true,
             user: {
@@ -94,7 +123,12 @@ module.exports = function (db) {
               username: row.username,
               email: row.email,
               displayName: row.display_name,
-              avatar: row.avatar
+              avatar: row.avatar,
+              bio: row.bio,
+              role: row.role || 'user',
+              followers: Array.isArray(followers) ? followers : [],
+              following: Array.isArray(following) ? following : [],
+              createdAt: row.created_at
             }
           });
         }

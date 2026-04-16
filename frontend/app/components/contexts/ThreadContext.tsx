@@ -56,6 +56,40 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const [threads, setThreads] = useState<Thread[]>([])
   const { isConnected } = useWebSocket()
 
+  const normalizeThread = (t: any, depth = 0): Thread => {
+    const safeParse = (v: any, fallback: any) => {
+      if (typeof v !== 'string') return v ?? fallback
+      try {
+        return JSON.parse(v)
+      } catch {
+        return fallback
+      }
+    }
+
+    const likes = safeParse(t.likes, [])
+    const dislikes = safeParse(t.dislikes, [])
+    const attachments = safeParse(t.attachments, [])
+
+    const rawReplies = Array.isArray(t.replies) ? t.replies : []
+    const replies = depth >= 1 ? [] : rawReplies.map((r: any) => normalizeThread(r, depth + 1))
+
+    return {
+      id: t.id,
+      authorId: t.authorId || t.author_id,
+      content: t.content,
+      createdAt: new Date(t.createdAt || t.created_at || Date.now()),
+      likes: Array.isArray(likes) ? likes : [],
+      dislikes: Array.isArray(dislikes) ? dislikes : [],
+      comments: Array.isArray(t.comments) ? t.comments : [],
+      replies,
+      parentId: t.parentId || t.parent_id,
+      visibility: t.visibility || 'public',
+      topicDayId: t.topicDayId || t.topic_day_id,
+      groupId: t.groupId || t.group_id,
+      attachments: Array.isArray(attachments) ? attachments : [],
+    }
+  }
+
   // Load threads from API on component mount
   useEffect(() => {
     loadThreadsFromAPI()
@@ -112,13 +146,30 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       
       if (data.success) {
-        // Convert string dates back to Date objects
-        const threadsWithDates = data.threads.map((thread: any) => ({
-          ...thread,
-          createdAt: new Date(thread.createdAt)
-        }))
-        setThreads(threadsWithDates)
-        console.log('✅ Loaded threads:', threadsWithDates.length, 'threads')
+        const normalizedThreads = (data.threads || []).map((thread: any) => {
+          try {
+            return normalizeThread(thread)
+          } catch (e) {
+            // Fall back to minimal safe shape if JSON parsing fails
+            return {
+              id: thread.id,
+              authorId: thread.authorId || thread.author_id,
+              content: thread.content,
+              createdAt: new Date(thread.createdAt || thread.created_at || Date.now()),
+              likes: [],
+              dislikes: [],
+              comments: [],
+              replies: [],
+              parentId: thread.parentId || thread.parent_id,
+              visibility: thread.visibility || 'public',
+              topicDayId: thread.topicDayId || thread.topic_day_id,
+              groupId: thread.groupId || thread.group_id,
+              attachments: [],
+            } as Thread
+          }
+        })
+        setThreads(normalizedThreads)
+        console.log('✅ Loaded threads:', normalizedThreads.length, 'threads')
       } else {
         console.error('❌ Failed to load threads:', data.error)
       }
@@ -129,27 +180,6 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
 
   const addThread = (thread: Thread) => {
     // Normalize incoming thread (WS/API may use snake_case)
-    const normalizeThread = (t: any): Thread => {
-      const likes = typeof t.likes === 'string' ? JSON.parse(t.likes) : (t.likes || [])
-      const dislikes = typeof t.dislikes === 'string' ? JSON.parse(t.dislikes) : (t.dislikes || [])
-      const attachments = typeof t.attachments === 'string' ? JSON.parse(t.attachments) : (t.attachments || [])
-      return {
-        id: t.id,
-        authorId: t.authorId || t.author_id,
-        content: t.content,
-        createdAt: new Date(t.createdAt || t.created_at || Date.now()),
-        likes,
-        dislikes,
-        comments: t.comments || [],
-        replies: t.replies || [],
-        parentId: t.parentId || t.parent_id,
-        visibility: t.visibility || 'public',
-        topicDayId: t.topicDayId || t.topic_day_id,
-        groupId: t.groupId || t.group_id,
-        attachments
-      }
-    }
-
     const normalized = normalizeThread(thread)
     console.log('addThread called with (normalized):', normalized)
     console.log('Current threads before add:', threads.length)

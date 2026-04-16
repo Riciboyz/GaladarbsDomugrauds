@@ -197,10 +197,14 @@ module.exports = function (db) {
       const ids = getMembersArray(row.members);
       if (!ids.length) return res.json({ success: true, members: [] });
       const placeholders = ids.map(() => '?').join(',');
-      db.all(`SELECT id, username, display_name, avatar FROM users WHERE id IN (${placeholders})`, ids, (e, users) => {
-        if (e) return res.status(500).json({ error: 'Database error' });
-        res.json({ success: true, members: users || [] });
-      });
+      db.all(
+        `SELECT id, username, display_name, avatar FROM users WHERE deleted_at IS NULL AND id IN (${placeholders})`,
+        ids,
+        (e, users) => {
+          if (e) return res.status(500).json({ error: 'Database error' });
+          res.json({ success: true, members: users || [] });
+        }
+      );
     });
   });
 

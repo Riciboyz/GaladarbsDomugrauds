@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { initDatabase } = require('./config/database');
@@ -19,6 +20,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.set('trust proxy', 1);
 
@@ -35,6 +37,8 @@ app.use('/api/threads', require('./routes/threads')(db, io));
 app.use('/api/groups', require('./routes/groups')(db));
 app.use('/api/notifications', require('./routes/notifications')(db, io));
 app.use('/api', require('./routes/topics')(db));
+app.use('/api/admin', require('./routes/admin')(db));
+app.use('/api/reports', require('./routes/reports')(db));
 app.use('/api', require('./routes/upload')());
 
 app.get('/health', (_req, res) => {

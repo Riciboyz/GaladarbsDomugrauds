@@ -64,13 +64,13 @@ export default function AuthPage() {
     }
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const endpoint = isLogin ? `${API_URL}/api/auth/login` : `${API_URL}/api/auth/register`
+      const endpoint = isLogin ? `/api/auth/login` : `/api/auth/register`
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(formData),
       })
 
@@ -90,10 +90,6 @@ export default function AuthPage() {
 
       if (response.ok) {
         setUser(data.user)
-        // Store token in localStorage
-        if (data.token) {
-          localStorage.setItem('auth-token', data.token)
-        }
         await loadThreadsFromAPI()
         success('Welcome!', 'You have successfully logged in.')
       } else {
@@ -117,6 +113,7 @@ export default function AuthPage() {
       const resp = await fetch('/api/auth/2fa/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: formData.email, code: twoFactorCode })
       })
       const data = await resp.json()
@@ -150,11 +147,12 @@ export default function AuthPage() {
     setErrorMessage('')
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           email: 'testuser1@example.com',
           password: 'password123'
@@ -186,8 +184,11 @@ export default function AuthPage() {
         <div className="w-full max-w-sm">
           {/* Ultra-Minimal Logo */}
           <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <ChatBubbleLeftRightIcon className="w-6 h-6 text-white" />
+            <div
+              className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-4"
+              style={{ width: 48, height: 48 }}
+            >
+              <ChatBubbleLeftRightIcon className="w-6 h-6 text-white" style={{ width: 24, height: 24 }} />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">DomuGrauds</h1>
             <p className="text-gray-600">Dalies ar savām domām, sazinies ar citiem</p>
@@ -229,7 +230,10 @@ export default function AuthPage() {
                     Email Address
                   </label>
                   <div className="relative">
-                    <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <EnvelopeIcon
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                      style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16 }}
+                    />
                     <input
                       type="email"
                       value={formData.email}
@@ -247,7 +251,10 @@ export default function AuthPage() {
                     Password
                   </label>
                   <div className="relative">
-                    <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <LockClosedIcon
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                      style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16 }}
+                    />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
@@ -262,9 +269,9 @@ export default function AuthPage() {
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                     >
                       {showPassword ? (
-                        <EyeSlashIcon className="w-4 h-4" />
+                        <EyeSlashIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
                       ) : (
-                        <EyeIcon className="w-4 h-4" />
+                        <EyeIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
                       )}
                     </button>
                   </div>
@@ -278,7 +285,10 @@ export default function AuthPage() {
                         Username
                       </label>
                       <div className="relative">
-                        <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <UserIcon
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                          style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16 }}
+                        />
                         <input
                           type="text"
                           value={formData.username}

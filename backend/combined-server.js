@@ -45,7 +45,12 @@ const db = new sqlite3.Database(dbPath);
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-this';
 
 const migrationsDir = path.join(__dirname, 'database', 'migrations');
-const migrationFiles = ['001_initial_schema.sql', '002_add_group_roles.sql', '003_add_user_settings.sql'];
+const migrationFiles = [
+  '001_initial_schema.sql',
+  '002_add_group_roles.sql',
+  '003_add_user_settings.sql',
+  '004_admin_moderation.sql',
+];
 let bootstrapSql = '';
 for (const f of migrationFiles) {
   const fp = path.join(migrationsDir, f);

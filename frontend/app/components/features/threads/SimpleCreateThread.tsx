@@ -58,20 +58,12 @@ export default function SimpleCreateThread({
     setIsSubmitting(true)
 
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('auth-token')
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
       const response = await fetch('/api/threads', {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify({
           content: content.trim(),
           parentId,

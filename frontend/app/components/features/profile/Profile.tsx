@@ -52,8 +52,32 @@ export default function Profile({ userId, onBack }: ProfileProps) {
   const isFollowing = user && profileUser && (user.following || []).includes(profileUser.id)
 
   const userThreads = threads.filter(thread => thread.authorId === profileUser?.id)
-  const totalLikes = userThreads.reduce((sum, thread) => sum + thread.likes.length, 0)
-  const totalComments = userThreads.reduce((sum, thread) => sum + thread.comments.length, 0)
+  const safeArrayLength = (value: any): number => {
+    if (Array.isArray(value)) return value.length
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed.length : 0
+      } catch {
+        return 0
+      }
+    }
+    return 0
+  }
+
+  const totalLikes = userThreads.reduce((sum, thread: any) => sum + safeArrayLength(thread.likes), 0)
+  const totalComments = userThreads.reduce((sum, thread: any) => {
+    // In this app replies are often used as comments; support both shapes safely
+    return sum + safeArrayLength(thread.replies ?? thread.comments)
+  }, 0)
+
+  const joinedLabel = (() => {
+    const raw = (profileUser as any)?.createdAt ?? (profileUser as any)?.created_at
+    if (!raw) return null
+    const d = raw instanceof Date ? raw : new Date(raw)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toLocaleDateString()
+  })()
 
   // Load initial data when profile user changes
   useEffect(() => {
@@ -81,9 +105,10 @@ export default function Profile({ userId, onBack }: ProfileProps) {
 
     setIsUploading(true)
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch(`/api/users/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           username: editData.username,
           displayName: editData.displayName,
@@ -133,6 +158,7 @@ export default function Profile({ userId, onBack }: ProfileProps) {
         
         const response = await fetch('/api/upload', {
           method: 'POST',
+          credentials: 'include',
           body: formData
         })
         
@@ -360,7 +386,7 @@ export default function Profile({ userId, onBack }: ProfileProps) {
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
                   <div className="flex items-center space-x-1">
                     <CalendarIcon className="w-4 h-4" />
-                    <span>Joined {new Date(profileUser.createdAt).toLocaleDateString()}</span>
+                    <span>Joined {joinedLabel ?? '—'}</span>
                   </div>
                   {(profileUser as any).location && (
                     <div className="flex items-center space-x-1">

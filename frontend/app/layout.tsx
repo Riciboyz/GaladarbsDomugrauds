@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
-import './components/styles/globals.css'
+import './globals.css'
 import { Providers } from './components/providers'
 import ErrorBoundary from './components/feedback/ErrorBoundary'
 

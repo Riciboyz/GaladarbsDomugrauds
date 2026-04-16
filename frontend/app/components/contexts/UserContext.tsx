@@ -8,6 +8,7 @@ export interface User {
   username: string
   displayName: string
   email: string
+  role?: string
   avatar?: string
   bio?: string
   followers: string[]
@@ -111,90 +112,37 @@ const mockUsers: User[] = [
 ]
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  // Default mock user so everything works without authentication
-  const defaultUser: User = {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    username: 'testuser',
-    displayName: 'Test User',
-    email: 'testuser@example.com',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    bio: 'Welcome to DomuGrauds! This is a test account.',
-    followers: [],
-    following: [],
-    createdAt: new Date()
-  };
-  
-  const [user, setUser] = useState<User | null>(defaultUser)
+  const [user, setUser] = useState<User | null>(null)
   const [users, setUsers] = useState<User[]>(mockUsers)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Load user from session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Check if user is logged in via session
         const response = await fetch('/api/auth/me', {
           credentials: 'include'
         })
         
         if (response.ok) {
           const data = await response.json()
-        if (data.success && data.user) {
-          setUser(data.user)
-          // Add current user to users array if not already present
-          setUsers(prev => {
-            const exists = prev.find(u => u.id === data.user.id)
-            if (!exists) {
-              return [...prev, data.user]
-            }
-            return prev
-          })
-          // Load all users from API
-          loadUsersFromAPI()
-          setIsLoading(false)
-          return
-        }
-        }
-        
-        // Fallback to localStorage
-        const savedUser = localStorage.getItem('user')
-        if (savedUser) {
-          try {
-            const userData = JSON.parse(savedUser)
-            setUser(userData)
+          if (data.success && data.user) {
+            setUser(data.user)
             // Add current user to users array if not already present
             setUsers(prev => {
-              const exists = prev.find(u => u.id === userData.id)
+              const exists = prev.find(u => u.id === data.user.id)
               if (!exists) {
-                return [...prev, userData]
-              }
-              return prev
-            })
-          } catch (parseError) {
-            localStorage.removeItem('user')
-          }
-        }
-      } catch (error) {
-        // Fallback to localStorage
-        const savedUser = localStorage.getItem('user')
-        if (savedUser) {
-          try {
-            const userData = JSON.parse(savedUser)
-            setUser(userData)
-            // Add current user to users array if not already present
-            setUsers(prev => {
-              const exists = prev.find(u => u.id === userData.id)
-              if (!exists) {
-                return [...prev, userData]
+                return [...prev, data.user]
               }
               return prev
             })
             // Load all users from API
             loadUsersFromAPI()
-          } catch (parseError) {
-            localStorage.removeItem('user')
+            return
           }
         }
+      } catch (error) {
+        setUser(null)
       } finally {
         setIsLoading(false)
       }
@@ -207,17 +155,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadUsersFromAPI()
   }, [])
-
-  // Save user to localStorage when it changes (only after initial load)
-  useEffect(() => {
-    if (!isLoading) {
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user))
-      } else {
-        localStorage.removeItem('user')
-      }
-    }
-  }, [user, isLoading])
 
   const loadUsersFromAPI = async () => {
     try {

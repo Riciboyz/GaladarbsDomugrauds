@@ -37,6 +37,9 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [isLiking, setIsLiking] = useState(false)
   const [isFollowingUser, setIsFollowingUser] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reportSubmitting, setReportSubmitting] = useState(false)
 
   // Prefer author embedded on the thread from API; fall back to users list
   let author = thread.author || users.find(u => u.id === thread.authorId)
@@ -303,6 +306,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
       const response = await fetch('/api/threads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           content: commentText,
           parentId: thread.id,
@@ -597,7 +601,82 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
           <button className="flex items-center space-x-1 hover:text-brand-green-700 transition-colors">
             <ShareIcon className="w-5 h-5" />
           </button>
+
+          {user && !isOwnThread && (
+            <button
+              type="button"
+              onClick={() => {
+                setReportReason('')
+                setShowReport(true)
+              }}
+              className="text-sm text-gray-500 hover:text-amber-700 underline-offset-2 hover:underline"
+            >
+              Ziņot
+            </button>
+          )}
         </div>
+
+        {showReport && user && (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+            <p className="text-sm font-medium text-amber-900">Ziņot par ierakstu</p>
+            <textarea
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              placeholder="Īss iemesls (neobligāti)"
+              className="w-full rounded-lg border border-amber-200 p-2 text-sm bg-white"
+              rows={2}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
+                onClick={() => setShowReport(false)}
+              >
+                Atcelt
+              </button>
+              <button
+                type="button"
+                disabled={reportSubmitting}
+                className="px-3 py-1 text-sm rounded-lg bg-amber-800 text-white disabled:opacity-50"
+                onClick={async () => {
+                  setReportSubmitting(true)
+                  try {
+                    const res = await fetch('/api/reports', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({ threadId: thread.id, reason: reportReason }),
+                    })
+                    const data = await res.json().catch(() => ({}))
+                    if (!res.ok) throw new Error(data.error || 'Neizdevās nosūtīt')
+                    addNotification({
+                      id: `report-ok-${Date.now()}`,
+                      userId: user.id,
+                      type: 'comment',
+                      message: 'Ziņojums nosūtīts moderācijai.',
+                      read: false,
+                      createdAt: new Date(),
+                    })
+                    setShowReport(false)
+                  } catch (err) {
+                    addNotification({
+                      id: `report-err-${Date.now()}`,
+                      userId: user.id,
+                      type: 'comment',
+                      message: err instanceof Error ? err.message : 'Ziņojums neizdevās',
+                      read: false,
+                      createdAt: new Date(),
+                    })
+                  } finally {
+                    setReportSubmitting(false)
+                  }
+                }}
+              >
+                {reportSubmitting ? 'Sūta…' : 'Nosūtīt'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Comments Section */}
         {showComments && (

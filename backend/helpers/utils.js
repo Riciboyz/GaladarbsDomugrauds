@@ -35,9 +35,20 @@ function mapUserPublic(row) {
     username: row.username,
     displayName: row.display_name,
     email: row.email,
+    role: row.role || 'user',
     avatar: row.avatar || row.avatar_url,
     bio: row.bio,
     createdAt: row.created_at
+  };
+}
+
+function mapUserAdmin(row) {
+  return {
+    ...mapUserPublic(row),
+    bannedUntil: row.banned_until || null,
+    mutedUntil: row.muted_until || null,
+    deletedAt: row.deleted_at || null,
+    lastActiveAt: row.last_active_at || null
   };
 }
 
@@ -46,4 +57,4 @@ function getMembersArray(membersCol) {
   return Array.isArray(m) ? m : [];
 }
 
-module.exports = { safeJsonParse, rowToThread, mapUserPublic, getMembersArray };
+module.exports = { safeJsonParse, rowToThread, mapUserPublic, mapUserAdmin, getMembersArray };

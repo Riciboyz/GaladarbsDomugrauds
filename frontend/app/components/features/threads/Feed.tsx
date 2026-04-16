@@ -62,14 +62,31 @@ export default function Feed({ onUserClick }: FeedProps) {
       const data = await response.json()
       
       if (data.success) {
-        // Convert string dates back to Date objects and normalize field names
-        const threadsWithDates = data.threads.map((thread: any) => ({
+        const normalizeArrayField = (value: any): any[] => {
+          if (Array.isArray(value)) return value
+          if (typeof value === 'string') {
+            try {
+              const parsed = JSON.parse(value)
+              return Array.isArray(parsed) ? parsed : []
+            } catch {
+              return []
+            }
+          }
+          return []
+        }
+
+        const threadsWithDates = (data.threads || []).map((thread: any) => ({
           ...thread,
           authorId: thread.author_id || thread.authorId,
-          createdAt: new Date(thread.created_at || thread.createdAt),
+          createdAt: new Date(thread.created_at || thread.createdAt || Date.now()),
           parentId: thread.parent_id || thread.parentId,
           topicDayId: thread.topic_day_id || thread.topicDayId,
-          groupId: thread.group_id || thread.groupId
+          groupId: thread.group_id || thread.groupId,
+          likes: normalizeArrayField(thread.likes),
+          dislikes: normalizeArrayField(thread.dislikes),
+          attachments: normalizeArrayField(thread.attachments),
+          replies: Array.isArray(thread.replies) ? thread.replies : [],
+          comments: Array.isArray(thread.comments) ? thread.comments : [],
         }))
         setThreads(threadsWithDates)
         console.log('✅ Loaded threads for feed:', feedType, threadsWithDates.length, 'threads')

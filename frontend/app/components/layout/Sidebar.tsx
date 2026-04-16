@@ -59,8 +59,11 @@ export default function Sidebar({ activeTab, onTabChange, tabs }: SidebarProps) 
         {/* Brand Header */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-green-700 flex items-center justify-center">
-              <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
+            <div
+              className="w-9 h-9 rounded-xl bg-brand-green-700 flex items-center justify-center"
+              style={{ width: 36, height: 36 }}
+            >
+              <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" style={{ width: 20, height: 20 }} />
             </div>
             <span className="text-xl font-bold text-gray-900">DomuGrauds</span>
           </div>

@@ -51,7 +51,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       const newSocket = io(WS_URL, {
         transports: ['websocket', 'polling'],
         timeout: 20000,
-        forceNew: true
+        forceNew: true,
+        withCredentials: true
       })
       setSocket(newSocket)
       
@@ -59,25 +60,12 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         console.log('🔌 WebSocketProvider: Connected to Socket.IO')
         setIsConnected(true)
         
-        // Register user for notifications and authenticate if user is logged in
+        // Register user for notifications
         if (user) {
-          const token = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('auth-token='))
-            ?.split('=')[1]
-          
           console.log('🔐 WebSocketProvider: Registering user for notifications:', user.id)
           newSocket.emit('register', {
-            userId: user.id,
-            token: token || undefined
+            userId: user.id
           })
-          
-          if (token) {
-            console.log('🔐 WebSocketProvider: Authenticating with token:', token.substring(0, 20) + '...')
-            newSocket.emit('authenticate', { token })
-          } else {
-            console.log('🔐 WebSocketProvider: No auth token found')
-          }
         } else {
           console.log('🔐 WebSocketProvider: No user logged in')
         }
@@ -264,24 +252,18 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   }
 
   const sendGroupMessage = (groupId: string, content: string, messageType: string = 'text', attachmentUrl?: string): boolean => {
-    const token = typeof document !== 'undefined'
-      ? document.cookie.split('; ').find(r => r.startsWith('auth-token='))?.split('=')[1]
-      : undefined
-    console.log('🔌 WebSocketContext: Sending group message:', { groupId, content, messageType, hasToken: !!token })
+    console.log('🔌 WebSocketContext: Sending group message:', { groupId, content, messageType })
     return sendMessage({
       type: 'group_message',
-      data: { groupId, content, messageType, attachmentUrl, token }
+      data: { groupId, content, messageType, attachmentUrl }
     })
   }
 
   const joinGroup = (groupId: string): boolean => {
-    const token = typeof document !== 'undefined'
-      ? document.cookie.split('; ').find(r => r.startsWith('auth-token='))?.split('=')[1]
-      : undefined
-    console.log('🔌 WebSocketContext: Joining group:', groupId, 'with token:', token ? 'yes' : 'no')
+    console.log('🔌 WebSocketContext: Joining group:', groupId)
     return sendMessage({
       type: 'join_group',
-      data: { groupId, token }
+      data: { groupId }
     })
   }
 

@@ -42,7 +42,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
     }
   }
 
-  const baseClasses = 'block w-full rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0'
+  const baseClasses = 'block w-full rounded-lg transition-colors bg-white text-secondary-900 placeholder:text-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0'
   const variantClasses = getVariantClasses()
   const errorClasses = error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
   const widthClasses = fullWidth ? 'w-full' : ''
