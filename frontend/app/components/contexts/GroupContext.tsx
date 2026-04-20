@@ -11,7 +11,6 @@ export interface Group {
   avatar?: string
   members: string[]
   admins?: string[]
-  isPrivate: boolean
   createdBy: string
   memberCount?: number
   isMember?: boolean
@@ -65,7 +64,6 @@ const mockGroups: Group[] = [
     avatar: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=150&h=150&fit=crop',
     members: ['1', '2', '3', '5'],
     admins: ['1'],
-    isPrivate: false,
     createdBy: '1',
     createdAt: new Date('2023-01-01'),
     threads: [],
@@ -77,7 +75,6 @@ const mockGroups: Group[] = [
     avatar: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=150&h=150&fit=crop',
     members: ['2', '4', '6'],
     admins: ['2'],
-    isPrivate: false,
     createdBy: '2',
     createdAt: new Date('2023-01-02'),
     threads: [],
@@ -89,7 +86,6 @@ const mockGroups: Group[] = [
     avatar: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=150&h=150&fit=crop',
     members: ['3', '1', '4'],
     admins: ['3'],
-    isPrivate: false,
     createdBy: '3',
     createdAt: new Date('2023-01-03'),
     threads: [],
@@ -97,11 +93,10 @@ const mockGroups: Group[] = [
   {
     id: '4',
     name: 'Startup Founders',
-    description: 'Private group for startup founders to share experiences',
+    description: 'Group for startup founders to share experiences',
     avatar: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=150&h=150&fit=crop',
     members: ['5', '1'],
     admins: ['5'],
-    isPrivate: true,
     createdBy: '5',
     createdAt: new Date('2023-01-04'),
     threads: [],
@@ -177,7 +172,6 @@ export function GroupProvider({ children }: { children: ReactNode }) {
           avatar: g.avatar,
           members: Array.isArray(g.members) ? g.members : [],
           admins: g.admins || [],
-          isPrivate: !!g.isPrivate,
           createdBy: g.createdBy,
           memberCount: g.memberCount,
           isMember: g.isMember,
@@ -221,95 +215,155 @@ export function GroupProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Real-time WebSocket message handlers
+  // Real-time WebSocket message handlers.
+  // The listener is registered once and relies on functional setState updates
+  // so it always sees the freshest groups list without re-registering per change.
   useEffect(() => {
-    const handleWebSocketMessage = (event: CustomEvent) => {
+    const persist = (next: Group[]) => {
       try {
-        const message = JSON.parse(event.detail)
-        
+        localStorage.setItem('threads-groups', JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
+      return next
+    }
+
+    const applyUpdate = (groupId: string, updates: Partial<Group>) => {
+      setGroups(prev => persist(prev.map(g => g.id === groupId ? { ...g, ...updates } : g)))
+    }
+
+    const handleWebSocketMessage = (event: Event) => {
+      try {
+        const message = (event as CustomEvent).detail
+        if (!message || !message.type) return
+
         switch (message.type) {
-          case 'group_created':
+          case 'group_created': {
             console.log('🆕 Group created:', message.data)
-            addGroup(message.data.group)
+            const incoming = message.data?.group
+            if (!incoming) return
+            setGroups(prev => {
+              if (prev.some(g => g.id === incoming.id)) return prev
+              const next: Group = {
+                ...incoming,
+                members: Array.isArray(incoming.members) ? incoming.members : [],
+                onlineMembers: [],
+                typingUsers: [],
+                lastActivity: new Date(),
+              }
+              return persist([...prev, next])
+            })
             break
-            
-          case 'group_updated':
+          }
+
+          case 'group_updated': {
             console.log('🔄 Group updated:', message.data)
-            updateGroup(message.data.groupId, message.data.updates)
+            const { groupId, updates, group } = message.data || {}
+            if (group && group.id) {
+              applyUpdate(group.id, group)
+            } else if (groupId && updates) {
+              applyUpdate(groupId, updates)
+            }
             break
-            
-          case 'group_deleted':
+          }
+
+          case 'group_deleted': {
             console.log('🗑️ Group deleted:', message.data)
-            deleteGroup(message.data.groupId)
+            const { groupId } = message.data || {}
+            if (!groupId) return
+            setGroups(prev => persist(prev.filter(g => g.id !== groupId)))
             break
-            
-          case 'group_member_joined':
+          }
+
+          case 'group_member_joined': {
             console.log('👋 Member joined group:', message.data)
-            updateGroup(message.data.groupId, {
-              members: [...(groups.find(g => g.id === message.data.groupId)?.members || []), message.data.userId]
-            })
+            const { groupId, userId, members } = message.data || {}
+            if (!groupId) return
+            setGroups(prev => persist(prev.map(g => {
+              if (g.id !== groupId) return g
+              const nextMembers = Array.isArray(members)
+                ? members
+                : (g.members.includes(userId) ? g.members : [...g.members, userId])
+              return { ...g, members: nextMembers, memberCount: nextMembers.length, lastActivity: new Date() }
+            })))
             break
-            
-          case 'group_member_left':
+          }
+
+          case 'group_member_left': {
             console.log('👋 Member left group:', message.data)
-            updateGroup(message.data.groupId, {
-              members: (groups.find(g => g.id === message.data.groupId)?.members || []).filter(id => id !== message.data.userId)
-            })
+            const { groupId, userId, members } = message.data || {}
+            if (!groupId) return
+            setGroups(prev => persist(prev.map(g => {
+              if (g.id !== groupId) return g
+              const nextMembers = Array.isArray(members)
+                ? members
+                : g.members.filter(id => id !== userId)
+              return { ...g, members: nextMembers, memberCount: nextMembers.length, lastActivity: new Date() }
+            })))
             break
-            
-          case 'group_message':
+          }
+
+          case 'group_message': {
             console.log('💬 Group message received:', message.data)
-            updateGroup(message.data.groupId, {
-              lastActivity: new Date()
-            })
+            const groupId = message.data?.group_id || message.data?.groupId
+            if (!groupId) return
+            applyUpdate(groupId, { lastActivity: new Date() })
             break
-            
-          case 'user_typing':
-            console.log('⌨️ User typing in group:', message.data)
-            updateGroup(message.data.groupId, {
-              typingUsers: [...(groups.find(g => g.id === message.data.groupId)?.typingUsers || []).filter(id => id !== message.data.userId), message.data.userId]
-            })
+          }
+
+          case 'user_typing': {
+            const { groupId, userId } = message.data || {}
+            if (!groupId || !userId) return
+            setGroups(prev => persist(prev.map(g => {
+              if (g.id !== groupId) return g
+              const typing = (g.typingUsers || []).filter(id => id !== userId)
+              return { ...g, typingUsers: [...typing, userId] }
+            })))
             break
-            
-          case 'user_stopped_typing':
-            console.log('⌨️ User stopped typing in group:', message.data)
-            updateGroup(message.data.groupId, {
-              typingUsers: (groups.find(g => g.id === message.data.groupId)?.typingUsers || []).filter(id => id !== message.data.userId)
-            })
+          }
+
+          case 'user_stopped_typing': {
+            const { groupId, userId } = message.data || {}
+            if (!groupId || !userId) return
+            setGroups(prev => persist(prev.map(g => {
+              if (g.id !== groupId) return g
+              return { ...g, typingUsers: (g.typingUsers || []).filter(id => id !== userId) }
+            })))
             break
-            
-          case 'user_online':
-            console.log('🟢 User came online:', message.data)
-            // Update online members for all groups this user is in
-            setGroups(prev => prev.map(group => 
-              group.members.includes(message.data.userId)
-                ? { ...group, onlineMembers: [...(group.onlineMembers || []).filter(id => id !== message.data.userId), message.data.userId] }
+          }
+
+          case 'user_online': {
+            const { userId } = message.data || {}
+            if (!userId) return
+            setGroups(prev => persist(prev.map(group =>
+              group.members.includes(userId)
+                ? { ...group, onlineMembers: [...(group.onlineMembers || []).filter(id => id !== userId), userId] }
                 : group
-            ))
+            )))
             break
-            
-          case 'user_offline':
-            console.log('🔴 User went offline:', message.data)
-            // Remove from online members for all groups
-            setGroups(prev => prev.map(group => 
-              group.members.includes(message.data.userId)
-                ? { ...group, onlineMembers: (group.onlineMembers || []).filter(id => id !== message.data.userId) }
+          }
+
+          case 'user_offline': {
+            const { userId } = message.data || {}
+            if (!userId) return
+            setGroups(prev => persist(prev.map(group =>
+              group.members.includes(userId)
+                ? { ...group, onlineMembers: (group.onlineMembers || []).filter(id => id !== userId) }
                 : group
-            ))
+            )))
             break
+          }
         }
       } catch (error) {
         console.error('Error handling WebSocket message:', error)
       }
     }
 
-    // Listen for WebSocket messages
     window.addEventListener('websocket-message', handleWebSocketMessage as EventListener)
-    
     return () => {
       window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener)
     }
-  }, [groups])
+  }, [])
 
   // Real-time functions
   const joinGroupRealtime = (groupId: string) => {

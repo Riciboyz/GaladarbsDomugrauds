@@ -14,6 +14,14 @@ export interface Comment {
   dislikes: string[] // lietotāju ID saraksts, kas ieliko "nepatīk"
 }
 
+
+export interface EmbeddedAuthor {
+  id: string
+  username: string
+  displayName: string
+  avatar?: string
+}
+
 // Galvenā "Thread" (ieraksta/domas) datu struktūra
 export interface Thread {
   id: string // ieraksta unikāls identifikators
@@ -29,6 +37,7 @@ export interface Thread {
   topicDayId?: string // saistība ar "Daily Topic" (ja ir)
   groupId?: string // saistība ar grupu (ja ieraksts pieder grupai)
   attachments?: string[] // pielikumu (failu/attēlu URL) saraksts
+  author?: EmbeddedAuthor // iestrādāts autors no backend (lai uzrādītu arī pirms `users` saraksta atjaunināšanas)
 }
 
 // Context
@@ -73,6 +82,20 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     const rawReplies = Array.isArray(t.replies) ? t.replies : []
     const replies = depth >= 1 ? [] : rawReplies.map((r: any) => normalizeThread(r, depth + 1))
 
+    // Iestrādāts autors var nākt gan no REST (rowToThread → `author.avatarUrl`),
+    // gan no WebSocket, gan no optimistiskā klienta pievienojuma. Saglabājam to,
+    // lai jauni lietotāji netiktu parādīti kā "Unknown User", kamēr `users`
+    // saraksts vēl nav atsvaidzināts.
+    const rawAuthor = t.author
+    const author: EmbeddedAuthor | undefined = rawAuthor && rawAuthor.id
+      ? {
+          id: rawAuthor.id,
+          username: rawAuthor.username || 'unknown',
+          displayName: rawAuthor.displayName || rawAuthor.display_name || rawAuthor.username || 'Unknown User',
+          avatar: rawAuthor.avatar || rawAuthor.avatarUrl || rawAuthor.avatar_url || undefined,
+        }
+      : undefined
+
     return {
       id: t.id,
       authorId: t.authorId || t.author_id,
@@ -87,6 +110,7 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       topicDayId: t.topicDayId || t.topic_day_id,
       groupId: t.groupId || t.group_id,
       attachments: Array.isArray(attachments) ? attachments : [],
+      author,
     }
   }
 

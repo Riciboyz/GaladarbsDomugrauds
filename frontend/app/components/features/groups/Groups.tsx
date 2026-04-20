@@ -11,9 +11,6 @@ import {
   XMarkIcon,
   UsersIcon,
   ChatBubbleLeftIcon,
-  CalendarIcon,
-  UserPlusIcon,
-  EnvelopeIcon,
   Cog6ToothIcon,
   EllipsisHorizontalIcon
 } from '@heroicons/react/24/outline'
@@ -22,38 +19,31 @@ import SimpleGroupChat from './SimpleGroupChat'
 
 export default function Groups() {
   const { groups, createGroup, loadGroups, joinGroupRealtime, leaveGroupRealtime } = useGroup()
-  const { user, users } = useUser()
+  const { user } = useUser()
   const { success, error: showError } = useToast()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showInviteModal, setShowInviteModal] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showManagement, setShowManagement] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<any>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [inviteUserId, setInviteUserId] = useState('')
   const [newGroup, setNewGroup] = useState({
     name: '',
-    description: '',
-    isPrivate: false
+    description: ''
   })
-  const [showGroupTypeInfo, setShowGroupTypeInfo] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [groupToLeave, setGroupToLeave] = useState<Group | null>(null)
   const [leaveLoading, setLeaveLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'private' | 'public' | 'created'>(() => {
+  const [activeTab, setActiveTab] = useState<'all' | 'joined' | 'created'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('groups-active-tab') as any
-      if (saved === 'private' || saved === 'public' || saved === 'created') return saved
+      if (saved === 'all' || saved === 'joined' || saved === 'created') return saved
     }
-    return 'public'
+    return 'all'
   })
-  const [pendingInvites, setPendingInvites] = useState<any[]>([])
-  const [loadingInvites, setLoadingInvites] = useState(false)
-  const [inviteTimers, setInviteTimers] = useState<{[key: string]: number}>({})
 
   // Persist tab selection so refresh keeps the same view
   useEffect(() => {
@@ -80,105 +70,24 @@ export default function Groups() {
     }
   }, [openMenuId])
 
-  // Load groups and pending invites on mount
+  // Load groups on mount
   useEffect(() => {
     loadGroups()
-    const loadInvites = async () => {
-      try {
-        setLoadingInvites(true)
-        const res = await fetch('/api/groups/invite', { credentials: 'include' })
-        const data = await res.json()
-        if (res.ok && data.success) {
-          setPendingInvites(data.invitations || [])
-        }
-      } catch (e) {
-        console.error('Error loading invites:', e)
-      } finally {
-        setLoadingInvites(false)
-      }
-    }
-    loadInvites()
   }, [])
 
-  // Listen for invite expiration via WebSocket
-  useEffect(() => {
-    if (!user) return
-
-    const handleInviteExpired = (event: CustomEvent) => {
-      const data = event.detail
-      console.log('⏰ Invite expired:', data)
-      
-      // Remove expired invite from state
-      setPendingInvites(prev => prev.filter(inv => inv.id !== data.invitationId))
-      
-      // Remove timer
-      setInviteTimers(prev => {
-        const newTimers = { ...prev }
-        delete newTimers[data.invitationId]
-        return newTimers
-      })
-      
-      // Show notification
-      showError('Invite Expired', 'The group invitation has expired.')
-    }
-
-    // Add event listener
-    window.addEventListener('invite_expired', handleInviteExpired as EventListener)
-
-    return () => {
-      window.removeEventListener('invite_expired', handleInviteExpired as EventListener)
-    }
-  }, [user, showError])
-
-  // Update invite timers
-  useEffect(() => {
-    if (pendingInvites.length === 0) return
-
-    const interval = setInterval(() => {
-      const now = new Date().getTime()
-      const newTimers: {[key: string]: number} = {}
-      
-      pendingInvites.forEach(invite => {
-        if (invite.expires_at) {
-          const expiresAt = new Date(invite.expires_at).getTime()
-          const timeLeft = Math.max(0, Math.floor((expiresAt - now) / 1000))
-          newTimers[invite.id] = timeLeft
-        }
-      })
-      
-      setInviteTimers(newTimers)
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [pendingInvites])
-
-  // Counts for tabs
-  const privateCount = user
-    ? groups.filter(g => g.isPrivate && (g.members?.includes(user.id) || g.createdBy === user.id)).length
-    : 0
-  // Public tab shows all public groups you can join OR you created
-  const publicJoinableCount = groups.filter(g => 
-    !g.isPrivate && (
-      (user ? g.createdBy === user.id : false) ||
-      (!user || !g.members?.includes(user!.id))
-    )
-  ).length
+  const allCount = groups.length
+  const joinedCount = user ? groups.filter((g) => g.members?.includes(user.id)).length : 0
   const createdCount = user ? groups.filter(g => g.createdBy === user.id).length : 0
 
-  // Enforce visibility and tab filtering
   const visibleGroups = groups
     .filter(group => {
-      if (activeTab === 'public') {
-        // Show ALL public groups (joined, joinable, or created by you)
-        return !group.isPrivate
+      if (activeTab === 'all') {
+        return true
       }
-      if (activeTab === 'private') {
-        // Show only private groups where the user is a member or creator
-        if (!user) return false
-        return group.isPrivate && (group.members?.includes(user.id) || group.createdBy === user.id)
+      if (activeTab === 'joined') {
+        return !!user && group.members?.includes(user.id)
       }
       if (activeTab === 'created') {
-        // Show only groups created by the current user
         if (!user) return false
         return group.createdBy === user.id
       }
@@ -198,44 +107,10 @@ export default function Groups() {
         ...newGroup,
         createdBy: user?.id
       })
-      setNewGroup({ name: '', description: '', isPrivate: false })
+      setNewGroup({ name: '', description: '' })
       setShowCreateModal(false)
     } catch (error) {
       console.error('Error creating group:', error)
-    }
-  }
-
-  const handleInviteUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inviteUserId || !selectedGroup || !user) return
-
-    try {
-      const response = await fetch('/api/groups/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          groupId: selectedGroup.id,
-          inviterId: user.id,
-          inviteeId: inviteUserId
-        })
-      })
-
-      const data = await response.json()
-      
-      if (response.ok && data.success) {
-        success('Invitation sent', `Invite sent to ${users.find(u => u.id === inviteUserId)?.displayName || 'user'}`)
-        setInviteUserId('')
-        setShowInviteModal(false)
-        setSelectedGroup(null)
-      } else {
-        console.error('Invite failed:', response.status, data)
-        throw new Error(data?.error || 'Failed to send invitation')
-      }
-    } catch (error) {
-      console.error('Error sending invitation:', error)
-      const message = (error as any)?.message || 'Failed to send invitation. Please try again.'
-      showError('Error', message)
     }
   }
 
@@ -260,7 +135,7 @@ export default function Groups() {
         const updated = groups.find(g => g.id === group.id) || group
         setSelectedGroup(updated)
         setShowChat(true)
-        setActiveTab(updated.isPrivate ? 'private' : 'public')
+        setActiveTab('joined')
       } else {
         throw new Error(data.error || 'Failed to join group')
       }
@@ -359,68 +234,6 @@ export default function Groups() {
     loadGroups()
   }
 
-  const acceptInvite = async (invitationId: string) => {
-    try {
-      console.log('🔍 Accept invite attempt:', { invitationId, user: user?.id })
-      
-      const res = await fetch('/api/groups/invite', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ invitationId, status: 'accepted' })
-      })
-      
-      console.log('🔍 Accept invite response status:', res.status)
-      const data = await res.json()
-      console.log('🔍 Accept invite response data:', data)
-      
-      if (!res.ok) {
-        console.error('❌ Accept invite failed:', data.error)
-        throw new Error(data.error || 'Failed to accept invite')
-      }
-      
-      setPendingInvites(prev => prev.filter(inv => inv.id !== invitationId))
-      await loadGroups()
-      success('Joined group!', 'You have joined the group.')
-    } catch (e) {
-      console.error('❌ Accept invite error:', e)
-      showError('Error', 'Could not accept the invite')
-    }
-  }
-
-  const declineInvite = async (invitationId: string) => {
-    try {
-      console.log('🔍 Decline invite attempt:', { invitationId, user: user?.id })
-      
-      const res = await fetch('/api/groups/invite', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ invitationId, status: 'declined' })
-      })
-      
-      console.log('🔍 Decline invite response status:', res.status)
-      const data = await res.json()
-      console.log('🔍 Decline invite response data:', data)
-      
-      if (!res.ok) {
-        console.error('❌ Decline invite failed:', data.error)
-        throw new Error(data.error || 'Failed to decline invite')
-      }
-      
-      setPendingInvites(prev => prev.filter(inv => inv.id !== invitationId))
-      success('Invite declined', 'Invitation was declined.')
-    } catch (e) {
-      console.error('❌ Decline invite error:', e)
-      showError('Error', 'Could not decline the invite')
-    }
-  }
-
-  // Get users that the current user follows (for invitations)
-  const followedUsers = user ? users.filter(u => 
-    u.id !== user.id && user.following?.includes(u.id)
-  ) : []
-
   return (
     <div className="max-w-4xl mx-auto">
       {/* Instagram/Twitter Style Header */}
@@ -443,20 +256,20 @@ export default function Groups() {
         <div className="mb-4 overflow-x-auto">
           <div className="inline-flex border border-gray-200 rounded-xl bg-white">
             <button
-              onClick={() => setActiveTab('private')}
+              onClick={() => setActiveTab('all')}
               className={`px-4 py-2 text-sm font-medium rounded-l-xl transition-colors ${
-                activeTab === 'private' ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-50'
+                activeTab === 'all' ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              Private ({privateCount})
+              All ({allCount})
             </button>
             <button
-              onClick={() => setActiveTab('public')}
+              onClick={() => setActiveTab('joined')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'public' ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-50'
+                activeTab === 'joined' ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              Public ({publicJoinableCount})
+              Joined ({joinedCount})
             </button>
             <button
               onClick={() => setActiveTab('created')}
@@ -483,47 +296,6 @@ export default function Groups() {
         </div>
       </div>
 
-      {/* Pending Invitations */}
-      {user && (
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Pending Invitations</h3>
-          {loadingInvites ? (
-            <div className="text-sm text-gray-500">Loading invites...</div>
-          ) : pendingInvites.length === 0 ? (
-            <div className="text-sm text-gray-500">No pending invites</div>
-          ) : (
-            <div className="space-y-3">
-              {pendingInvites.map((inv: any) => (
-                <div key={inv.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                      {inv.group_avatar ? (
-                        <img src={inv.group_avatar} alt={inv.group_name} className="w-10 h-10 rounded-lg object-cover" />
-                      ) : (
-                        <UsersIcon className="w-5 h-5 text-gray-600" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{inv.group_name || 'Group invite'}</div>
-                      <div className="text-xs text-gray-500">Invited by {inv.inviter_display_name || inv.inviter_username}</div>
-                      {inviteTimers[inv.id] !== undefined && (
-                        <div className="text-xs text-orange-600 font-medium">
-                          Expires in {Math.floor(inviteTimers[inv.id] / 60)}:{(inviteTimers[inv.id] % 60).toString().padStart(2, '0')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button onClick={() => acceptInvite(inv.id)} className="px-3 py-1.5 text-xs font-medium bg-black text-white rounded-lg hover:bg-gray-800">Accept</button>
-                    <button onClick={() => declineInvite(inv.id)} className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Decline</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Groups Grid - Instagram/Twitter Style */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleGroups.map((group) => (
@@ -548,15 +320,9 @@ export default function Groups() {
               {/* Overlay content */}
               <div className="absolute inset-0">
                 <div className="absolute top-4 right-4 flex items-center space-x-2">
-                  {group.isPrivate ? (
-                    <span className="bg-black/20 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full border border-white/20">
-                      🔒 Private
-                    </span>
-                  ) : (
-                    <span className="bg-green-500/20 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full border border-white/20">
-                      🌐 Public
-                    </span>
-                  )}
+                  <span className="bg-green-500/20 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full border border-white/20">
+                    🌐 Public
+                  </span>
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="flex items-center space-x-2 text-white/90">
@@ -641,19 +407,7 @@ export default function Groups() {
 
               {/* Action Button */}
               <div className="space-y-3">
-                {user && group.createdBy === user.id && (
-                  <button
-                    onClick={() => {
-                      setSelectedGroup(group)
-                      setShowInviteModal(true)
-                    }}
-                    className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center space-x-2"
-                  >
-                    <UserPlusIcon className="w-4 h-4" />
-                    <span>Invite Members</span>
-                  </button>
-                )}
-                {user && !group.members?.includes(user.id) && !group.isPrivate && (
+                {user && !group.members?.includes(user.id) && (
                   <button
                     onClick={() => handleJoinGroup(group)}
                     className="w-full bg-black text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all duration-200 transform hover:scale-[1.02]"
@@ -682,13 +436,6 @@ export default function Groups() {
                     )}
                   </div>
                 )}
-                {user && !group.members?.includes(user.id) && group.isPrivate && (
-                  <div className="text-center">
-                    <span className="text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-xl inline-block">
-                      🔒 Private Group - Invite Only
-                    </span>
-                  </div>
-                )}
                 {!user && (
                   <div className="text-center">
                     <span className="text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-xl inline-block">
@@ -712,11 +459,11 @@ export default function Groups() {
           <p className="body-regular text-gray-600 mb-6">
             {searchQuery 
               ? 'Try adjusting your search terms'
-              : activeTab === 'public'
-                ? 'No public groups available to join right now'
-                : activeTab === 'private'
-                  ? 'You are not a member of any private groups yet'
-                  : 'You have not created any groups yet'
+              : activeTab === 'joined'
+                ? 'Join a group to start chatting in real time'
+                : activeTab === 'created'
+                  ? 'You have not created any groups yet'
+                  : 'No groups available right now'
             }
           </p>
           {!searchQuery && (
@@ -767,40 +514,9 @@ export default function Groups() {
                 />
               </div>
               
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="isPrivate"
-                      checked={newGroup.isPrivate}
-                      onChange={(e) => setNewGroup(prev => ({ ...prev, isPrivate: e.target.checked }))}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="isPrivate" className="text-sm text-gray-700">
-                      Private group (invite only)
-                    </label>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowGroupTypeInfo(!showGroupTypeInfo)}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    ℹ️ Info
-                  </button>
-                </div>
-                
-                {showGroupTypeInfo && (
-                  <div className="p-3 bg-blue-50 rounded-md text-sm text-blue-800">
-                    <div className="mb-2">
-                      <strong>Public Group:</strong> Anyone can join and see content
-                    </div>
-                    <div>
-                      <strong>Private Group:</strong> Only mutual followers can be invited
-                    </div>
-                  </div>
-                )}
-              </div>
+              <p className="text-sm text-gray-500">
+                All groups are public. Any user can join and chat in real time.
+              </p>
             </form>
             
             <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-100">
@@ -815,69 +531,6 @@ export default function Groups() {
                 className="btn-primary"
               >
                 Create Group
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Invitation Modal */}
-      {showInviteModal && selectedGroup && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="card-elevated w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h3 className="heading-3 text-gray-900">Invite to Group</h3>
-              <button
-                onClick={() => {
-                  setShowInviteModal(false)
-                  setSelectedGroup(null)
-                }}
-                className="btn-icon"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleInviteUser} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Invite to: {selectedGroup.name}
-                </label>
-                <select
-                  value={inviteUserId}
-                  onChange={(e) => setInviteUserId(e.target.value)}
-                  className="input"
-                  required
-                >
-                  <option value="">Select a user to invite</option>
-                  {followedUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.displayName} (@{user.username})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  You can only invite users you follow
-                </p>
-              </div>
-            </form>
-            
-            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-100">
-              <button
-                onClick={() => {
-                  setShowInviteModal(false)
-                  setSelectedGroup(null)
-                }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 font-medium text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleInviteUser}
-                disabled={!inviteUserId}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Send Invitation
               </button>
             </div>
           </div>
@@ -1028,12 +681,8 @@ export default function Groups() {
                         <UsersIcon className="w-3 h-3" />
                         <span>{groupToLeave.memberCount || groupToLeave.members?.length || 0} members</span>
                       </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        groupToLeave.isPrivate 
-                          ? 'text-blue-600 bg-blue-100' 
-                          : 'text-green-600 bg-green-100'
-                      }`}>
-                        {groupToLeave.isPrivate ? 'Private' : 'Public'}
+                      <span className="px-2 py-1 text-xs font-medium rounded-full text-green-600 bg-green-100">
+                        Public
                       </span>
                     </div>
                   </div>

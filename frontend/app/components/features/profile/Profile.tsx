@@ -25,10 +25,11 @@ import {
 interface ProfileProps {
   userId?: string
   onBack?: () => void
+  onUserClick?: (userId: string) => void
 }
 
-export default function Profile({ userId, onBack }: ProfileProps) {
-  const { user, users, updateUser } = useUser()
+export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
+  const { user, users, updateUser, followUser, unfollowUser } = useUser()
   const { threads } = useThread()
   const { lastMessage } = useWebSocket()
   const [isEditing, setIsEditing] = useState(false)
@@ -292,35 +293,20 @@ export default function Profile({ userId, onBack }: ProfileProps) {
     if (!user || !profileUser) return
 
     try {
-      const action = isFollowing ? 'unfollow' : 'follow'
-      const response = await fetch('/api/users/follow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId: profileUser.id, 
-          action: action
-        }),
-      })
-      
-      const data = await response.json()
-      if (response.ok) {
-        // Update the profile user in the users list
-        const updatedUsers = users.map(u => 
-          u.id === profileUser.id ? data.targetUser : u
-        )
-        // Update both current user and users list
-        updateUser(data.currentUser, updatedUsers)
-        
-        // Refresh followers/following data if modals are open
-        if (showFollowers) {
-          loadFollowers()
-        }
-        if (showFollowing) {
-          loadFollowing()
-        }
-      } else {
-        console.error('Follow API error:', data)
-        alert(data.error || 'Failed to follow user')
+      const success = isFollowing
+        ? await unfollowUser(profileUser.id)
+        : await followUser(profileUser.id)
+
+      if (!success) {
+        alert('Failed to update follow status')
+        return
+      }
+
+      if (showFollowers) {
+        loadFollowers()
+      }
+      if (showFollowing) {
+        loadFollowing()
       }
     } catch (error) {
       console.error('Error following user:', error)
@@ -634,12 +620,8 @@ export default function Profile({ userId, onBack }: ProfileProps) {
                       <div 
                         className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
                         onClick={() => {
-                          // Close modal first
                           setShowFollowers(false)
-                          // Navigate to user profile
-                          if (typeof window !== 'undefined' && (window as any).navigateToUser) {
-                            (window as any).navigateToUser(follower.id)
-                          }
+                          onUserClick?.(follower.id)
                         }}
                       >
                         <img
@@ -656,20 +638,11 @@ export default function Profile({ userId, onBack }: ProfileProps) {
                         <button
                           onClick={async () => {
                             try {
-                              const action = isFollowingFollower ? 'unfollow' : 'follow'
-                              const response = await fetch('/api/users/follow', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                  userId: follower.id, 
-                                  action: action
-                                }),
-                              })
-                              
-                              if (response.ok) {
-                                const data = await response.json()
-                                updateUser(data.currentUser)
-                                // Refresh the lists
+                              const success = isFollowingFollower
+                                ? await unfollowUser(follower.id)
+                                : await followUser(follower.id)
+
+                              if (success) {
                                 loadFollowers()
                                 loadFollowing()
                               }
@@ -725,12 +698,8 @@ export default function Profile({ userId, onBack }: ProfileProps) {
                     <div 
                       className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
                       onClick={() => {
-                        // Close modal first
                         setShowFollowing(false)
-                        // Navigate to user profile
-                        if (typeof window !== 'undefined' && (window as any).navigateToUser) {
-                          (window as any).navigateToUser(followingUser.id)
-                        }
+                        onUserClick?.(followingUser.id)
                       }}
                     >
                       <img

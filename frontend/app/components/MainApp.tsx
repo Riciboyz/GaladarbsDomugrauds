@@ -56,7 +56,7 @@ export default function MainApp() {
       case 'home':
         return <Feed onUserClick={handleUserProfileClick} />
       case 'profile':
-        return <Profile />
+        return <Profile onUserClick={handleUserProfileClick} />
       case 'notifications':
         return <RealtimeNotificationsProvider />
       case 'search':
@@ -70,7 +70,8 @@ export default function MainApp() {
             onBack={() => {
               setViewedUserId(null)
               setActiveTab('home')
-            }} 
+            }}
+            onUserClick={handleUserProfileClick}
           />
         ) : <Feed onUserClick={handleUserProfileClick} />
       case 'topic-submission':

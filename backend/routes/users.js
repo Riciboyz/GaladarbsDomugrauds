@@ -1,9 +1,10 @@
 const { Router } = require('express');
+const crypto = require('crypto');
 const { authenticateToken, optionalAuth, currentUserId, requireRole } = require('../middleware/auth');
 const { mapUserPublic, mapUserAdmin } = require('../helpers/utils');
 const { logAudit } = require('../helpers/audit');
 
-module.exports = function (db) {
+module.exports = function (db, io) {
   const router = Router();
 
   router.get('/', (_req, res) => {
@@ -107,9 +108,44 @@ module.exports = function (db) {
       db.run(
         'INSERT OR IGNORE INTO followers (follower_id, following_id, created_at) VALUES (?, ?, datetime("now"))',
         [uid, userId],
-        (err) => {
+        function (err) {
           if (err) return res.status(500).json({ error: 'Database error' });
-          res.json({ success: true, message: 'Followed user', following: true });
+
+          // Only create a notification if a new follow row was actually inserted
+          // (prevents spamming when the user is already following).
+          if (!this.changes || !uid) {
+            return res.json({ success: true, message: 'Followed user', following: true });
+          }
+
+          db.get('SELECT username, display_name FROM users WHERE id = ?', [uid], (uErr, follower) => {
+            const name = follower?.display_name || follower?.username || 'Someone';
+            const notificationId = crypto.randomUUID();
+            const type = 'follow';
+            const title = type;
+            const message = `${name} started following you`;
+            const dataJson = JSON.stringify({ fromUserId: uid });
+
+            db.run(
+              `INSERT INTO notifications (id, user_id, type, title, message, read, data, created_at)
+               VALUES (?, ?, ?, ?, ?, 0, ?, datetime('now'))`,
+              [notificationId, userId, type, title, message, dataJson],
+              (nErr) => {
+                if (!nErr && io) {
+                  io.to(`user:${userId}`).emit('new_notification', {
+                    id: notificationId,
+                    userId,
+                    type,
+                    title,
+                    message,
+                    read: false,
+                    createdAt: new Date().toISOString(),
+                    relatedId: undefined
+                  });
+                }
+                res.json({ success: true, message: 'Followed user', following: true });
+              }
+            );
+          });
         }
       );
     };

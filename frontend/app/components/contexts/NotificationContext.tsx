@@ -7,7 +7,7 @@ import { useUser } from './UserContext'
 export interface Notification {
   id: string
   userId: string
-  type: 'like' | 'dislike' | 'comment' | 'follow' | 'topic_day' | 'group_invite'
+  type: 'like' | 'dislike' | 'comment' | 'follow' | 'topic_day'
   message: string
   read: boolean
   createdAt: Date
@@ -70,15 +70,6 @@ const mockNotifications: Notification[] = [
     read: false,
     createdAt: new Date('2023-12-01T09:00:00'),
     relatedId: '1'
-  },
-  {
-    id: '5',
-    userId: '1',
-    type: 'group_invite',
-    message: 'You\'ve been invited to join "Design Community"',
-    read: false,
-    createdAt: new Date('2023-12-01T08:00:00'),
-    relatedId: '2'
   }
 ]
 
@@ -95,6 +86,32 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setNotifications([])
     }
   }, [user?.id]) // Only depend on user ID, not the entire user object
+
+  // Listen for real-time notifications via the shared websocket-message bus.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail
+      if (!detail || detail.type !== 'new_notification') return
+      const raw = detail.data || {}
+      const normalized: Notification = {
+        id: raw.id,
+        userId: raw.userId || raw.user_id,
+        type: raw.type,
+        message: raw.message || raw.title || '',
+        read: !!raw.read,
+        createdAt: new Date(raw.createdAt || raw.created_at || Date.now()),
+        relatedId: raw.relatedId,
+      }
+      if (!normalized.id) return
+      // Only accept notifications addressed to the currently logged-in user.
+      if (user?.id && normalized.userId && normalized.userId !== user.id) return
+      console.log('🔔 NotificationContext: Real-time notification received:', normalized)
+      addNotification(normalized)
+    }
+
+    window.addEventListener('websocket-message', handler as EventListener)
+    return () => window.removeEventListener('websocket-message', handler as EventListener)
+  }, [user?.id])
 
   const loadNotificationsFromAPI = async () => {
     try {

@@ -3,18 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useToast } from '../../contexts/ToastContext'
-import { useNotification } from '../../contexts/NotificationContext'
-import { useWebSocket } from '../../contexts/WebSocketContext'
 import { 
   UserGroupIcon,
   UsersIcon,
-  Cog6ToothIcon,
   TrashIcon,
   UserMinusIcon,
-  UserPlusIcon,
   PencilIcon,
-  XMarkIcon,
-  CheckIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 
 interface GroupManagementProps {
@@ -24,16 +19,12 @@ interface GroupManagementProps {
 }
 
 export default function GroupManagement({ group, onClose, onUpdate }: GroupManagementProps) {
-  const { user, users } = useUser()
+  const { user } = useUser()
   const { success, error: showError } = useToast()
-  const { addNotification } = useNotification()
-  const { sendMessage } = useWebSocket()
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMemberManagement, setShowMemberManagement] = useState(false)
   const [members, setMembers] = useState<any[]>([])
-  const [showInviteSection, setShowInviteSection] = useState(false)
-  const [inviteUserId, setInviteUserId] = useState('')
   const [editForm, setEditForm] = useState({
     name: group.name,
     description: group.description || '',
@@ -80,16 +71,18 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
 
   const loadGroupMembers = async () => {
     try {
-      // In a real app, you'd fetch member details from the API
-      // For now, we'll use the member IDs from the group
-      const memberDetails = group.members?.map((memberId: string) => ({
-        id: memberId,
-        username: `user_${memberId}`,
-        displayName: `User ${memberId}`,
-        avatar: null
-      })) || []
-      
-      setMembers(memberDetails)
+      const response = await fetch(`/api/groups/members?groupId=${group.id}`, {
+        credentials: 'include'
+      })
+      const data = await response.json()
+      if (response.ok && data.success) {
+        setMembers((data.members || []).map((member: any) => ({
+          id: member.id,
+          username: member.username,
+          displayName: member.display_name,
+          avatar: member.avatar
+        })))
+      }
     } catch (error) {
       console.error('Error loading members:', error)
     }
@@ -151,64 +144,14 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
     }
   }
 
-  const addMember = async (userId: string) => {
-    if (!group?.id || !user?.id) return
-
-    try {
-      // Send via WebSocket for real-time updates
-      if (sendMessage) {
-        sendMessage({
-          type: 'add_group_member',
-          data: {
-            groupId: group.id,
-            userId: userId
-          }
-        })
-      }
-
-      // Also update via API as backup
-      const response = await fetch('/api/groups/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          groupId: group.id,
-          userId: userId 
-        })
-      })
-
-      const data = await response.json()
-      
-      if (response.ok) {
-        success('Member Added', 'Member added successfully!')
-        loadGroupMembers()
-      } else {
-        throw new Error(data.error || 'Failed to add member')
-      }
-    } catch (error) {
-      console.error('Error adding member:', error)
-      showError('Add Member', 'Failed to add member. Please try again.')
-    }
-  }
-
   const removeMember = async (userId: string) => {
     if (!group?.id || !user?.id) return
 
     try {
-      // Send via WebSocket for real-time updates
-      if (sendMessage) {
-        sendMessage({
-          type: 'remove_group_member',
-          data: {
-            groupId: group.id,
-            userId: userId
-          }
-        })
-      }
-
-      // Also update via API as backup
       const response = await fetch(`/api/groups/members?groupId=${group.id}&userId=${userId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
       })
 
       const data = await response.json()
@@ -228,44 +171,6 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
   const handleRemoveMember = async (memberId: string) => {
     await removeMember(memberId)
   }
-
-  const handleInviteUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inviteUserId || !user) return
-
-    try {
-      const response = await fetch('/api/groups/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          groupId: group.id,
-          inviterId: user.id,
-          inviteeId: inviteUserId
-        })
-      })
-
-      const data = await response.json()
-      
-      if (response.ok) {
-        success('Invitation sent', `Invite sent to ${users.find(u => u.id === inviteUserId)?.displayName || 'user'}`)
-        setInviteUserId('')
-        setShowInviteSection(false)
-      } else {
-        throw new Error(data.error || 'Failed to send invitation')
-      }
-    } catch (error) {
-      console.error('Error sending invitation:', error)
-      showError('Error', 'Failed to send invitation. Please try again.')
-    }
-  }
-
-  // Get users that have mutual following relationship (both follow each other)
-  // Allow inviting any user you follow; backend enforces stricter rules for private groups
-  const mutualFollowers = user ? users.filter(u => 
-    u.id !== user.id && 
-    user.following?.includes(u.id)
-  ) : []
 
   if (!user || group.createdBy !== user.id) {
     return null
@@ -303,12 +208,8 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                     <UsersIcon className="w-4 h-4" />
                     <span>{group.memberCount || group.members?.length || 0} members</span>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    group.isPrivate 
-                      ? 'text-blue-600 bg-blue-100' 
-                      : 'text-green-600 bg-green-100'
-                  }`}>
-                    {group.isPrivate ? 'Private' : 'Public'}
+                  <span className="px-2 py-1 text-xs font-medium rounded-full text-green-600 bg-green-100">
+                    Public
                   </span>
                 </div>
               </div>
@@ -331,22 +232,6 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
             >
               <UsersIcon className="w-4 h-4" />
               <span>{showMemberManagement ? 'Hide Members' : 'Manage Members'}</span>
-            </button>
-            
-            <button
-              onClick={() => {
-                setShowMemberManagement(true)
-                setShowInviteSection(true)
-              }}
-              className="btn-secondary flex items-center space-x-2"
-            >
-              <UserPlusIcon className="w-4 h-4" />
-              <span>Invite Members</span>
-              {mutualFollowers.length > 0 && (
-                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded-full">
-                  {mutualFollowers.length}
-                </span>
-              )}
             </button>
             
             <button
@@ -466,71 +351,6 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                 )}
               </div>
 
-              {/* Invite Members Section */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h6 className="text-sm font-medium text-gray-900">Invite Members</h6>
-                  <button
-                    onClick={() => setShowInviteSection(!showInviteSection)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    {showInviteSection ? 'Hide' : 'Invite Users'}
-                  </button>
-                </div>
-
-                {showInviteSection && (
-                  <form onSubmit={handleInviteUser} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select User to Invite
-                      </label>
-                      <select
-                        value={inviteUserId}
-                        onChange={(e) => setInviteUserId(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                      >
-                        <option value="">Choose a user...</option>
-                        {mutualFollowers.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.displayName} (@{user.username})
-                          </option>
-                        ))}
-                      </select>
-                      {mutualFollowers.length === 0 && (
-                        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <p className="text-xs text-yellow-800 font-medium mb-1">
-                            No users available to invite
-                          </p>
-                          <p className="text-xs text-yellow-700">
-                            You can invite users you follow. Follow some users to enable invitations.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowInviteSection(false)
-                          setInviteUserId('')
-                        }}
-                        className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200 font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={!inviteUserId}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Send Invitation
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
             </div>
           )}
 

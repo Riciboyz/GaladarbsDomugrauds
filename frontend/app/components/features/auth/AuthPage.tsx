@@ -57,7 +57,22 @@ export default function AuthPage() {
       return
     }
 
-    if (formData.password.length < 6) {
+    if (!isLogin) {
+      const pwd = formData.password
+      const errors: string[] = []
+      if (pwd.length < 8) errors.push('vismaz 8 rakstzīmes')
+      if (!/[A-Z]/.test(pwd)) errors.push('vienu lielo burtu')
+      if (!/[a-z]/.test(pwd)) errors.push('vienu mazo burtu')
+      if (!/[0-9]/.test(pwd)) errors.push('vienu ciparu')
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(pwd)) {
+        errors.push('vienu speciālo simbolu (piem. ! @ # $ %)')
+      }
+      if (errors.length) {
+        setErrorMessage(`Parolē jābūt ${errors.join(', ')}.`)
+        setLoading(false)
+        return
+      }
+    } else if (formData.password.length < 6) {
       setErrorMessage('Password must be at least 6 characters long')
       setLoading(false)
       return
@@ -275,6 +290,27 @@ export default function AuthPage() {
                       )}
                     </button>
                   </div>
+                  {!isLogin && (
+                    <ul className="mt-2 space-y-1 text-xs">
+                      {[
+                        { label: 'Vismaz 8 rakstzīmes', ok: formData.password.length >= 8 },
+                        { label: 'Viens lielais burts (A-Z)', ok: /[A-Z]/.test(formData.password) },
+                        { label: 'Viens mazais burts (a-z)', ok: /[a-z]/.test(formData.password) },
+                        { label: 'Viens cipars (0-9)', ok: /[0-9]/.test(formData.password) },
+                        { label: 'Viens speciālais simbols (! @ # $ % ...)', ok: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(formData.password) },
+                      ].map((rule) => (
+                        <li
+                          key={rule.label}
+                          className={`flex items-center space-x-2 ${rule.ok ? 'text-green-600' : 'text-gray-500'}`}
+                        >
+                          <span
+                            className={`inline-block w-1.5 h-1.5 rounded-full ${rule.ok ? 'bg-green-500' : 'bg-gray-300'}`}
+                          />
+                          <span>{rule.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 {/* Registration Fields */}

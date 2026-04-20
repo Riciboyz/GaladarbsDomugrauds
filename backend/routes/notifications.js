@@ -44,9 +44,21 @@ module.exports = function (db, io) {
       [notificationId, toUserId, type, title, message, dataJson],
       function (err) {
         if (err) return res.status(500).json({ error: 'Database error' });
-        const notification = { id: notificationId, user_id: toUserId, type, title, message, read: 0, data: dataJson, created_at: new Date().toISOString() };
-        io.emit('new_notification', notification);
-        res.json({ success: true, notification: mapNotification(notification) });
+        const row = {
+          id: notificationId,
+          user_id: toUserId,
+          type,
+          title,
+          message,
+          read: 0,
+          data: dataJson,
+          created_at: new Date().toISOString()
+        };
+        const notification = mapNotification(row);
+        if (io) {
+          io.to(`user:${toUserId}`).emit('new_notification', notification);
+        }
+        res.json({ success: true, notification });
       }
     );
   });

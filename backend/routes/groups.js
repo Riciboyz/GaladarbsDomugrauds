@@ -3,8 +3,9 @@ const crypto = require('crypto');
 const { optionalAuth, currentUserId } = require('../middleware/auth');
 const { safeJsonParse, getMembersArray } = require('../helpers/utils');
 
-module.exports = function (db) {
+module.exports = function (db, io) {
   const router = Router();
+  const groupRoomName = (groupId) => `group:${groupId}`;
 
   function mapGroupRow(row, viewerId) {
     const members = getMembersArray(row.members);
@@ -15,7 +16,6 @@ module.exports = function (db) {
       avatar: row.avatar,
       members,
       admins: members.length ? [row.created_by] : [],
-      isPrivate: row.visibility === 'private',
       createdBy: row.created_by,
       memberCount: members.length,
       isMember: viewerId ? members.includes(viewerId) : false,
@@ -50,10 +50,10 @@ module.exports = function (db) {
   });
 
   router.post('/', optionalAuth, (req, res) => {
-    const { name, description, isPrivate, is_private } = req.body || {};
+    const { name, description } = req.body || {};
     const userId = currentUserId(req);
     if (!name) return res.status(400).json({ error: 'Group name is required' });
-    const visibility = isPrivate === true || is_private === true ? 'private' : 'public';
+    const visibility = 'public';
     const groupId = crypto.randomUUID();
     const members = JSON.stringify([userId]);
     db.run(
@@ -64,7 +64,9 @@ module.exports = function (db) {
         if (err) return res.status(500).json({ error: 'Database error' });
         db.get('SELECT * FROM groups WHERE id = ?', [groupId], (e, row) => {
           if (e || !row) return res.status(500).json({ error: 'Database error' });
-          res.json({ success: true, group: mapGroupRow(row, userId) });
+          const group = mapGroupRow(row, userId);
+          if (io) io.emit('group_created', { group });
+          res.json({ success: true, group });
         });
       }
     );
@@ -88,7 +90,15 @@ module.exports = function (db) {
       db.run(`UPDATE groups SET ${updates.join(', ')}, updated_at = datetime('now') WHERE id = ?`, vals, (e) => {
         if (e) return res.status(500).json({ error: 'Database error' });
         db.get('SELECT * FROM groups WHERE id = ?', [groupId], (e2, r) => {
-          res.json({ success: true, group: mapGroupRow(r, uid) });
+          const group = mapGroupRow(r, uid);
+          if (io) {
+            const updateFields = {};
+            if (name !== undefined) updateFields.name = name;
+            if (description !== undefined) updateFields.description = description;
+            if (avatar !== undefined) updateFields.avatar = avatar;
+            io.emit('group_updated', { groupId, updates: updateFields, group });
+          }
+          res.json({ success: true, group });
         });
       });
     });
@@ -103,6 +113,7 @@ module.exports = function (db) {
       if (row.created_by !== uid) return res.status(403).json({ error: 'Only creator can delete' });
       db.run('DELETE FROM groups WHERE id = ?', [groupId], (e) => {
         if (e) return res.status(500).json({ error: 'Database error' });
+        if (io) io.emit('group_deleted', { groupId });
         res.json({ success: true });
       });
     });
@@ -110,6 +121,7 @@ module.exports = function (db) {
 
   // ---- Join / Leave ----
   function joinGroup(groupId, uid, res) {
+    if (!groupId) return res.status(400).json({ error: 'groupId required' });
     db.get('SELECT * FROM groups WHERE id = ?', [groupId], (err, row) => {
       if (err || !row) return res.status(404).json({ error: 'Group not found' });
       const members = getMembersArray(row.members);
@@ -117,17 +129,20 @@ module.exports = function (db) {
       members.push(uid);
       db.run('UPDATE groups SET members = ?, updated_at = datetime("now") WHERE id = ?', [JSON.stringify(members), groupId], (e) => {
         if (e) return res.status(500).json({ error: 'Database error' });
+        if (io) io.emit('group_member_joined', { groupId, userId: uid, members });
         res.json({ success: true, message: 'Joined group successfully' });
       });
     });
   }
 
   function leaveGroup(groupId, uid, res) {
+    if (!groupId) return res.status(400).json({ error: 'groupId required' });
     db.get('SELECT * FROM groups WHERE id = ?', [groupId], (err, row) => {
       if (err || !row) return res.status(404).json({ error: 'Group not found' });
       const members = getMembersArray(row.members).filter((id) => id !== uid);
       db.run('UPDATE groups SET members = ?, updated_at = datetime("now") WHERE id = ?', [JSON.stringify(members), groupId], (e) => {
         if (e) return res.status(500).json({ error: 'Database error' });
+        if (io) io.emit('group_member_left', { groupId, userId: uid, members });
         res.json({ success: true, message: 'Left group successfully' });
       });
     });
@@ -147,45 +162,6 @@ module.exports = function (db) {
 
   router.post('/:id/leave', optionalAuth, (req, res) => {
     leaveGroup(req.params.id, currentUserId(req), res);
-  });
-
-  // ---- Invitations ----
-  router.get('/invite', optionalAuth, (req, res) => {
-    const uid = req.query.userId || currentUserId(req);
-    db.all(
-      `SELECT gi.*, g.name as group_name FROM group_invites gi
-       JOIN groups g ON gi.group_id = g.id
-       WHERE gi.invited_user = ? AND gi.status = 'pending' AND gi.expires_at > datetime('now')
-       ORDER BY gi.created_at DESC`,
-      [uid],
-      (err, rows) => {
-        if (err) return res.json({ success: true, invitations: [] });
-        res.json({
-          success: true,
-          invitations: (rows || []).map((r) => ({
-            id: r.id, groupId: r.group_id, groupName: r.group_name,
-            invitedBy: r.invited_by, status: r.status, expiresAt: r.expires_at
-          }))
-        });
-      }
-    );
-  });
-
-  router.post('/invite', optionalAuth, (req, res) => {
-    const { groupId, inviterId, inviteeId } = req.body || {};
-    const uid = currentUserId(req);
-    if (!groupId || !inviteeId) return res.status(400).json({ error: 'groupId and inviteeId required' });
-    const inviteId = crypto.randomUUID();
-    const expires = new Date(Date.now() + 7 * 864e5).toISOString();
-    db.run(
-      `INSERT INTO group_invites (id, group_id, invited_by, invited_user, status, expires_at, created_at)
-       VALUES (?, ?, ?, ?, 'pending', ?, datetime('now'))`,
-      [inviteId, groupId, inviterId || uid, inviteeId, expires.replace('T', ' ').slice(0, 19)],
-      (err) => {
-        if (err) return res.status(500).json({ error: 'Database error' });
-        res.json({ success: true, invitation: { id: inviteId } });
-      }
-    );
   });
 
   // ---- Members ----
@@ -217,6 +193,7 @@ module.exports = function (db) {
       if (!members.includes(newMemberId)) members.push(newMemberId);
       db.run('UPDATE groups SET members = ?, updated_at = datetime("now") WHERE id = ?', [JSON.stringify(members), groupId], (e) => {
         if (e) return res.status(500).json({ error: 'Database error' });
+        if (io) io.emit('group_member_joined', { groupId, userId: newMemberId, members });
         res.json({ success: true });
       });
     });
@@ -230,6 +207,7 @@ module.exports = function (db) {
       const members = getMembersArray(row.members).filter((id) => id !== removeId);
       db.run('UPDATE groups SET members = ?, updated_at = datetime("now") WHERE id = ?', [JSON.stringify(members), groupId], (e) => {
         if (e) return res.status(500).json({ error: 'Database error' });
+        if (io) io.emit('group_member_left', { groupId, userId: removeId, members });
         res.json({ success: true });
       });
     });
@@ -264,7 +242,21 @@ module.exports = function (db) {
       [id, groupId, uid, content, attachments],
       (err) => {
         if (err) return res.status(500).json({ error: 'Database error' });
-        res.json({ success: true, messageId: id });
+        db.get(
+          `SELECT gp.*, u.username, u.display_name, u.avatar
+           FROM group_posts gp
+           JOIN users u ON gp.author_id = u.id
+           WHERE gp.id = ?`,
+          [id],
+          (fetchErr, row) => {
+            if (fetchErr || !row) return res.status(500).json({ error: 'Database error' });
+            const message = mapGroupPostRow(row);
+            if (io) {
+              io.to(groupRoomName(groupId)).emit('group_message', message);
+            }
+            res.json({ success: true, messageId: id, message });
+          }
+        );
       }
     );
   });

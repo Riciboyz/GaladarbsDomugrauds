@@ -25,6 +25,19 @@ module.exports = function (db) {
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required' });
     }
+    const pwdChecks = [
+      [/.{8,}/, 'vismaz 8 rakstzīmes'],
+      [/[A-Z]/, 'lielais burts'],
+      [/[a-z]/, 'mazais burts'],
+      [/[0-9]/, 'cipars'],
+      [/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/, 'speciālais simbols'],
+    ];
+    const missing = pwdChecks.filter(([re]) => !re.test(password)).map(([, label]) => label);
+    if (missing.length) {
+      return res.status(400).json({
+        error: `Parolei nepieciešams: ${missing.join(', ')}.`,
+      });
+    }
     db.get('SELECT id FROM users WHERE email = ? OR username = ?', [email, username], (err, row) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       if (row) return res.status(400).json({ error: 'User already exists' });

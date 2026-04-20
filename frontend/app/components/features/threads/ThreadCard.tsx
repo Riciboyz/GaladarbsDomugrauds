@@ -250,17 +250,6 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
             : u
         )
         updateUser(updatedUser, updatedUsers)
-        
-        if (action === 'follow') {
-          addNotification({
-            id: Date.now().toString(),
-            type: 'follow',
-            message: `${user.displayName} started following you`,
-            userId: author.id,
-            read: false,
-            createdAt: new Date()
-          })
-        }
       } else {
         throw new Error(data.error || 'Failed to follow user')
       }
@@ -683,7 +672,9 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
           <div className="mt-4 pt-4 border-t border-gray-100">
             <div className="space-y-3">
               {thread.replies?.map((comment: any) => {
-                const commentAuthor = users.find(u => u.id === comment.authorId)
+                // Priekšroka iestrādātajam autoram no backend (piem., tikko reģistrēts
+                // lietotājs vēl nebūs `users` sarakstā, kas tiek ielādēts vienreiz).
+                const commentAuthor = comment.author || users.find(u => u.id === comment.authorId)
                 return (
                   <div key={comment.id} className="flex items-start gap-3">
                     <img

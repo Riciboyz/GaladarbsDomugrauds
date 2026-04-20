@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useToast } from '../../contexts/ToastContext'
+import { useWebSocket } from '../../contexts/WebSocketContext'
 import { 
   PaperAirplaneIcon,
   PhotoIcon,
   PaperClipIcon,
-  XMarkIcon,
-  EllipsisVerticalIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 
 interface SimpleGroupChatProps {
@@ -32,6 +32,7 @@ interface Message {
 export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps) {
   const { user } = useUser()
   const { success, error: showError } = useToast()
+  const { isConnected, joinGroup, leaveGroup, sendGroupMessage, lastMessage } = useWebSocket()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -39,107 +40,24 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Debug: Log group data
-  console.log('🔍 SimpleGroupChat: Group data:', group)
-  console.log('🔍 SimpleGroupChat: Group ID:', group?.id)
-
-  // WebSocket connection
   useEffect(() => {
-    if (!group?.id) return
-
-    console.log('🔌 SimpleGroupChat: Connecting to WebSocket for group:', group.id)
-    
-    const connectWebSocket = () => {
-      try {
-        const WS_URL = process.env.NEXT_PUBLIC_WS_URL?.replace('http://', 'ws://') || 'ws://localhost:3001';
-        const ws = new WebSocket(WS_URL)
-        wsRef.current = ws
-
-        ws.onopen = () => {
-          console.log('✅ SimpleGroupChat: WebSocket connected')
-          setIsConnected(true)
-          
-          // Register user
-          if (user) {
-            console.log('🔐 SimpleGroupChat: Registering user:', user.id)
-            ws.send(JSON.stringify({
-              type: 'register',
-              userId: user.id
-            }))
-          } else {
-            console.log('❌ SimpleGroupChat: No user found')
-          }
-          
-          // Join group
-          ws.send(JSON.stringify({
-            type: 'join_group',
-            data: { groupId: group.id }
-          }))
-        }
-
-        ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data)
-            console.log('📨 SimpleGroupChat: Received message:', message.type)
-            
-            if (message.type === 'group_message') {
-              console.log('💬 SimpleGroupChat: Adding message:', message.data)
-              setMessages(prev => {
-                // Check for duplicates
-                const exists = prev.some(m => m.id === message.data.id)
-                if (exists) {
-                  console.log('🚫 SimpleGroupChat: Message already exists, skipping')
-                  return prev
-                }
-                return [...prev, message.data]
-              })
-              scrollToBottom()
-            }
-            
-            if (message.type === 'error') {
-              console.error('❌ SimpleGroupChat: WebSocket error:', message.data.message)
-            }
-          } catch (error) {
-            console.error('❌ SimpleGroupChat: Error parsing message:', error)
-          }
-        }
-
-        ws.onclose = () => {
-          console.log('🔌 SimpleGroupChat: WebSocket disconnected')
-          setIsConnected(false)
-          
-          // Reconnect after 3 seconds
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('🔄 SimpleGroupChat: Reconnecting...')
-            connectWebSocket()
-          }, 3000)
-        }
-
-        ws.onerror = (error) => {
-          console.error('❌ SimpleGroupChat: WebSocket error:', error)
-        }
-
-      } catch (error) {
-        console.error('❌ SimpleGroupChat: Error connecting WebSocket:', error)
-        setIsConnected(false)
-      }
-    }
-
-    connectWebSocket()
-
+    if (!group?.id || !user) return
+    joinGroup(group.id)
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-      if (wsRef.current) {
-        wsRef.current.close()
-      }
+      leaveGroup(group.id)
     }
-  }, [group?.id, user?.id])
+  }, [group?.id, user?.id, joinGroup, leaveGroup])
+
+  useEffect(() => {
+    if (!lastMessage || lastMessage.type !== 'group_message') return
+    const message = lastMessage.data as Message
+    if (message.group_id !== group?.id) return
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === message.id)) return prev
+      return [...prev, message]
+    })
+  }, [lastMessage, group?.id])
 
   // Load messages
   useEffect(() => {
@@ -185,47 +103,18 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
     if (!newMessage.trim() || !user || !group?.id) return
 
     const messageContent = newMessage.trim()
-    console.log('📤 SimpleGroupChat: Sending message:', messageContent, 'to group:', group.id)
-    
-    // Try WebSocket first
-    if (isConnected && wsRef.current) {
-      try {
-        wsRef.current.send(JSON.stringify({
-          type: 'group_message',
-          data: {
-            groupId: group.id,
-            content: messageContent,
-            messageType: 'text'
-          }
-        }))
-        
-        // Add optimistic message
-        const optimisticMsg: Message = {
-          id: `tmp_${Date.now()}`,
-          group_id: group.id,
-          sender_id: user.id,
-          content: messageContent,
-          message_type: 'text',
-          created_at: new Date().toISOString(),
-          username: user.username,
-          display_name: user.displayName,
-          avatar: user.avatar
-        }
-        setMessages(prev => [...prev, optimisticMsg])
+    if (isConnected) {
+      const sent = sendGroupMessage(group.id, messageContent, 'text')
+      if (sent) {
         setNewMessage('')
-        scrollToBottom()
         return
-      } catch (error) {
-        console.error('❌ SimpleGroupChat: WebSocket send error:', error)
       }
     }
-    
-    // Fallback to API
     try {
-      console.log('📤 SimpleGroupChat: Sending via API')
       const response = await fetch('/api/groups/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           groupId: group.id,
           content: messageContent,
@@ -235,26 +124,13 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
 
       const data = await response.json()
       
-      if (response.ok) {
-        console.log('✅ SimpleGroupChat: Message sent via API')
-        setNewMessage('')
-        
-        // Add the new message to the list
-        const newMsg: Message = {
-          id: data.messageId,
-          group_id: group.id,
-          sender_id: user.id,
-          content: messageContent,
-          message_type: 'text',
-          created_at: new Date().toISOString(),
-          username: user.username,
-          display_name: user.displayName,
-          avatar: user.avatar
-        }
-        setMessages(prev => [...prev, newMsg])
-        scrollToBottom()
-      } else {
+      if (!response.ok) {
         throw new Error(data.error || 'Failed to send message')
+      }
+      setNewMessage('')
+      if (!isConnected) {
+        // Keep UX working even when realtime socket is down.
+        await loadMessages()
       }
     } catch (error) {
       console.error('❌ SimpleGroupChat: Error sending message:', error)
@@ -312,42 +188,14 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
 
       // Send file message
       const content = `${fileIcon} ${file.name}`
-      
-      // Try WebSocket first
-      if (isConnected && wsRef.current) {
-        try {
-          wsRef.current.send(JSON.stringify({
-            type: 'group_message',
-            data: {
-              groupId: group.id,
-              content: content,
-              messageType: messageType,
-              attachmentUrl: uploadData.url
-            }
-          }))
-          
-          // Add optimistic message
-          const optimisticMsg: Message = {
-            id: `tmp_${Date.now()}`,
-            group_id: group.id,
-            sender_id: user.id,
-            content: content,
-            message_type: messageType,
-            attachment_url: uploadData.url,
-            created_at: new Date().toISOString(),
-            username: user.username,
-            display_name: user.displayName,
-            avatar: user.avatar
-          }
-          setMessages(prev => [...prev, optimisticMsg])
+      if (isConnected) {
+        const sent = sendGroupMessage(group.id, content, messageType, uploadData.url)
+        if (sent) {
           success('File Sent', 'File uploaded and sent successfully!')
           return
-        } catch (error) {
-          console.error('❌ SimpleGroupChat: WebSocket send error:', error)
         }
       }
       
-      // Fallback to API
       const messageResponse = await fetch('/api/groups/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -366,20 +214,9 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
         throw new Error(messageData.error || 'Failed to send file')
       }
 
-      // Add the new message to the list
-      const newMsg: Message = {
-        id: messageData.messageId,
-        group_id: group.id,
-        sender_id: user.id,
-        content: content,
-        message_type: messageType,
-        attachment_url: uploadData.url,
-        created_at: new Date().toISOString(),
-        username: user.username,
-        display_name: user.displayName,
-        avatar: user.avatar
+      if (!isConnected) {
+        await loadMessages()
       }
-      setMessages(prev => [...prev, newMsg])
       success('File Sent', 'File uploaded and sent successfully!')
       
     } catch (error) {
