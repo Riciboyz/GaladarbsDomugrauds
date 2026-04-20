@@ -28,7 +28,7 @@ interface ProfileProps {
 }
 
 export default function Profile({ userId, onBack }: ProfileProps) {
-  const { user, users, updateUser } = useUser()
+  const { user, users, updateUser, followUser, unfollowUser } = useUser()
   const { threads } = useThread()
   const { lastMessage } = useWebSocket()
   const [isEditing, setIsEditing] = useState(false)
@@ -46,6 +46,7 @@ export default function Profile({ userId, onBack }: ProfileProps) {
   const [following, setFollowing] = useState<any[]>([])
   const [loadingFollowers, setLoadingFollowers] = useState(false)
   const [loadingFollowing, setLoadingFollowing] = useState(false)
+  const [isFollowingInProgress, setIsFollowingInProgress] = useState(false)
 
   const profileUser = userId ? users.find(u => u.id === userId) : user
   const isOwnProfile = user && profileUser && user.id === profileUser.id
@@ -289,42 +290,26 @@ export default function Profile({ userId, onBack }: ProfileProps) {
   }, [lastMessage, profileUser, showFollowers, showFollowing])
 
   const handleFollow = async () => {
-    if (!user || !profileUser) return
+    if (!user || !profileUser || isFollowingInProgress) return
 
+    setIsFollowingInProgress(true)
     try {
-      const action = isFollowing ? 'unfollow' : 'follow'
-      const response = await fetch('/api/users/follow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId: profileUser.id, 
-          action: action
-        }),
-      })
+      const success = isFollowing 
+        ? await unfollowUser(profileUser.id)
+        : await followUser(profileUser.id)
       
-      const data = await response.json()
-      if (response.ok) {
-        // Update the profile user in the users list
-        const updatedUsers = users.map(u => 
-          u.id === profileUser.id ? data.targetUser : u
-        )
-        // Update both current user and users list
-        updateUser(data.currentUser, updatedUsers)
-        
-        // Refresh followers/following data if modals are open
-        if (showFollowers) {
-          loadFollowers()
-        }
-        if (showFollowing) {
-          loadFollowing()
-        }
+      if (success) {
+        // Refresh followers/following data
+        loadFollowers()
+        loadFollowing()
       } else {
-        console.error('Follow API error:', data)
-        alert(data.error || 'Failed to follow user')
+        alert('Failed to update follow status')
       }
     } catch (error) {
       console.error('Error following user:', error)
       alert('Failed to follow user. Please try again.')
+    } finally {
+      setIsFollowingInProgress(false)
     }
   }
 
@@ -419,13 +404,19 @@ export default function Profile({ userId, onBack }: ProfileProps) {
               ) : (
                 <button
                   onClick={handleFollow}
+                  disabled={isFollowingInProgress}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                     isFollowing
                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       : 'btn-primary'
-                  }`}
+                  } ${isFollowingInProgress ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {isFollowing ? (
+                  {isFollowingInProgress ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      <span>Processing...</span>
+                    </>
+                  ) : isFollowing ? (
                     <>
                       <UserMinusIcon className="w-4 h-4" />
                       <span>Following</span>

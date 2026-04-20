@@ -91,7 +91,7 @@ export default function Search({ onUserClick }: SearchProps) {
         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
         <input
           type="text"
-          placeholder="Search for users..."
+          placeholder="      Search for users..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="input pl-10 pr-10"
@@ -151,51 +151,49 @@ export default function Search({ onUserClick }: SearchProps) {
                     </div>
                   ) : (
                     filteredUsers.map((user) => (
-                      <div key={user.id} className="card-elevated">
-                        <div className="p-4">
-                          <div className="flex items-center space-x-3">
-                            <div 
-                              className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
-                              onClick={() => onUserClick?.(user.id)}
-                            >
-                              <img
-                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=3b82f6&color=fff`}
-                                alt={user.displayName}
-                                className="w-10 h-10 rounded-lg object-cover"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 truncate hover:text-blue-600">
-                                  {user.displayName}
-                                </h3>
-                                <p className="text-sm text-gray-500">@{user.username}</p>
-                                {user.bio && (
-                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                    {user.bio}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <button 
-                              onClick={() => handleFollow(user.id)}
-                              disabled={followLoading === user.id}
-                              className={`btn-secondary text-sm ${
-                                isFollowing(user.id) 
-                                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                              {followLoading === user.id ? (
-                                <div className="flex items-center space-x-1">
-                                  <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
-                                  <span>Loading...</span>
-                                </div>
-                              ) : isFollowing(user.id) ? (
-                                'Unfollow'
-                              ) : (
-                                'Follow'
+                      <div key={user.id} className="card-elevated !p-4">
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
+                            onClick={() => onUserClick?.(user.id)}
+                          >
+                            <img
+                              src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=3b82f6&color=fff`}
+                              alt={user.displayName}
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 truncate hover:text-blue-600">
+                                {user.displayName}
+                              </h3>
+                              <p className="text-sm text-gray-500">@{user.username}</p>
+                              {user.bio && (
+                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                  {user.bio}
+                                </p>
                               )}
-                            </button>
+                            </div>
                           </div>
+                          <button 
+                            onClick={() => handleFollow(user.id)}
+                            disabled={followLoading === user.id}
+                            className={`btn-secondary text-sm ${
+                              isFollowing(user.id) 
+                                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {followLoading === user.id ? (
+                              <div className="flex items-center space-x-1">
+                                <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
+                                <span>Loading...</span>
+                              </div>
+                            ) : isFollowing(user.id) ? (
+                              'Unfollow'
+                            ) : (
+                              'Follow'
+                            )}
+                          </button>
                         </div>
                       </div>
                     ))

@@ -10,7 +10,8 @@ import {
   ChatBubbleLeftIcon,
   UserPlusIcon,
   XMarkIcon,
-  CheckIcon
+  CheckIcon,
+  HandThumbDownIcon
 } from '@heroicons/react/24/outline'
 
 export default function RealtimeNotificationsProvider() {
@@ -64,7 +65,7 @@ export default function RealtimeNotificationsProvider() {
       case 'like':
         return <HeartIcon className="w-5 h-5 text-red-500" />
       case 'dislike':
-        return <HeartIcon className="w-5 h-5 text-gray-500 rotate-180" />
+        return <HandThumbDownIcon className="w-5 h-5 text-blue-500" />
       case 'comment':
         return <ChatBubbleLeftIcon className="w-5 h-5 text-blue-500" />
       case 'follow':
