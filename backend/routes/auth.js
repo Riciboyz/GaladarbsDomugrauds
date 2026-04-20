@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET, getTokenFromRequest, isBanned } = require('../middleware/auth');
 const { touchLastActive } = require('../helpers/audit');
-const { safeJsonParse } = require('../helpers/utils');
+const { safeJsonParse, toIsoUtc } = require('../helpers/utils');
 
 module.exports = function (db) {
   const router = Router();
@@ -141,7 +141,7 @@ module.exports = function (db) {
               role: row.role || 'user',
               followers: Array.isArray(followers) ? followers : [],
               following: Array.isArray(following) ? following : [],
-              createdAt: row.created_at
+              createdAt: toIsoUtc(row.created_at)
             }
           });
         }

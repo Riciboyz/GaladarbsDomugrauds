@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const crypto = require('crypto');
 const { authenticateToken, optionalAuth, currentUserId, requireRole } = require('../middleware/auth');
-const { mapUserPublic, mapUserAdmin } = require('../helpers/utils');
+const { mapUserPublic, mapUserAdmin, toIsoUtc } = require('../helpers/utils');
 const { logAudit } = require('../helpers/audit');
 
 module.exports = function (db, io) {
@@ -166,7 +166,7 @@ module.exports = function (db, io) {
       (err, row) => {
         if (err) return res.status(500).json({ error: 'Database error' });
         if (!row) return res.status(404).json({ error: 'User not found' });
-        res.json({ success: true, user: row });
+        res.json({ success: true, user: { ...row, created_at: toIsoUtc(row.created_at) } });
       }
     );
   });

@@ -47,12 +47,14 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
   const [content, setContent] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [hasCheckedSubmission, setHasCheckedSubmission] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadTopic()
     loadSubmissions()
-  }, [topicId])
+    checkAlreadySubmitted()
+  }, [topicId, user?.id])
 
   // Listen for real-time topic submission updates
   useEffect(() => {
@@ -133,16 +135,39 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
 
   const loadSubmissions = async () => {
     try {
-      const response = await fetch(`/api/topic-submissions?topicId=${topicId}`)
+      const response = await fetch(`/api/topic-submissions?topicId=${topicId}`, {
+        credentials: 'include'
+      })
       const data = await response.json()
       
       if (data.success) {
         setSubmissions(data.submissions)
+        if (data.mySubmissionId) setHasSubmitted(true)
       }
     } catch (error) {
       console.error('Error loading submissions:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const checkAlreadySubmitted = async () => {
+    if (!user) {
+      setHasCheckedSubmission(true)
+      return
+    }
+    try {
+      const response = await fetch(`/api/topic-submissions/me?topicId=${topicId}`, {
+        credentials: 'include'
+      })
+      const data = await response.json()
+      if (data.success && data.hasSubmitted) {
+        setHasSubmitted(true)
+      }
+    } catch (error) {
+      console.error('Error checking submission:', error)
+    } finally {
+      setHasCheckedSubmission(true)
     }
   }
 
@@ -203,6 +228,12 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
 
       const data = await response.json()
       
+      if (response.status === 409 || data.alreadySubmitted) {
+        setHasSubmitted(true)
+        showError('Jau iesniegts', 'Šodien jau esi veicis ierakstu.')
+        return
+      }
+
       if (data.success) {
         success('Success', 'Your submission has been posted!')
         setContent('')
@@ -274,7 +305,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       </div>
 
       {/* Submission Form */}
-      {user && !hasSubmitted && (
+      {user && hasCheckedSubmission && !hasSubmitted && (
         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Your Response</h3>
           

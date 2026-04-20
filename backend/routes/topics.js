@@ -1,12 +1,69 @@
 const { Router } = require('express');
 const crypto = require('crypto');
 const { optionalAuth, currentUserId, requireRole, assertUserCanCreateContent } = require('../middleware/auth');
-const { safeJsonParse } = require('../helpers/utils');
+const { safeJsonParse, toIsoUtc } = require('../helpers/utils');
 const { logAudit, touchLastActive } = require('../helpers/audit');
 
-module.exports = function (db) {
+module.exports = function (db, io) {
   const router = Router();
   const todayIso = () => new Date().toISOString().slice(0, 10);
+
+  function broadcastActiveDailyTopic() {
+    if (!io) return;
+    const today = todayIso();
+    const emit = (row) => {
+      io.emit('daily_topic_active_set', row ? formatDailyTopicRow(row) : null);
+    };
+    db.get(
+      `SELECT dt.*, u.username as cu, u.display_name as cdn
+       FROM daily_topics dt JOIN users u ON dt.created_by = u.id
+       WHERE dt.date = ? AND COALESCE(dt.status, 'published') = 'published'
+       ORDER BY dt.created_at DESC LIMIT 1`,
+      [today],
+      (err, row) => {
+        if (!err && row) {
+          emit(row);
+          return;
+        }
+        db.get(
+          `SELECT dt.*, u.username as cu, u.display_name as cdn
+           FROM daily_topics dt JOIN users u ON dt.created_by = u.id
+           WHERE COALESCE(dt.status, 'published') = 'published' AND dt.date <= ?
+           ORDER BY dt.date DESC, dt.created_at DESC LIMIT 1`,
+          [today],
+          (e2, latest) => {
+            if (e2 || !latest) emit(null);
+            else emit(latest);
+          }
+        );
+      }
+    );
+  }
+
+  function mapSubmissionRow(r, includeTopicId) {
+    let text = r.content;
+    let image_url = '';
+    try {
+      const parsed = JSON.parse(r.content);
+      if (parsed && typeof parsed === 'object' && parsed.text !== undefined) {
+        text = parsed.text;
+        image_url = parsed.image_url || '';
+      }
+    } catch {
+      /* plain text */
+    }
+    const o = {
+      id: r.id,
+      content: text,
+      image_url,
+      created_at: toIsoUtc(r.created_at),
+      username: r.username,
+      display_name: r.display_name,
+      avatar: r.avatar,
+    };
+    if (includeTopicId) o.topic_id = r.topic_id;
+    return o;
+  }
 
   function ensureSampleDailyTopic() {
     const today = todayIso();
@@ -35,7 +92,7 @@ module.exports = function (db) {
       description: row.description || '',
       status: row.status || 'published',
       is_active: true,
-      created_at: row.created_at,
+      created_at: toIsoUtc(row.created_at),
       created_by_username: row.cu,
       created_by_display_name: row.cdn,
     };
@@ -149,7 +206,10 @@ module.exports = function (db) {
             entityId: null,
             metadata: { startDate, count: created.length },
           },
-          () => res.json({ success: true, topicDays: created })
+          () => {
+            broadcastActiveDailyTopic();
+            res.json({ success: true, topicDays: created });
+          }
         );
       }
       const i = idx++;
@@ -201,6 +261,7 @@ module.exports = function (db) {
             metadata: { title, date, status: st },
           },
           () => {
+            broadcastActiveDailyTopic();
             res.json({
               success: true,
               topicDay: {
@@ -242,6 +303,8 @@ module.exports = function (db) {
               [id],
               (e, row) => {
                 if (e || !row) return res.status(500).json({ error: 'Database error' });
+                if (io) io.emit('daily_topic_updated', mapTopicDayRow(row));
+                broadcastActiveDailyTopic();
                 res.json({ success: true, topicDay: mapTopicDayRow(row) });
               }
             );
@@ -301,6 +364,8 @@ module.exports = function (db) {
               [id],
               (e, row) => {
                 if (e || !row) return res.status(500).json({ error: 'Database error' });
+                if (io) io.emit('daily_topic_updated', mapTopicDayRow(row));
+                broadcastActiveDailyTopic();
                 res.json({ success: true, topicDay: mapTopicDayRow(row) });
               }
             );
@@ -328,15 +393,20 @@ module.exports = function (db) {
             entityId: id,
             metadata: { title: row.title, date: row.date },
           },
-          () => res.json({ success: true })
+          () => {
+            if (io) io.emit('daily_topic_deleted', { id });
+            broadcastActiveDailyTopic();
+            res.json({ success: true });
+          }
         );
       });
     });
   });
 
-  router.get('/topic-submissions', (req, res) => {
+  router.get('/topic-submissions', optionalAuth, (req, res) => {
     const topicId = req.query.topicId;
     if (!topicId) return res.status(400).json({ success: false, error: 'topicId required' });
+    const uid = currentUserId(req);
     db.all(
       `SELECT ts.*, u.username, u.display_name, u.avatar
        FROM topic_submissions ts JOIN users u ON ts.user_id = u.id
@@ -345,29 +415,26 @@ module.exports = function (db) {
       [topicId],
       (err, rows) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
+        let mySubmissionId = null;
         const submissions = (rows || []).map((r) => {
-          let text = r.content;
-          let image_url = '';
-          try {
-            const parsed = JSON.parse(r.content);
-            if (parsed && typeof parsed === 'object' && parsed.text !== undefined) {
-              text = parsed.text;
-              image_url = parsed.image_url || '';
-            }
-          } catch {
-            /* plain text */
-          }
-          return {
-            id: r.id,
-            content: text,
-            image_url,
-            created_at: r.created_at,
-            username: r.username,
-            display_name: r.display_name,
-            avatar: r.avatar,
-          };
+          if (r.user_id === uid) mySubmissionId = r.id;
+          return mapSubmissionRow(r, false);
         });
-        res.json({ success: true, submissions });
+        res.json({ success: true, submissions, mySubmissionId });
+      }
+    );
+  });
+
+  router.get('/topic-submissions/me', optionalAuth, (req, res) => {
+    const topicId = req.query.topicId;
+    if (!topicId) return res.status(400).json({ success: false, error: 'topicId required' });
+    const uid = currentUserId(req);
+    db.get(
+      'SELECT id FROM topic_submissions WHERE topic_id = ? AND user_id = ? LIMIT 1',
+      [topicId, uid],
+      (err, row) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        res.json({ success: true, hasSubmitted: !!row, submissionId: row ? row.id : null });
       }
     );
   });
@@ -375,16 +442,36 @@ module.exports = function (db) {
   router.post('/topic-submissions', optionalAuth, assertUserCanCreateContent(db), (req, res) => {
     const { topicId, content, imageUrl } = req.body || {};
     if (!topicId || (!content && !imageUrl)) return res.status(400).json({ error: 'topicId and content or imageUrl required' });
-    const id = crypto.randomUUID();
     const uid = currentUserId(req);
-    const stored = imageUrl ? JSON.stringify({ text: content || '', image_url: imageUrl }) : String(content);
-    db.run(
-      'INSERT INTO topic_submissions (id, topic_id, user_id, content, created_at) VALUES (?, ?, ?, ?, datetime("now"))',
-      [id, topicId, uid, stored],
-      (err) => {
-        if (err) return res.status(500).json({ error: 'Database error' });
-        touchLastActive(db, uid, () => {});
-        res.json({ success: true, id });
+    db.get(
+      'SELECT id FROM topic_submissions WHERE topic_id = ? AND user_id = ? LIMIT 1',
+      [topicId, uid],
+      (existsErr, existing) => {
+        if (existsErr) return res.status(500).json({ error: 'Database error' });
+        if (existing) return res.status(409).json({ error: 'You have already submitted for this topic today', alreadySubmitted: true });
+
+        const id = crypto.randomUUID();
+        const stored = imageUrl ? JSON.stringify({ text: content || '', image_url: imageUrl }) : String(content);
+        db.run(
+          'INSERT INTO topic_submissions (id, topic_id, user_id, content, created_at) VALUES (?, ?, ?, ?, datetime("now"))',
+          [id, topicId, uid, stored],
+          (err) => {
+            if (err) return res.status(500).json({ error: 'Database error' });
+            touchLastActive(db, uid, () => {});
+            db.get(
+              `SELECT ts.*, u.username, u.display_name, u.avatar
+               FROM topic_submissions ts JOIN users u ON ts.user_id = u.id
+               WHERE ts.id = ? AND u.deleted_at IS NULL`,
+              [id],
+              (e2, r) => {
+                if (!e2 && r && io) {
+                  io.emit('topic_submission_created', mapSubmissionRow(r, true));
+                }
+                res.json({ success: true, id });
+              }
+            );
+          }
+        );
       }
     );
   });

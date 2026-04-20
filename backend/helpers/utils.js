@@ -6,6 +6,19 @@ function safeJsonParse(s, fallback) {
   }
 }
 
+
+// parsē kā lokālo laiku vai Invalid Date. Konvertējam uz pilnu ISO 8601 UTC,
+// lai frontend-am vienmēr ir viennozīmīgs laiks.
+function toIsoUtc(s) {
+  if (!s) return s;
+  if (typeof s !== 'string') return s;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+    return new Date(s.replace(' ', 'T') + 'Z').toISOString();
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? s : d.toISOString();
+}
+
 function rowToThread(row) {
   return {
     id: row.id,
@@ -18,8 +31,8 @@ function rowToThread(row) {
     attachments: row.attachments,
     likes: row.likes,
     dislikes: row.dislikes,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: toIsoUtc(row.created_at),
+    updatedAt: toIsoUtc(row.updated_at),
     author: {
       id: row.user_id,
       username: row.username,
@@ -38,17 +51,17 @@ function mapUserPublic(row) {
     role: row.role || 'user',
     avatar: row.avatar || row.avatar_url,
     bio: row.bio,
-    createdAt: row.created_at
+    createdAt: toIsoUtc(row.created_at)
   };
 }
 
 function mapUserAdmin(row) {
   return {
     ...mapUserPublic(row),
-    bannedUntil: row.banned_until || null,
-    mutedUntil: row.muted_until || null,
-    deletedAt: row.deleted_at || null,
-    lastActiveAt: row.last_active_at || null
+    bannedUntil: toIsoUtc(row.banned_until) || null,
+    mutedUntil: toIsoUtc(row.muted_until) || null,
+    deletedAt: toIsoUtc(row.deleted_at) || null,
+    lastActiveAt: toIsoUtc(row.last_active_at) || null
   };
 }
 
@@ -57,4 +70,4 @@ function getMembersArray(membersCol) {
   return Array.isArray(m) ? m : [];
 }
 
-module.exports = { safeJsonParse, rowToThread, mapUserPublic, mapUserAdmin, getMembersArray };
+module.exports = { safeJsonParse, toIsoUtc, rowToThread, mapUserPublic, mapUserAdmin, getMembersArray };

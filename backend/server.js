@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { createServer } = require('http');
@@ -31,6 +32,8 @@ app.use(express.json({ limit: '10mb' }));
 app.set('trust proxy', 1);
 
 const { db, dbPath } = initDatabase();
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 io.on('connection', (socket) => {
   socket.on('register', ({ userId } = {}) => {
@@ -112,7 +115,7 @@ app.use('/api/users', require('./routes/users')(db, io));
 app.use('/api/threads', require('./routes/threads')(db, io));
 app.use('/api/groups', require('./routes/groups')(db, io));
 app.use('/api/notifications', require('./routes/notifications')(db, io));
-app.use('/api', require('./routes/topics')(db));
+app.use('/api', require('./routes/topics')(db, io));
 app.use('/api/admin', require('./routes/admin')(db));
 app.use('/api/reports', require('./routes/reports')(db));
 app.use('/api', require('./routes/upload')());

@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const crypto = require('crypto');
 const { optionalAuth, currentUserId } = require('../middleware/auth');
-const { safeJsonParse, getMembersArray } = require('../helpers/utils');
+const { safeJsonParse, getMembersArray, toIsoUtc } = require('../helpers/utils');
 
 module.exports = function (db, io) {
   const router = Router();
@@ -19,7 +19,7 @@ module.exports = function (db, io) {
       createdBy: row.created_by,
       memberCount: members.length,
       isMember: viewerId ? members.includes(viewerId) : false,
-      createdAt: row.created_at,
+      createdAt: toIsoUtc(row.created_at),
       threads: []
     };
   }
@@ -33,7 +33,7 @@ module.exports = function (db, io) {
       content: row.content,
       message_type: att.messageType || 'text',
       attachment_url: att.attachmentUrl || att.url || '',
-      created_at: row.created_at,
+      created_at: toIsoUtc(row.created_at),
       username: row.username,
       display_name: row.display_name,
       avatar: row.avatar

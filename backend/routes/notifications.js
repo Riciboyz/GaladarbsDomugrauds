@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const crypto = require('crypto');
 const { optionalAuth, currentUserId } = require('../middleware/auth');
-const { safeJsonParse } = require('../helpers/utils');
+const { safeJsonParse, toIsoUtc } = require('../helpers/utils');
 
 module.exports = function (db, io) {
   const router = Router();
@@ -14,7 +14,7 @@ module.exports = function (db, io) {
       type: row.type,
       message: row.message || row.title || '',
       read: !!row.read,
-      createdAt: row.created_at,
+      createdAt: toIsoUtc(row.created_at),
       relatedId: data.relatedId,
       title: row.title
     };

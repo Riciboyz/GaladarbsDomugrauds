@@ -39,6 +39,9 @@ next-env.d.ts
 # Database
 *.db
 
+# User uploads (backend)
+backend/uploads/
+
 # IDE
 .vscode/
 .idea/

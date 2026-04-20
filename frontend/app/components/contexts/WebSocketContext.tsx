@@ -51,6 +51,10 @@ const FORWARDED_EVENTS = [
   'user_online',
   'user_offline',
   'registered',
+  'daily_topic_active_set',
+  'daily_topic_updated',
+  'daily_topic_deleted',
+  'topic_submission_created',
 ] as const
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {

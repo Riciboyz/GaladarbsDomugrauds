@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { requireRole } = require('../middleware/auth');
+const { toIsoUtc } = require('../helpers/utils');
 
 module.exports = function (db) {
   const router = Router();
@@ -61,7 +62,7 @@ module.exports = function (db) {
         entityType: r.entity_type,
         entityId: r.entity_id,
         metadata: r.metadata,
-        createdAt: r.created_at
+        createdAt: toIsoUtc(r.created_at)
       }));
       res.json({ success: true, logs });
     });
