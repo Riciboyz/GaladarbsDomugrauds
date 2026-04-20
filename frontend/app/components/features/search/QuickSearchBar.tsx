@@ -180,10 +180,10 @@ const QuickSearchBar = forwardRef<{ focus: () => void }, QuickSearchBarProps>(({
                 <div
                   key={user.id}
                   onClick={() => handleUserClick(user.id)}
-                  className={`px-4 py-3 cursor-pointer transition-colors flex items-center space-x-3 ${
+                  className={`px-4 py-3 cursor-pointer transition-colors flex items-center space-x-3 border-l-4 ${
                     index === selectedIndex
-                      ? 'bg-blue-50 border-l-4 border-blue-500'
-                      : 'hover:bg-gray-50'
+                      ? 'bg-blue-50 border-blue-500'
+                      : 'hover:bg-gray-50 border-transparent'
                   }`}
                 >
                   <img
