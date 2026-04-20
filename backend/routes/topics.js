@@ -6,7 +6,13 @@ const { logAudit, touchLastActive } = require('../helpers/audit');
 
 module.exports = function (db, io) {
   const router = Router();
-  const todayIso = () => new Date().toISOString().slice(0, 10);
+  const todayIso = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
   function broadcastActiveDailyTopic() {
     if (!io) return;

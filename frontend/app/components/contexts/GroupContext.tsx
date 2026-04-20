@@ -106,18 +106,31 @@ const mockGroups: Group[] = [
 export function GroupProvider({ children }: { children: ReactNode }) {
   const { isConnected, sendGroupMessage: wsSendGroupMessage, joinGroup: wsJoinGroup, leaveGroup: wsLeaveGroup, sendTyping: wsSendTyping, sendStopTyping: wsSendStopTyping } = useWebSocket()
   
+  // De-duplicate groups by id while preserving order (first occurrence wins).
+  const dedupeById = <T extends { id: string }>(items: T[]): T[] => {
+    const seen = new Set<string>()
+    const out: T[] = []
+    for (const item of items) {
+      if (!item || !item.id || seen.has(item.id)) continue
+      seen.add(item.id)
+      out.push(item)
+    }
+    return out
+  }
+
   const [groups, setGroups] = useState<Group[]>(() => {
     if (typeof window !== 'undefined') {
       const savedGroups = localStorage.getItem('threads-groups')
       if (savedGroups) {
         try {
-          return JSON.parse(savedGroups).map((group: any) => ({
+          const parsed = JSON.parse(savedGroups).map((group: any) => ({
             ...group,
             createdAt: new Date(group.createdAt),
             onlineMembers: [],
             typingUsers: [],
             lastActivity: new Date()
           }))
+          return dedupeById(parsed)
         } catch (error) {
           console.error('Error parsing saved groups:', error)
         }
@@ -131,11 +144,20 @@ export function GroupProvider({ children }: { children: ReactNode }) {
     }))
   })
 
+  // Idempotent: if a group with the same id already exists, keep the existing
+  // entry (merging any new fields) instead of appending a duplicate. This is
+  // critical because `createGroup` and the `group_created` websocket event
+  // can both try to insert the same group.
   const addGroup = (group: Group) => {
     setGroups(prev => {
-      const newGroups = [...prev, group]
-      localStorage.setItem('threads-groups', JSON.stringify(newGroups))
-      return newGroups
+      const existing = prev.find(g => g.id === group.id)
+      const next = existing
+        ? prev.map(g => g.id === group.id ? { ...g, ...group } : g)
+        : [...prev, group]
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('threads-groups', JSON.stringify(next))
+      }
+      return next
     })
   }
 
@@ -182,7 +204,11 @@ export function GroupProvider({ children }: { children: ReactNode }) {
           typingUsers: [],
           lastActivity: new Date(),
         }))
-        setGroups(mapped)
+        const unique = dedupeById(mapped)
+        setGroups(unique)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('threads-groups', JSON.stringify(unique))
+        }
       } else {
         console.error('Error loading groups:', data.error)
         // Fallback to mock data

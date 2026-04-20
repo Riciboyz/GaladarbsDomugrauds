@@ -114,22 +114,14 @@ export default function Feed({ onUserClick }: FeedProps) {
   const filteredThreads = filter === 'following' && user
     ? threads.filter(t => (user.following || []).includes(t.authorId) && t.authorId !== user.id)
     : threads
-  
-  // Debug logging
-  console.log('Feed render - threads:', threads.length, 'filteredThreads:', filteredThreads.length)
-  console.log('Current filter:', filter)
-  console.log('Loading state:', loading)
-  console.log('Error state:', error)
-  console.log('User:', user?.id, 'Users count:', users.length)
-  console.log('Users:', users.map(u => ({ id: u.id, username: u.username })))
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* DomuGrauds App Style Header */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 z-10">
+      {/* Desktop-only header (mobile uses MobileTopBar) */}
+      <div className="hidden lg:block sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 z-10">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-gray-900">Home</h1>
+            <h1 className="text-xl font-bold text-gray-900">Sākums</h1>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span className="text-xs text-gray-500">
@@ -143,79 +135,102 @@ export default function Feed({ onUserClick }: FeedProps) {
               leftIcon={<PlusIcon className="w-4 h-4" />}
               size="sm"
             >
-              Compose
+              Jauns
             </Button>
             <button
               onClick={handleRefresh}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               disabled={loading}
+              aria-label="Atsvaidzināt"
             >
               <ArrowPathIcon className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
-        
-        {/* Simple Filters */}
-        <div className="flex border-b border-gray-200">
+      </div>
+
+      {/* Filter tabs — sticky under MobileTopBar on mobile, under desktop header on lg */}
+      <div
+        className="sticky bg-white/90 backdrop-blur-xl border-b border-gray-200/70 z-10 lg:top-[57px]"
+        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+      >
+        <div className="flex lg:hidden items-center justify-between px-3 h-10 border-b border-gray-100">
+          <div className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
+            <span className="text-[11px] text-gray-500 font-medium">
+              {isConnected ? 'Tiešraide' : 'Nav savienojuma'}
+            </span>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            aria-label="Atsvaidzināt"
+            className="inline-flex items-center justify-center w-8 h-8 -mr-1 rounded-lg text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        <div className="flex">
           {filters.map((filterOption) => {
             const Icon = filterOption.icon
             const isActive = filter === filterOption.id
-            
+
             return (
               <button
                 key={filterOption.id}
                 onClick={() => handleFilterChange(filterOption.id as Filter)}
-                className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium text-sm transition-colors ${
-                  isActive
-                    ? 'text-gray-900 border-b-2 border-gray-900'
-                    : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 flex items-center justify-center gap-2 px-4 h-11 text-sm transition-colors relative ${
+                  isActive ? 'text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-700 font-medium'
                 }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{filterOption.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-[2.5px] rounded-full bg-brand-green-700" />
+                )}
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Domas List */}
-      <div className="divide-y divide-gray-200">
+      {/* Threads list */}
+      <div className="space-y-3 mt-3">
         {loading ? (
           <ThreadLoadingSkeleton count={3} />
         ) : error ? (
-          <div className="p-12 text-center">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-dg-sm p-10 text-center">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <ArrowPathIcon className="w-6 h-6 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load threads</h3>
-            <p className="text-gray-600 mb-6">{error.message}</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1.5">Neizdevās ielādēt</h3>
+            <p className="text-sm text-gray-600 mb-5">{error.message}</p>
             <button
               onClick={() => loadThreads(filter)}
-              className="bg-black text-white px-6 py-2 rounded-full hover:bg-gray-800 transition-colors font-medium"
+              className="inline-flex items-center h-10 px-5 rounded-xl bg-brand-green-700 text-white hover:bg-brand-green-600 active:bg-brand-green-900 transition-colors font-semibold text-sm"
             >
-              Try Again
+              Mēģināt vēlreiz
             </button>
           </div>
         ) : filteredThreads.length === 0 ? (
-          <div className="p-12 text-center">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-dg-sm p-10 text-center">
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <UsersIcon className="w-6 h-6 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No threads yet</h3>
-            <p className="text-gray-600 mb-6">Be the first to start a conversation!</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1.5">Vēl nav ierakstu</h3>
+            <p className="text-sm text-gray-600 mb-5">Esi pirmais, kas sāk sarunu!</p>
             <button
               onClick={() => setShowCreateThread(true)}
-              className="bg-black text-white px-6 py-2 rounded-full hover:bg-gray-800 transition-colors font-medium"
+              className="inline-flex items-center h-10 px-5 rounded-xl bg-brand-green-700 text-white hover:bg-brand-green-600 active:bg-brand-green-900 transition-colors font-semibold text-sm"
             >
-              Create First Thread
+              Izveidot ierakstu
             </button>
           </div>
         ) : (
-          filteredThreads.map((thread) => {
-            console.log('Rendering thread:', thread.id, thread.content)
-            return <ThreadCard key={thread.id} thread={thread} onUserClick={onUserClick} />
-          })
+          filteredThreads.map((thread) => (
+            <ThreadCard key={thread.id} thread={thread} onUserClick={onUserClick} />
+          ))
         )}
       </div>
 

@@ -33,6 +33,70 @@ app.set('trust proxy', 1);
 
 const { db, dbPath } = initDatabase();
 
+// One-time sanitize: older uploads stored absolute URLs (e.g.
+// `http://localhost:3001/uploads/xyz.webp`) which are unreachable for any
+// client other than the machine that uploaded them. Convert those rows to
+// relative `/uploads/...` paths so the frontend's `/uploads/*` rewrite can
+// proxy them correctly for every client.
+function sanitizeLegacyAvatarUrls() {
+  const hosts = [
+    'http://localhost:3001',
+    'https://localhost:3001',
+    'http://127.0.0.1:3001'
+  ];
+  ['users', 'groups'].forEach((table) => {
+    hosts.forEach((host) => {
+      db.run(
+        `UPDATE ${table} SET avatar = REPLACE(avatar, ?, '')
+         WHERE avatar LIKE ?`,
+        [host, `${host}/uploads/%`],
+        (err) => {
+          if (err) console.warn(`Avatar sanitize (${table}) failed:`, err.message);
+        }
+      );
+    });
+  });
+}
+sanitizeLegacyAvatarUrls();
+
+// Remove `blob:` entries from thread attachments. Blob URLs only exist in the
+// author's browser memory, so other users (and even the author after refresh)
+// see 404s. Older builds of the thread composer accidentally persisted them.
+function sanitizeThreadBlobAttachments() {
+  db.all(
+    `SELECT id, attachments FROM threads
+     WHERE attachments LIKE '%blob:%'`,
+    [],
+    (err, rows) => {
+      if (err) {
+        console.warn('Thread attachment sanitize failed:', err.message);
+        return;
+      }
+      (rows || []).forEach((row) => {
+        let parsed;
+        try {
+          parsed = JSON.parse(row.attachments);
+        } catch {
+          return;
+        }
+        if (!Array.isArray(parsed)) return;
+        const cleaned = parsed.filter(
+          (item) => typeof item === 'string' && !item.startsWith('blob:')
+        );
+        if (cleaned.length === parsed.length) return;
+        db.run(
+          `UPDATE threads SET attachments = ? WHERE id = ?`,
+          [JSON.stringify(cleaned), row.id],
+          (uErr) => {
+            if (uErr) console.warn('Thread attachment update failed:', uErr.message);
+          }
+        );
+      });
+    }
+  );
+}
+sanitizeThreadBlobAttachments();
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 io.on('connection', (socket) => {

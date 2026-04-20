@@ -223,18 +223,6 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
             </section>
           )}
 
-          {/* Footer mini links */}
-          <section className="rounded-3xl bg-white/50 border border-gray-100">
-            <div className="p-5 text-[12px] text-gray-500 leading-relaxed">
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                <a className="hover:text-gray-700" href="#">About</a>
-                <a className="hover:text-gray-700" href="#">Privacy</a>
-                <a className="hover:text-gray-700" href="#">Terms</a>
-                <a className="hover:text-gray-700" href="#">Help</a>
-              </div>
-              <p className="mt-2">© {new Date().getFullYear()} DomuGrauds</p>
-            </div>
-          </section>
         </div>
       </div>
     </aside>

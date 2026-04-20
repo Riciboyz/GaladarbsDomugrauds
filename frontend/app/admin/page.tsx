@@ -79,7 +79,10 @@ export default function AdminPage() {
   const [success, setSuccess] = useState('')
   const [userActionLoadingId, setUserActionLoadingId] = useState<string | null>(null)
   const [topicActionLoadingId, setTopicActionLoadingId] = useState<string | null>(null)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })()
   const [form, setForm] = useState({ title: '', description: '', date: today, status: 'scheduled' as string })
   const [userFilters, setUserFilters] = useState({ q: '', role: '', includeDeleted: false })
   const [statsDate, setStatsDate] = useState(today)

@@ -3,13 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useUser } from '../../contexts/UserContext'
 import { useThread } from '../../contexts/ThreadContext'
-import { useNotification } from '../../contexts/NotificationContext'
 import { useWebSocket } from '../../contexts/WebSocketContext'
 import { formatDistanceToNow } from 'date-fns'
 import { 
   HeartIcon,
   ChatBubbleLeftIcon,
-  ShareIcon,
   EllipsisHorizontalIcon,
   UserPlusIcon,
   UserMinusIcon,
@@ -27,7 +25,6 @@ interface ThreadCardProps {
 export default function ThreadCard({ thread, isReply = false, onUserClick }: ThreadCardProps) {
   const { user, users, updateUser } = useUser()
   const { updateThread, deleteThread } = useThread()
-  const { addNotification } = useNotification()
   const { sendMessage } = useWebSocket()
   const [showReplies, setShowReplies] = useState(false)
   const [showCreateReply, setShowCreateReply] = useState(false)
@@ -40,6 +37,8 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
   const [showReport, setShowReport] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [reportStatus, setReportStatus] = useState<'ok' | 'error' | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
 
   // Prefer author embedded on the thread from API; fall back to users list
   let author = thread.author || users.find(u => u.id === thread.authorId)
@@ -79,25 +78,6 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
     }
   }, [showOptions])
   
-  // Debug thread data
-  console.log('ThreadCard rendering thread:', {
-    id: thread.id,
-    createdAt: thread.createdAt,
-    createdAtType: typeof thread.createdAt,
-    content: thread.content?.substring(0, 50) + '...',
-    author: author?.id,
-    isOwnThread,
-    isFollowing,
-    user: user?.id
-  })
-  
-  console.log('Follow button render check:', { 
-    isOwnThread, 
-    author: author?.id, 
-    user: user?.id,
-    shouldShowFollowButton: !isOwnThread
-  })
-
   const handleLike = async () => {
     if (!user || !author || isLiking) return
 
@@ -218,6 +198,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
       const response = await fetch('/api/users/follow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ 
           userId: author.id, // The user we want to follow/unfollow
           action: action
@@ -386,98 +367,85 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
     console.log('Using fallback author:', author)
   }
 
+  const relativeTime = (() => {
+    try {
+      const date = new Date(thread.createdAt)
+      if (isNaN(date.getTime())) return 'tagad'
+      return formatDistanceToNow(date, { addSuffix: true })
+    } catch {
+      return 'tagad'
+    }
+  })()
+
   return (
     <div id={`thread-${thread.id}`} className={`${isReply ? 'ml-8 border-l border-gray-200' : ''}`}>
-      <div className="p-5 bg-white border border-gray-100 rounded-xl shadow-dg-sm hover:shadow-dg-md transition-shadow duration-200">
+      <div className="p-4 sm:p-5 bg-white border border-gray-100 rounded-2xl shadow-dg-sm hover:shadow-dg-md transition-shadow duration-200">
         {/* Thread Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <img
-              src={author.avatar || `https://ui-avatars.com/api/?name=${author.displayName}&background=3b82f6&color=fff`}
-              alt={author.displayName}
-              className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-dg-sm hover:opacity-90 transition-opacity"
-              onClick={() => onUserClick?.(author.id)}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2">
-                <h3 
-                  className="font-semibold text-gray-900 truncate text-sm cursor-pointer hover:text-brand-green-700"
-                  onClick={() => onUserClick?.(author.id)}
-                >
-                  {author.displayName}
-                </h3>
-                <span className="text-sm text-gray-500">@{author.username}</span>
-                <span className="text-sm text-gray-400">·</span>
-                <span className="text-sm text-gray-500">
-                  {(() => {
-                    try {
-                      const date = new Date(thread.createdAt)
-                      if (isNaN(date.getTime())) {
-                        return 'Just now'
-                      }
-                      return formatDistanceToNow(date, { addSuffix: true })
-                    } catch (error) {
-                      console.error('Date formatting error:', error, 'thread.createdAt:', thread.createdAt)
-                      return 'Just now'
-                    }
-                  })()}
-                </span>
-              </div>
-              {!isOwnThread && (
-                <button
-                  onClick={() => {
-                    console.log('Follow button clicked:', {
-                      user: user?.id,
-                      author: author?.id,
-                      isFollowing,
-                      isFollowingUser
-                    })
-                    handleFollow()
-                  }}
-                  disabled={isFollowingUser}
-                  className={`mt-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                    isFollowing
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-brand-green-700 text-white hover:bg-brand-green-600'
-                  } ${isFollowingUser ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {isFollowingUser ? (
-                    <>
-                      <div className="w-3 h-3 inline mr-1 animate-spin border border-white border-t-transparent rounded-full"></div>
-                      Processing...
-                    </>
-                  ) : isFollowing ? (
-                    'Following'
-                  ) : (
-                    'Follow'
-                  )}
-                </button>
-              )}
+        <div className="flex items-start gap-3 mb-3">
+          <img
+            src={author.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(author.displayName || 'U')}&background=2d5a2d&color=fff&bold=true`}
+            alt={author.displayName}
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover cursor-pointer ring-2 ring-white shadow-dg-sm hover:opacity-90 transition-opacity flex-shrink-0"
+            onClick={() => onUserClick?.(author.id)}
+          />
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <h3
+                className="font-semibold text-gray-900 truncate text-[15px] cursor-pointer hover:text-brand-green-700 leading-tight"
+                onClick={() => onUserClick?.(author.id)}
+              >
+                {author.displayName}
+              </h3>
+              <span className="text-[13px] text-gray-400 flex-shrink-0">·</span>
+              <span className="text-[13px] text-gray-500 whitespace-nowrap flex-shrink-0">
+                {relativeTime}
+              </span>
             </div>
+            <p className="text-[13px] text-gray-500 truncate leading-tight">
+              @{author.username}
+            </p>
           </div>
-          
+
+          {!isOwnThread && (
+            <button
+              onClick={handleFollow}
+              disabled={isFollowingUser}
+              className={`flex-shrink-0 inline-flex items-center justify-center h-8 px-3 rounded-full text-[12px] font-semibold transition-all ${
+                isFollowing
+                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                  : 'bg-gray-900 text-white hover:bg-gray-800'
+              } ${isFollowingUser ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isFollowingUser ? (
+                <div className="w-3.5 h-3.5 animate-spin border-2 border-current border-t-transparent rounded-full" />
+              ) : isFollowing ? 'Seko' : 'Sekot'}
+            </button>
+          )}
+
           {isOwnThread && (
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowOptions(!showOptions)
                 }}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Vairāk"
+                className="inline-flex items-center justify-center w-8 h-8 -mr-1 -mt-1 rounded-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
               >
-                <EllipsisHorizontalIcon className="w-5 h-5 text-gray-500" />
+                <EllipsisHorizontalIcon className="w-5 h-5" />
               </button>
-              
+
               {showOptions && (
-                <div 
-                  className="absolute right-0 top-8 bg-white border border-gray-100 rounded-xl shadow-dg-sm z-10"
+                <div
+                  className="absolute right-0 top-9 min-w-[140px] bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={handleDelete}
-                    className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-xl"
+                    className="block w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 font-medium"
                   >
-                    Delete
+                    Dzēst
                   </button>
                 </div>
               )}
@@ -486,109 +454,89 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         </div>
 
         {/* Thread Content */}
-        <div className="text-gray-800 mb-4 whitespace-pre-wrap leading-relaxed">
+        <div className="text-gray-800 text-[15px] mb-3 whitespace-pre-wrap break-words leading-relaxed">
           {thread.content}
         </div>
 
         {/* Attachments */}
-        {thread.attachments && (() => {
+        {(() => {
           try {
-            const attachments = typeof thread.attachments === 'string' 
-              ? JSON.parse(thread.attachments) 
-              : thread.attachments;
-            return Array.isArray(attachments) && attachments.length > 0;
-          } catch {
-            return false;
-          }
-        })() && (
-          <div className="mb-4">
-            <div className="grid grid-cols-1 gap-2">
-              {(() => {
-                try {
-                  const attachments = typeof thread.attachments === 'string' 
-                    ? JSON.parse(thread.attachments) 
-                    : thread.attachments;
-                  return Array.isArray(attachments) ? attachments : [];
-                } catch {
-                  return [];
-                }
-              })().map((attachment: string, index: number) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={attachment}
-                    alt={`Attachment ${index + 1}`}
-                    className="w-full max-w-md rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => window.open(attachment, '_blank')}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+            const attachments = typeof thread.attachments === 'string'
+              ? JSON.parse(thread.attachments)
+              : thread.attachments
+            if (!Array.isArray(attachments) || attachments.length === 0) return null
 
-        {/* Thread Actions */}
-        <div className="flex items-center gap-6 text-gray-500">
-          {/* Like Button */}
+            return (
+              <div className="mb-3 -mx-1">
+                <div className={`grid gap-1.5 ${attachments.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {attachments.map((attachment: string, index: number) => (
+                    <div
+                      key={index}
+                      className="relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50"
+                    >
+                      <img
+                        src={attachment}
+                        alt={`Pielikums ${index + 1}`}
+                        loading="lazy"
+                        className="w-full h-auto max-h-[400px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                        onClick={() => window.open(attachment, '_blank')}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          } catch {
+            return null
+          }
+        })()}
+
+        {/* Thread Actions — evenly spaced on mobile */}
+        <div className="flex items-center justify-between sm:justify-start sm:gap-6 text-gray-500 pt-1">
           <button
             onClick={handleLike}
             disabled={isLiking}
-            className={`flex items-center space-x-1 hover:text-red-500 transition-colors ${
-              isLiked ? 'text-red-500' : ''
+            aria-label="Patīk"
+            className={`inline-flex items-center gap-1.5 h-8 px-1 rounded-lg transition-colors ${
+              isLiked ? 'text-red-500' : 'hover:text-red-500'
             }`}
           >
-            {isLiked ? (
-              <HeartFilledIcon className="w-5 h-5" />
-            ) : (
-              <HeartIcon className="w-5 h-5" />
-            )}
-            <span className="text-sm">{(() => {
+            {isLiked ? <HeartFilledIcon className="w-5 h-5" /> : <HeartIcon className="w-5 h-5" />}
+            <span className="text-[13px] font-medium tabular-nums">{(() => {
               try {
-                const likes = typeof thread.likes === 'string' ? JSON.parse(thread.likes) : thread.likes;
-                return Array.isArray(likes) ? likes.length : 0;
-              } catch {
-                return 0;
-              }
+                const likes = typeof thread.likes === 'string' ? JSON.parse(thread.likes) : thread.likes
+                return Array.isArray(likes) ? likes.length : 0
+              } catch { return 0 }
             })()}</span>
           </button>
 
-          {/* Dislike Button */}
           <button
             onClick={handleDislike}
             disabled={isLiking}
-            className={`flex items-center space-x-1 hover:text-blue-500 transition-colors ${
-              isDisliked ? 'text-blue-500' : ''
+            aria-label="Nepatīk"
+            className={`inline-flex items-center gap-1.5 h-8 px-1 rounded-lg transition-colors ${
+              isDisliked ? 'text-blue-500' : 'hover:text-blue-500'
             }`}
           >
-            {isDisliked ? (
-              <HandThumbDownFilledIcon className="w-5 h-5" />
-            ) : (
-              <HandThumbDownIcon className="w-5 h-5" />
-            )}
-            <span className="text-sm">{(() => {
+            {isDisliked ? <HandThumbDownFilledIcon className="w-5 h-5" /> : <HandThumbDownIcon className="w-5 h-5" />}
+            <span className="text-[13px] font-medium tabular-nums">{(() => {
               try {
-                const dislikes = typeof thread.dislikes === 'string' ? JSON.parse(thread.dislikes) : thread.dislikes;
-                return Array.isArray(dislikes) ? dislikes.length : 0;
-              } catch {
-                return 0;
-              }
+                const dislikes = typeof thread.dislikes === 'string' ? JSON.parse(thread.dislikes) : thread.dislikes
+                return Array.isArray(dislikes) ? dislikes.length : 0
+              } catch { return 0 }
             })()}</span>
           </button>
 
-          {/* Comment Button */}
           <button
-            onClick={() => {
-              console.log('Comment button clicked, current replies:', thread.replies)
-              setShowComments(!showComments)
-            }}
-            className="flex items-center space-x-1 hover:text-blue-500 transition-colors"
+            onClick={() => setShowComments(!showComments)}
+            aria-label="Komentāri"
+            className="inline-flex items-center gap-1.5 h-8 px-1 rounded-lg hover:text-brand-green-700 transition-colors"
           >
             <ChatBubbleLeftIcon className="w-5 h-5" />
-            <span className="text-sm">{thread.replies?.length || 0}</span>
-          </button>
-
-          {/* Share Button */}
-          <button className="flex items-center space-x-1 hover:text-brand-green-700 transition-colors">
-            <ShareIcon className="w-5 h-5" />
+            <span className="text-[13px] font-medium tabular-nums">{thread.replies?.length || 0}</span>
           </button>
 
           {user && !isOwnThread && (
@@ -596,11 +544,17 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
               type="button"
               onClick={() => {
                 setReportReason('')
+                setReportStatus(null)
+                setReportError(null)
                 setShowReport(true)
               }}
-              className="text-sm text-gray-500 hover:text-amber-700 underline-offset-2 hover:underline"
+              aria-label="Ziņot"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-gray-500 hover:text-amber-700 hover:bg-amber-50 transition-colors"
             >
-              Ziņot
+              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 21V4" />
+                <path d="M4 4h11l-1.5 4 1.5 4H4" />
+              </svg>
             </button>
           )}
         </div>
@@ -615,11 +569,21 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
               className="w-full rounded-lg border border-amber-200 p-2 text-sm bg-white"
               rows={2}
             />
+            {reportStatus === 'ok' && (
+              <p className="text-sm text-green-700">Ziņojums nosūtīts moderācijai.</p>
+            )}
+            {reportStatus === 'error' && (
+              <p className="text-sm text-red-700">{reportError || 'Ziņojums neizdevās'}</p>
+            )}
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
                 className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
-                onClick={() => setShowReport(false)}
+                onClick={() => {
+                  setShowReport(false)
+                  setReportStatus(null)
+                  setReportError(null)
+                }}
               >
                 Atcelt
               </button>
@@ -629,6 +593,8 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                 className="px-3 py-1 text-sm rounded-lg bg-amber-800 text-white disabled:opacity-50"
                 onClick={async () => {
                   setReportSubmitting(true)
+                  setReportError(null)
+                  setReportStatus(null)
                   try {
                     const res = await fetch('/api/reports', {
                       method: 'POST',
@@ -638,24 +604,15 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                     })
                     const data = await res.json().catch(() => ({}))
                     if (!res.ok) throw new Error(data.error || 'Neizdevās nosūtīt')
-                    addNotification({
-                      id: `report-ok-${Date.now()}`,
-                      userId: user.id,
-                      type: 'comment',
-                      message: 'Ziņojums nosūtīts moderācijai.',
-                      read: false,
-                      createdAt: new Date(),
-                    })
-                    setShowReport(false)
+                    setReportStatus('ok')
+                    setTimeout(() => {
+                      setShowReport(false)
+                      setReportReason('')
+                      setReportStatus(null)
+                    }, 1500)
                   } catch (err) {
-                    addNotification({
-                      id: `report-err-${Date.now()}`,
-                      userId: user.id,
-                      type: 'comment',
-                      message: err instanceof Error ? err.message : 'Ziņojums neizdevās',
-                      read: false,
-                      createdAt: new Date(),
-                    })
+                    setReportStatus('error')
+                    setReportError(err instanceof Error ? err.message : 'Ziņojums neizdevās')
                   } finally {
                     setReportSubmitting(false)
                   }

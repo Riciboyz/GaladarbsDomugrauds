@@ -3,25 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 17, 24, 39;
+  --dg-surface: 249, 250, 251;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+html,
+body {
+  color: rgb(var(--foreground-rgb));
+  background-color: rgb(var(--dg-surface));
+  min-height: 100%;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: radial-gradient(1200px 800px at 20% 10%, rgba(255,255,255,0.6) 0%, transparent 60%),
-    radial-gradient(1000px 700px at 80% 90%, rgba(0,0,0,0.04) 0%, transparent 70%),
-    linear-gradient(135deg, rgb(var(--background-start-rgb)) 0%, rgb(var(--background-end-rgb)) 100%);
-  background-attachment: fixed;
+  overflow-x: clip;
 }
 
 @layer utilities {
@@ -115,4 +111,29 @@ body {
 
 .header {
   @apply bg-white border-b border-gray-200;
+}
+
+/* Mobile: reserve space for fixed top bar (h-14 + safe area) and bottom nav (h-16 + safe area) */
+.dg-mobile-safe-pad {
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+
+@media (min-width: 1024px) {
+  .dg-mobile-safe-pad {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* Bottom-sheet slide-up animation for mobile modals */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

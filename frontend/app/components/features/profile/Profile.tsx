@@ -41,6 +41,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
   })
   const [avatarPreview, setAvatarPreview] = useState('')
   const [isUploading, setIsUploading] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
   const [showFollowers, setShowFollowers] = useState(false)
   const [showFollowing, setShowFollowing] = useState(false)
   const [followers, setFollowers] = useState<any[]>([])
@@ -97,6 +98,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
         avatar: profileUser.avatar || ''
       })
       setAvatarPreview(profileUser.avatar || '')
+      setEditError(null)
       setIsEditing(true)
     }
   }
@@ -104,32 +106,75 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
   const handleSave = async () => {
     if (!profileUser || !user) return
 
+    setEditError(null)
+
+    // Build diff payload: only send fields that actually changed so the
+    // backend doesn't reject unchanged usernames (e.g. legacy emails that
+    // wouldn't pass the new /^[a-zA-Z0-9_]+$/ rule).
+    const payload: Record<string, unknown> = {}
+    const trimmedUsername = (editData.username || '').trim()
+    const trimmedDisplayName = (editData.displayName || '').trim()
+
+    if (trimmedUsername !== (profileUser.username || '')) {
+      if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+        setEditError('Lietotājvārdam jābūt no 3 līdz 30 rakstzīmēm')
+        return
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+        setEditError('Lietotājvārds drīkst saturēt tikai burtus, ciparus un pasvītras')
+        return
+      }
+      payload.username = trimmedUsername
+    }
+    if (trimmedDisplayName !== (profileUser.displayName || '')) {
+      payload.displayName = trimmedDisplayName
+    }
+    if ((editData.bio || '') !== (profileUser.bio || '')) {
+      payload.bio = editData.bio || ''
+    }
+    if ((editData.avatar || '') !== (profileUser.avatar || '')) {
+      payload.avatar = editData.avatar || ''
+    }
+
+    if (Object.keys(payload).length === 0) {
+      setIsEditing(false)
+      setAvatarPreview('')
+      return
+    }
+
     setIsUploading(true)
     try {
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          username: editData.username,
-          displayName: editData.displayName,
-          bio: editData.bio,
-          avatar: editData.avatar
-        }),
+        body: JSON.stringify(payload),
       })
 
-      const data = await response.json()
-      if (response.ok) {
+      // Guard against non-JSON (HTML error pages from proxy, empty 504 etc.)
+      let data: any = null
+      try {
+        data = await response.json()
+      } catch {
+        data = null
+      }
+
+      if (response.ok && data?.user) {
         updateUser(data.user)
         setIsEditing(false)
         setAvatarPreview('')
-      } else {
-        console.error('Error updating profile:', data.error)
-        alert(data.error || 'Failed to update profile')
+        return
       }
+
+      if (response.status === 401 || response.status === 403) {
+        setEditError('Sesija beigusies — lūdzu pieslēdzies vēlreiz')
+        return
+      }
+
+      setEditError(data?.error || `Neizdevās saglabāt profilu (${response.status})`)
     } catch (error) {
       console.error('Error updating profile:', error)
-      alert('Failed to update profile')
+      setEditError('Tīkla kļūda — pārbaudi savienojumu un mēģini vēlreiz')
     } finally {
       setIsUploading(false)
     }
@@ -166,9 +211,19 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
         const data = await response.json()
         
         if (response.ok && data.success) {
-          // Update with the server URL
-          setAvatarPreview(data.url)
-          setEditData(prev => ({ ...prev, avatar: data.url }))
+          // Defence in depth: normalise absolute URLs from older backend
+          // builds to a relative `/uploads/...` path so the image is
+          // reachable from any client (not just the uploader's machine).
+          let url: string = data.url || ''
+          if (/^https?:\/\//i.test(url)) {
+            try {
+              url = new URL(url).pathname
+            } catch {
+              /* leave as-is */
+            }
+          }
+          setAvatarPreview(url)
+          setEditData(prev => ({ ...prev, avatar: url }))
         } else {
           alert(data.error || 'Failed to upload image')
         }
@@ -343,47 +398,52 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
         </div>
       )}
       
-      {/* Ultra-Minimal Profile Header */}
-      <div className="card-elevated mb-6">
-        <div className="p-6">
-          {/* Profile Info */}
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center space-x-4">
+      {/* Profile Header — responsive: stacks on mobile, row on desktop */}
+      <div className="bg-white rounded-2xl shadow-dg-sm border border-gray-100 mb-6 overflow-hidden">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+            <div className="flex items-start gap-4 min-w-0">
               <img
-                src={profileUser.avatar || `https://ui-avatars.com/api/?name=${profileUser.displayName}&background=3b82f6&color=fff`}
+                src={profileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.displayName || profileUser.username || 'U')}&background=2d5a2d&color=fff&bold=true`}
                 alt={profileUser.displayName}
-                className="w-16 h-16 rounded-xl object-cover"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-2 ring-white shadow-dg-sm flex-shrink-0"
               />
-              <div>
-                <div className="flex items-center space-x-2 mb-1">
-                  <h1 className="heading-2 text-gray-900">{profileUser.displayName}</h1>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate tracking-tight">
+                    {profileUser.displayName}
+                  </h1>
                   {(profileUser as any).verified && (
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">✓</span>
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-[11px] font-bold leading-none">✓</span>
                     </div>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mb-2">@{profileUser.username}</p>
+                <p className="text-sm text-gray-500 truncate">@{profileUser.username}</p>
                 {profileUser.bio && (
-                  <p className="body-regular text-gray-700 mb-3">{profileUser.bio}</p>
+                  <p className="text-[15px] text-gray-700 mt-3 leading-relaxed break-words">
+                    {profileUser.bio}
+                  </p>
                 )}
-                
-                {/* Additional Info */}
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <div className="flex items-center space-x-1">
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-[13px] text-gray-500">
+                  <div className="flex items-center gap-1.5">
                     <CalendarIcon className="w-4 h-4" />
-                    <span>Joined {joinedLabel ?? '—'}</span>
+                    <span>Pievienojās {joinedLabel ?? '—'}</span>
                   </div>
                   {(profileUser as any).location && (
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center gap-1.5">
                       <MapPinIcon className="w-4 h-4" />
                       <span>{(profileUser as any).location}</span>
                     </div>
                   )}
                   {(profileUser as any).website && (
-                    <div className="flex items-center space-x-1">
-                      <LinkIcon className="w-4 h-4" />
-                      <a href={(profileUser as any).website} className="text-blue-600 hover:underline">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <LinkIcon className="w-4 h-4 flex-shrink-0" />
+                      <a
+                        href={(profileUser as any).website}
+                        className="text-brand-green-700 hover:underline truncate"
+                      >
                         {(profileUser as any).website}
                       </a>
                     </div>
@@ -392,34 +452,34 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
+            {/* Action button — full-width on mobile, auto on sm+ */}
+            <div className="flex sm:block sm:flex-shrink-0">
               {isOwnProfile ? (
                 <button
                   onClick={handleEdit}
-                  className="btn-secondary flex items-center space-x-2"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 active:bg-gray-700 transition-colors"
                 >
                   <PencilIcon className="w-4 h-4" />
-                  <span>Edit Profile</span>
+                  <span>Rediģēt profilu</span>
                 </button>
               ) : (
                 <button
                   onClick={handleFollow}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold transition-colors ${
                     isFollowing
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'btn-primary'
+                      ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      : 'bg-brand-green-700 text-white hover:bg-brand-green-600 active:bg-brand-green-900'
                   }`}
                 >
                   {isFollowing ? (
                     <>
                       <UserMinusIcon className="w-4 h-4" />
-                      <span>Following</span>
+                      <span>Seko</span>
                     </>
                   ) : (
                     <>
                       <UserPlusIcon className="w-4 h-4" />
-                      <span>Follow</span>
+                      <span>Sekot</span>
                     </>
                   )}
                 </button>
@@ -427,67 +487,80 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center space-x-6 pt-4 border-t border-gray-100">
+          {/* Stats — 4-col grid on mobile, row on desktop */}
+          <div className="grid grid-cols-4 gap-2 pt-4 border-t border-gray-100">
             <button
               onClick={handleShowFollowers}
-              className="flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200"
+              className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <span className="heading-4 text-gray-900">{followers.length || profileUser.followers?.length || 0}</span>
-              <span className="body-regular text-gray-600">Followers</span>
+              <span className="text-base sm:text-lg font-bold text-gray-900">
+                {followers.length || profileUser.followers?.length || 0}
+              </span>
+              <span className="text-[11px] sm:text-sm text-gray-500">Sekotāji</span>
             </button>
             <button
               onClick={handleShowFollowing}
-              className="flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200"
+              className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <span className="heading-4 text-gray-900">{following.length || profileUser.following?.length || 0}</span>
-              <span className="body-regular text-gray-600">Following</span>
+              <span className="text-base sm:text-lg font-bold text-gray-900">
+                {following.length || profileUser.following?.length || 0}
+              </span>
+              <span className="text-[11px] sm:text-sm text-gray-500">Seko</span>
             </button>
-            <div className="flex items-center space-x-2">
-              <span className="heading-4 text-gray-900">{userThreads.length}</span>
-              <span className="body-regular text-gray-600">Threads</span>
+            <div className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1">
+              <span className="text-base sm:text-lg font-bold text-gray-900">{userThreads.length}</span>
+              <span className="text-[11px] sm:text-sm text-gray-500">Ieraksti</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="heading-4 text-gray-900">{totalLikes}</span>
-              <span className="body-regular text-gray-600">Likes</span>
+            <div className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1">
+              <span className="text-base sm:text-lg font-bold text-gray-900">{totalLikes}</span>
+              <span className="text-[11px] sm:text-sm text-gray-500">Patīk</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* Edit Profile — bottom-sheet on mobile, centered modal on sm+ */}
       {isEditing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="card-elevated w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h3 className="heading-3 text-gray-900">Edit Profile</h3>
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
+          onClick={() => setIsEditing(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-[slideUp_0.25s_ease-out]"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          >
+            {/* Drag handle for mobile */}
+            <div className="sm:hidden flex justify-center pt-2.5 pb-1">
+              <div className="w-10 h-1 rounded-full bg-gray-300" />
+            </div>
+
+            <div className="flex items-center justify-between px-5 sm:px-6 h-14 border-b border-gray-100 flex-shrink-0">
+              <h3 className="text-lg font-bold text-gray-900 tracking-tight">Rediģēt profilu</h3>
               <button
                 onClick={() => setIsEditing(false)}
-                className="btn-icon"
+                aria-label="Aizvērt"
+                className="inline-flex items-center justify-center w-9 h-9 -mr-1 rounded-xl text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Profile Picture Upload */}
-              <div className="flex items-center space-x-4">
-                <div className="relative group">
-                  <div className="relative">
-                    <img
-                      src={avatarPreview || `https://ui-avatars.com/api/?name=${editData.displayName}&background=3b82f6&color=fff`}
-                      alt="Profile preview"
-                      className="w-20 h-20 rounded-xl object-cover border-2 border-gray-200 cursor-pointer"
-                      onClick={() => {
-                        document.getElementById('avatar-upload')?.click()
-                      }}
-                    />
-                    {isUploading && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-xl flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                      </div>
-                    )}
-                  </div>
+
+            <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-5">
+              {/* Avatar uploader */}
+              <div className="flex items-center gap-4">
+                <div className="relative group flex-shrink-0">
+                  <img
+                    src={avatarPreview || `https://ui-avatars.com/api/?name=${encodeURIComponent(editData.displayName || 'U')}&background=2d5a2d&color=fff&bold=true`}
+                    alt="Profile preview"
+                    className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white shadow-dg-sm cursor-pointer"
+                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                  />
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                    </div>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -496,9 +569,9 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                     id="avatar-upload"
                     disabled={isUploading}
                   />
-                  <label 
+                  <label
                     htmlFor="avatar-upload"
-                    className={`absolute inset-0 bg-black bg-opacity-50 rounded-xl flex items-center justify-center cursor-pointer hover:bg-opacity-60 transition-all duration-200 group-hover:opacity-100 opacity-0 ${isUploading ? 'pointer-events-none' : ''}`}
+                    className={`absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity ${isUploading ? 'pointer-events-none' : ''}`}
                   >
                     <CameraIcon className="w-6 h-6 text-white" />
                   </label>
@@ -506,81 +579,93 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                     <button
                       type="button"
                       onClick={handleRemoveAvatar}
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                      aria-label="Noņemt attēlu"
+                      className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
                     >
-                      <XMarkIcon className="w-4 h-4" />
+                      <XMarkIcon className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
-                <div className="flex-1">
-                  <label htmlFor="avatar-upload" className="block text-sm font-medium text-gray-700 mb-1">
-                    Profile Picture
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">Click on the image or camera icon to upload (max 5MB)</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 mb-0.5">Profila attēls</p>
+                  <p className="text-xs text-gray-500 leading-snug">
+                    Nospied, lai augšupielādētu (max 5 MB)
+                  </p>
                   {avatarPreview && (
                     <button
                       type="button"
                       onClick={handleRemoveAvatar}
-                      className="text-xs text-red-600 hover:text-red-700 transition-colors duration-200"
+                      className="mt-1.5 text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
                     >
-                      Remove image
+                      Noņemt attēlu
                     </button>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Vārds</label>
                 <input
                   type="text"
                   value={editData.displayName}
                   onChange={(e) => setEditData(prev => ({ ...prev, displayName: e.target.value }))}
                   className="input"
-                  placeholder="Enter your display name"
+                  placeholder="Tavs redzamais vārds"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Lietotājvārds</label>
                 <input
                   type="text"
                   value={editData.username}
                   onChange={(e) => setEditData(prev => ({ ...prev, username: e.target.value }))}
                   className="input"
-                  placeholder="Enter your username"
+                  placeholder="lietotajvards"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Bio</label>
                 <textarea
                   value={editData.bio}
                   onChange={(e) => setEditData(prev => ({ ...prev, bio: e.target.value }))}
                   className="input-textarea h-24"
-                  placeholder="Tell us about yourself..."
+                  placeholder="Pastāsti par sevi..."
                   maxLength={160}
                 />
-                <p className="text-xs text-gray-500 mt-1">{editData.bio.length}/160</p>
+                <p className="text-xs text-gray-500 mt-1 text-right">{editData.bio.length}/160</p>
               </div>
+
+              {editError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                >
+                  {editError}
+                </div>
+              )}
             </div>
-            
-            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-100">
+
+            <div className="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-gray-100 flex-shrink-0">
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 font-medium text-sm"
+                className="px-4 h-10 rounded-xl text-gray-700 hover:bg-gray-100 active:bg-gray-200 font-semibold text-sm transition-colors"
               >
-                Cancel
+                Atcelt
               </button>
               <button
                 onClick={handleSave}
                 disabled={isUploading}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-brand-green-700 text-white font-semibold text-sm hover:bg-brand-green-600 active:bg-brand-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isUploading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Saving...</span>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Saglabā...</span>
                   </>
                 ) : (
-                  <span>Save Changes</span>
+                  <span>Saglabāt</span>
                 )}
               </button>
             </div>

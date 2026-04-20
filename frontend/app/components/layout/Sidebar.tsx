@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useUser } from '../contexts/UserContext'
 import { useNotification } from '../contexts/NotificationContext'
 import { 
@@ -31,13 +30,6 @@ export default function Sidebar({ activeTab, onTabChange, tabs }: SidebarProps) 
   const { notifications } = useNotification()
   const unreadNotifications = notifications.filter(n => !n.read && n.userId === user?.id).length
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔔 Sidebar - Current user:', user?.id)
-    console.log('🔔 Sidebar - All notifications:', notifications)
-    console.log('🔔 Sidebar - Unread count:', unreadNotifications)
-  }, [notifications, user, unreadNotifications])
-
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', {
@@ -54,7 +46,7 @@ export default function Sidebar({ activeTab, onTabChange, tabs }: SidebarProps) 
   }
 
   return (
-    <div className="fixed left-0 top-0 h-full w-72 bg-white border-r border-gray-100 z-20">
+    <div className="hidden lg:block fixed left-0 top-0 h-full w-72 bg-white border-r border-gray-100 z-20">
       <div className="flex flex-col h-full">
         {/* Brand Header */}
         <div className="p-6 border-b border-gray-100">

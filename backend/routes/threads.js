@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const {
   optionalAuth,
   currentUserId,
-  DEMO_USER_ID,
   requireAdmin,
   assertUserCanCreateContent,
 } = require('../middleware/auth');
@@ -18,11 +17,11 @@ const THREAD_FEED_FILTER = ` AND u.deleted_at IS NULL AND (COALESCE(t.visibility
 module.exports = function (db, io) {
   const router = Router();
 
-  router.get('/', (req, res) => {
+  router.get('/', optionalAuth, (req, res) => {
     const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
     const offset = parseInt(req.query.offset, 10) || 0;
     const feedType = req.query.feedType || 'all';
-    const viewerId = req.query.userId || DEMO_USER_ID;
+    const viewerId = currentUserId(req);
 
     let sql = `${THREAD_SELECT} WHERE (t.parent_id IS NULL OR t.parent_id = '')${THREAD_FEED_FILTER}`;
     const params = [];

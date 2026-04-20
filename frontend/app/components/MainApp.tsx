@@ -1,9 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from './contexts/UserContext'
+import { useNotification } from './contexts/NotificationContext'
 import { useRealtimeNotifications } from './hooks/useRealtimeNotifications'
 import Sidebar from './layout/Sidebar'
+import MobileTopBar from './layout/MobileTopBar'
+import MobileDrawer from './layout/MobileDrawer'
+import MobileBottomNav from './layout/MobileBottomNav'
 import Feed from './features/threads/Feed'
 import Profile from './features/profile/Profile'
 import RealtimeNotificationsProvider from './features/notifications/RealtimeNotificationsProvider'
@@ -25,21 +29,37 @@ type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-pr
 
 export default function MainApp() {
   const { user } = useUser()
+  const { notifications } = useNotification()
+  const unreadNotifications = notifications.filter(n => !n.read && n.userId === user?.id).length
   
   useRealtimeNotifications()
-  
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = ''
+    }
+  }, [])
+
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [showCreateThread, setShowCreateThread] = useState(false)
   const [currentTopicId, setCurrentTopicId] = useState<string | null>(null)
   const [viewedUserId, setViewedUserId] = useState<string | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const tabs = [
-    { id: 'home', label: 'Home', icon: HomeIcon },
-    { id: 'profile', label: 'Profile', icon: UserIcon },
-    { id: 'notifications', label: 'Notifications', icon: BellIcon },
-    { id: 'search', label: 'Search', icon: MagnifyingGlassIcon },
-    { id: 'groups', label: 'Groups', icon: UserGroupIcon },
+    { id: 'home', label: 'Sākums', icon: HomeIcon },
+    { id: 'search', label: 'Meklēt', icon: MagnifyingGlassIcon },
+    { id: 'groups', label: 'Grupas', icon: UserGroupIcon },
+    { id: 'notifications', label: 'Paziņojumi', icon: BellIcon },
+    { id: 'profile', label: 'Profils', icon: UserIcon },
   ]
+
+  const activeTitle =
+    activeTab === 'user-profile'
+      ? 'Profils'
+      : activeTab === 'topic-submission'
+      ? 'Tēma'
+      : tabs.find(t => t.id === activeTab)?.label
 
   const handleOpenTopicSubmission = (topicId: string) => {
     setCurrentTopicId(topicId)
@@ -49,6 +69,11 @@ export default function MainApp() {
   const handleUserProfileClick = (userId: string) => {
     setViewedUserId(userId)
     setActiveTab('user-profile' as Tab)
+  }
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as Tab)
+    setDrawerOpen(false)
   }
 
   const renderContent = () => {
@@ -87,7 +112,7 @@ export default function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <KeyboardShortcuts
         onNewThread={() => setShowCreateThread(true)}
         onSearch={() => setActiveTab('search')}
@@ -97,15 +122,22 @@ export default function MainApp() {
         onGroups={() => setActiveTab('groups')}
         onSettings={() => {}}
       />
-      
-      <div className="flex min-h-screen">
-        <Sidebar activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as Tab)} tabs={tabs} />
+
+      <MobileTopBar
+        onOpenDrawer={() => setDrawerOpen(true)}
+        onCompose={() => setShowCreateThread(true)}
+        title={activeTitle}
+      />
+      <MobileDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      <div className="flex min-h-screen w-full">
+        <Sidebar activeTab={activeTab} onTabChange={handleTabChange} tabs={tabs} />
         
-        <div className="flex-1 ml-72">
-          <div className="min-h-screen">
-            <div className="container-padding py-8">
-              <div className="mx-auto max-w-6xl flex gap-6">
-                <div className="flex-1 max-w-2xl">
+        <div className="flex-1 min-w-0 lg:ml-72">
+          <div className="min-h-screen dg-mobile-safe-pad lg:pt-0 lg:pb-0">
+            <div className="px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
+              <div className="mx-auto max-w-6xl flex gap-6 w-full">
+                <div className="flex-1 min-w-0 lg:max-w-2xl">
                   {renderContent()}
                 </div>
                 <RightSidebar onOpenTopicSubmission={handleOpenTopicSubmission} />
@@ -114,9 +146,16 @@ export default function MainApp() {
           </div>
         </div>
       </div>
+
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        tabs={tabs}
+        unreadCount={unreadNotifications}
+      />
       
       {showCreateThread && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <SimpleCreateThread onClose={() => setShowCreateThread(false)} />
         </div>
       )}

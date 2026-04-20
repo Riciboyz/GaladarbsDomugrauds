@@ -238,14 +238,14 @@ export default function Groups() {
     <div className="max-w-4xl mx-auto">
       {/* Instagram/Twitter Style Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Groups</h1>
-            <p className="text-gray-600">Discover and join communities that interest you</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Groups</h1>
+            <p className="text-sm sm:text-base text-gray-600">Discover and join communities that interest you</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-black text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-all duration-200 transform hover:scale-[1.02] flex items-center space-x-2 shadow-lg"
+            className="bg-black text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl font-semibold hover:bg-gray-800 transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center space-x-2 shadow-lg self-start sm:self-auto"
           >
             <PlusIcon className="w-5 h-5" />
             <span>Create Group</span>

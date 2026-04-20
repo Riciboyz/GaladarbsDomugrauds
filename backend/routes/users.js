@@ -66,13 +66,21 @@ module.exports = function (db, io) {
     const userId = req.query.userId;
     if (!userId) return res.json({ success: true, followers: [] });
     db.all(
-      `SELECT u.id, u.username, u.display_name, u.avatar as avatar_url
+      `SELECT u.id, u.username, u.display_name, u.avatar
        FROM users u INNER JOIN followers f ON u.id = f.follower_id
        WHERE f.following_id = ? AND u.deleted_at IS NULL`,
       [userId],
       (err, rows) => {
         if (err) return res.json({ success: true, followers: [] });
-        res.json({ success: true, followers: rows || [] });
+        res.json({
+          success: true,
+          followers: (rows || []).map((r) => ({
+            id: r.id,
+            username: r.username,
+            displayName: r.display_name,
+            avatar: r.avatar
+          }))
+        });
       }
     );
   });
@@ -81,13 +89,21 @@ module.exports = function (db, io) {
     const userId = req.query.userId;
     if (!userId) return res.json({ success: true, following: [] });
     db.all(
-      `SELECT u.id, u.username, u.display_name, u.avatar as avatar_url
+      `SELECT u.id, u.username, u.display_name, u.avatar
        FROM users u INNER JOIN followers f ON u.id = f.following_id
        WHERE f.follower_id = ? AND u.deleted_at IS NULL`,
       [userId],
       (err, rows) => {
         if (err) return res.json({ success: true, following: [] });
-        res.json({ success: true, following: rows || [] });
+        res.json({
+          success: true,
+          following: (rows || []).map((r) => ({
+            id: r.id,
+            username: r.username,
+            displayName: r.display_name,
+            avatar: r.avatar
+          }))
+        });
       }
     );
   });
@@ -98,9 +114,17 @@ module.exports = function (db, io) {
     if (!userId) return res.status(400).json({ error: 'User ID required' });
     if (userId === uid) return res.status(400).json({ error: 'Cannot follow yourself' });
 
+    const emitFollowUpdated = (action) => {
+      if (!io || !uid) return;
+      const payload = { userId, followerId: uid, action };
+      io.to(`user:${userId}`).emit('follow_updated', payload);
+      io.to(`user:${uid}`).emit('follow_updated', payload);
+    };
+
     const doUnfollow = () => {
       db.run('DELETE FROM followers WHERE follower_id = ? AND following_id = ?', [uid, userId], (err) => {
         if (err) return res.status(500).json({ error: 'Database error' });
+        emitFollowUpdated('unfollow');
         res.json({ success: true, message: 'Unfollowed user', following: false });
       });
     };
@@ -114,8 +138,11 @@ module.exports = function (db, io) {
           // Only create a notification if a new follow row was actually inserted
           // (prevents spamming when the user is already following).
           if (!this.changes || !uid) {
+            emitFollowUpdated('follow');
             return res.json({ success: true, message: 'Followed user', following: true });
           }
+
+          emitFollowUpdated('follow');
 
           db.get('SELECT username, display_name FROM users WHERE id = ?', [uid], (uErr, follower) => {
             const name = follower?.display_name || follower?.username || 'Someone';
@@ -160,13 +187,13 @@ module.exports = function (db, io) {
 
   router.get('/:id', (req, res) => {
     db.get(
-      `SELECT id, username, display_name, email, avatar as avatar_url, bio, created_at FROM users
+      `SELECT id, username, display_name, email, avatar, bio, created_at FROM users
        WHERE id = ? AND deleted_at IS NULL`,
       [req.params.id],
       (err, row) => {
         if (err) return res.status(500).json({ error: 'Database error' });
         if (!row) return res.status(404).json({ error: 'User not found' });
-        res.json({ success: true, user: { ...row, created_at: toIsoUtc(row.created_at) } });
+        res.json({ success: true, user: mapUserPublic(row) });
       }
     );
   });

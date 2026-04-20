@@ -90,12 +90,14 @@ interface ToastContainerProps {
 }
 
 export default function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
+  if (!toasts || toasts.length === 0) return null
+
   return (
     <div
       aria-live="assertive"
-      className="fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start z-50"
+      className="fixed top-0 right-0 flex flex-col items-end px-4 py-6 pointer-events-none sm:p-6 z-50 max-w-sm w-full"
     >
-      <div className="w-full flex flex-col items-center space-y-4 sm:items-end">
+      <div className="w-full flex flex-col items-center space-y-4 sm:items-end pointer-events-none">
         {toasts.map((toast) => (
           <ToastComponent
             key={toast.id}

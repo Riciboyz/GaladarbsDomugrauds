@@ -38,8 +38,9 @@ export default function SimpleCreateThread({
   const [content, setContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [attachments, setAttachments] = useState<string[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,11 +144,70 @@ export default function SimpleCreateThread({
     setShowEmojiPicker(false)
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (files) {
-      const newAttachments = Array.from(files).map(file => URL.createObjectURL(file))
-      setAttachments(prev => [...prev, ...newAttachments])
+    if (!files || files.length === 0) return
+
+    // Upload each file to the backend so its URL is reachable to every user,
+    // not just to the author. `URL.createObjectURL` creates a blob: URL that
+    // only exists in the uploader's browser memory → other users get 404.
+    setIsUploading(true)
+    try {
+      const uploaded: string[] = []
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) {
+          showError('Error', 'Only image files are allowed')
+          continue
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          showError('Error', `${file.name}: image must be under 5MB`)
+          continue
+        }
+
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        })
+
+        let data: any = null
+        try {
+          data = await response.json()
+        } catch {
+          data = null
+        }
+
+        if (!response.ok || !data?.success || !data.url) {
+          showError('Upload failed', data?.error || `Could not upload ${file.name}`)
+          continue
+        }
+
+        // Normalise absolute URLs to relative so other clients can load them
+        // via the Next.js `/uploads/*` rewrite regardless of host.
+        let url: string = data.url
+        if (/^https?:\/\//i.test(url)) {
+          try {
+            url = new URL(url).pathname
+          } catch {
+            /* leave as-is */
+          }
+        }
+        uploaded.push(url)
+      }
+
+      if (uploaded.length) {
+        setAttachments(prev => [...prev, ...uploaded])
+      }
+    } catch (err) {
+      console.error('Error uploading image(s):', err)
+      showError('Upload failed', 'Network error while uploading image')
+    } finally {
+      setIsUploading(false)
+      // Clear the input so selecting the same file again re-triggers onChange.
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -282,6 +342,8 @@ export default function SimpleCreateThread({
                   onClick={() => fileInputRef.current?.click()}
                   variant="ghost"
                   size="sm"
+                  disabled={isUploading}
+                  loading={isUploading}
                 >
                   <PhotoIcon className="w-4 h-4" />
                 </Button>
@@ -292,6 +354,7 @@ export default function SimpleCreateThread({
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
+                  disabled={isUploading}
                 />
 
 
@@ -316,7 +379,7 @@ export default function SimpleCreateThread({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!content.trim() || isSubmitting}
+                  disabled={!content.trim() || isSubmitting || isUploading}
                   loading={isSubmitting}
                   leftIcon={<PaperAirplaneIcon className="w-4 h-4" />}
                 >

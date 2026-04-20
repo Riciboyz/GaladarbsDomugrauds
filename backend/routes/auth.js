@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET, getTokenFromRequest, isBanned } = require('../middleware/auth');
 const { touchLastActive } = require('../helpers/audit');
-const { safeJsonParse, toIsoUtc } = require('../helpers/utils');
+const { toIsoUtc } = require('../helpers/utils');
 
 module.exports = function (db) {
   const router = Router();
@@ -118,7 +118,7 @@ module.exports = function (db) {
     jwt.verify(token, JWT_SECRET, (err, user) => {
       if (err) return res.status(403).json({ success: false, error: 'Invalid token' });
       db.get(
-        `SELECT id, username, email, display_name, avatar, bio, followers, following, role, created_at,
+        `SELECT id, username, email, display_name, avatar, bio, role, created_at,
                 deleted_at, banned_until, muted_until
          FROM users WHERE id = ?`,
         [user.id],
@@ -127,23 +127,37 @@ module.exports = function (db) {
           if (row.deleted_at) return res.status(403).json({ success: false, error: 'Account deleted' });
           if (isBanned(row)) return res.status(403).json({ success: false, error: 'Account suspended' });
           touchLastActive(db, row.id, () => {});
-          const followers = safeJsonParse(row.followers, []);
-          const following = safeJsonParse(row.following, []);
-          res.json({
-            success: true,
-            user: {
-              id: row.id,
-              username: row.username,
-              email: row.email,
-              displayName: row.display_name,
-              avatar: row.avatar,
-              bio: row.bio,
-              role: row.role || 'user',
-              followers: Array.isArray(followers) ? followers : [],
-              following: Array.isArray(following) ? following : [],
-              createdAt: toIsoUtc(row.created_at)
+          // Read follow relationships from the join table so /me always reflects
+          // the latest state instead of the stale users.following/followers JSON columns.
+          db.all(
+            `SELECT follower_id, following_id FROM followers
+             WHERE follower_id = ? OR following_id = ?`,
+            [row.id, row.id],
+            (fErr, fRows) => {
+              const rows = Array.isArray(fRows) ? fRows : [];
+              const following = rows
+                .filter(r => r.follower_id === row.id)
+                .map(r => r.following_id);
+              const followers = rows
+                .filter(r => r.following_id === row.id)
+                .map(r => r.follower_id);
+              res.json({
+                success: true,
+                user: {
+                  id: row.id,
+                  username: row.username,
+                  email: row.email,
+                  displayName: row.display_name,
+                  avatar: row.avatar,
+                  bio: row.bio,
+                  role: row.role || 'user',
+                  followers,
+                  following,
+                  createdAt: toIsoUtc(row.created_at)
+                }
+              });
             }
-          });
+          );
         }
       );
     });
