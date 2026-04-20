@@ -88,7 +88,10 @@ npm run db:baseline      # Create baseline
 
 ## Environment Variables
 
+Copy the provided example files to create your own configuration:
+
 ### Backend (.env)
+Copy `backend/.env.example` to `backend/.env`.
 ```env
 PORT=3001
 NODE_ENV=development
@@ -99,6 +102,7 @@ FRONTEND_URL=http://localhost:3000
 ```
 
 ### Frontend (.env.local)
+Copy `frontend/.env.local.example` to `frontend/.env.local`.
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_WS_URL=http://localhost:3001
