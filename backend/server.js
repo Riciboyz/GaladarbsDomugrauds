@@ -7,7 +7,12 @@ const { initDatabase } = require('./config/database');
 const crypto = require('crypto');
 require('dotenv').config();
 
-const ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'];
+const DEFAULT_ORIGINS = ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'];
+const EXTRA_ORIGINS = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+const ALLOWED_ORIGINS = Array.from(new Set([...DEFAULT_ORIGINS, ...EXTRA_ORIGINS]));
 
 const app = express();
 const server = createServer(app);
