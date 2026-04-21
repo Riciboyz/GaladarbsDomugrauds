@@ -1,6 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import {
   PaperAirplaneIcon,
   ChevronLeftIcon,
@@ -8,6 +16,7 @@ import {
   NoSymbolIcon,
   PhotoIcon,
   XMarkIcon,
+  ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline'
 import { useUser } from '../../contexts/UserContext'
 import { useWebSocket } from '../../contexts/WebSocketContext'
@@ -31,6 +40,16 @@ type ConvRow = {
   unread: boolean
 }
 
+type ReplyRef = {
+  id: string
+  senderId: string
+  content: string
+  username?: string
+  displayName?: string
+  messageType?: string
+  attachmentUrl?: string
+}
+
 type MsgRow = {
   id: string
   conversationId: string
@@ -42,6 +61,7 @@ type MsgRow = {
   avatar?: string
   messageType?: string
   attachmentUrl?: string
+  replyTo?: ReplyRef
 }
 
 interface DirectMessagesProps {
@@ -59,6 +79,98 @@ function normalizeUploadUrl(url: string): string {
     }
   }
   return u
+}
+
+function replySnippet(r: ReplyRef): string {
+  if (r.attachmentUrl && r.messageType === 'image') return r.content?.trim() || '📷 Attēls'
+  if (r.attachmentUrl) return '📎 Fails'
+  const t = (r.content || '').trim()
+  return t.length > 160 ? `${t.slice(0, 160)}…` : t
+}
+
+function SwipeToReplyWrap({
+  children,
+  onReply,
+}: {
+  children: React.ReactNode
+  onReply: () => void
+}) {
+  const [tx, setTx] = useState(0)
+  const txRef = useRef(0)
+  const start = useRef({ x: 0, y: 0 })
+  const active = useRef(false)
+  const locked = useRef<'h' | 'v' | null>(null)
+
+  const onPointerDown = (e: ReactPointerEvent) => {
+    if (e.button !== 0) return
+    const el = e.target as HTMLElement
+    if (el.closest('button, a, [role="button"]')) return
+    active.current = true
+    locked.current = null
+    start.current = { x: e.clientX, y: e.clientY }
+    txRef.current = 0
+    setTx(0)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const onPointerMove = (e: ReactPointerEvent) => {
+    if (!active.current) return
+    const dx = e.clientX - start.current.x
+    const dy = e.clientY - start.current.y
+    if (!locked.current) {
+      if (Math.hypot(dx, dy) < 10) return
+      locked.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
+    }
+    if (locked.current === 'v') return
+    if (dx > 0) {
+      const n = Math.min(dx, 72)
+      txRef.current = n
+      setTx(n)
+    }
+  }
+
+  const endPointer = (e: ReactPointerEvent) => {
+    if (!active.current) return
+    active.current = false
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    if (locked.current === 'h' && txRef.current > 44) onReply()
+    txRef.current = 0
+    setTx(0)
+    locked.current = null
+  }
+
+  const opacity = Math.min(tx / 56, 1)
+
+  return (
+    <div
+      className="relative max-w-[min(92%,20rem)] touch-pan-y select-none overflow-hidden rounded-2xl"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endPointer}
+      onPointerCancel={endPointer}
+    >
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 flex w-14 items-center justify-center text-ink-muted"
+        style={{ opacity: opacity * 0.95 }}
+        aria-hidden
+      >
+        <ArrowUturnLeftIcon className="h-6 w-6" />
+      </div>
+      <div
+        style={{
+          transform: `translateX(${tx}px)`,
+          transition: tx === 0 ? 'transform 0.2s ease-out' : undefined,
+        }}
+        className="relative"
+      >
+        {children}
+      </div>
+    </div>
+  )
 }
 
 function listPreview(c: ConvRow): string {
@@ -91,8 +203,11 @@ export default function DirectMessages({
   const [reportFor, setReportFor] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; messageType: 'image' } | null>(null)
+  const [replyingTo, setReplyingTo] = useState<MsgRow | null>(null)
   const listEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const draftInputRef = useRef<HTMLInputElement>(null)
+  const composerRef = useRef<HTMLFormElement>(null)
 
   const activeConv = useMemo(
     () => conversations.find((c) => c.id === activeId) || null,
@@ -124,6 +239,7 @@ export default function DirectMessages({
       setLoadingMessages(true)
       setMessages([])
       setPendingAttachment(null)
+      setReplyingTo(null)
       try {
         const res = await fetch(`/api/dms/conversations/${conversationId}/messages?limit=80`, {
           credentials: 'include',
@@ -193,12 +309,13 @@ export default function DirectMessages({
         return prev
       }
       const c = prev[idx]
-      const preview =
+      const basePreview =
         m.attachmentUrl && m.messageType === 'image'
           ? (m.content?.trim() || '📷 Attēls')
           : m.attachmentUrl
             ? '📎 Fails'
             : m.content
+      const preview = m.replyTo ? `↩ ${replySnippet(m.replyTo)} · ${basePreview}` : basePreview
       const nextLast: LastMsg = {
         id: m.id,
         content: m.content,
@@ -223,17 +340,32 @@ export default function DirectMessages({
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, activeId])
 
+  useEffect(() => {
+    if (!replyingTo) return
+    /* Scroll composer virs apakšējās navigācijas / tastatūras, tad fokuss — kā otrajā ekrānā */
+    const t = window.setTimeout(() => {
+      composerRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+      requestAnimationFrame(() => {
+        draftInputRef.current?.focus({ preventScroll: true })
+      })
+    }, 80)
+    return () => clearTimeout(t)
+  }, [replyingTo])
+
   const sendViaRest = async (
     conversationId: string,
     content: string,
     messageType: string = 'text',
-    attachmentUrl: string = ''
+    attachmentUrl: string = '',
+    replyToMessageId?: string
   ) => {
+    const body: Record<string, unknown> = { content, messageType, attachmentUrl }
+    if (replyToMessageId) body.replyToMessageId = replyToMessageId
     const res = await fetch(`/api/dms/conversations/${conversationId}/messages`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, messageType, attachmentUrl }),
+      body: JSON.stringify(body),
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(data.error || 'Neizdevās nosūtīt')
@@ -250,19 +382,23 @@ export default function DirectMessages({
     if ((!text && !att) || !activeId || sending) return
     const messageType = att ? att.messageType : 'text'
     const attachmentUrl = att?.url || ''
+    const replyTarget = replyingTo
     setSending(true)
     setDraft('')
     setPendingAttachment(null)
+    setReplyingTo(null)
     try {
-      if (isConnected && sendDmMessage(activeId, text, messageType, attachmentUrl)) {
+      const rid = replyTarget?.id
+      if (isConnected && sendDmMessage(activeId, text, messageType, attachmentUrl, rid)) {
         /* socket */
       } else {
-        await sendViaRest(activeId, text, messageType, attachmentUrl)
+        await sendViaRest(activeId, text, messageType, attachmentUrl, rid)
       }
     } catch (err) {
       toastError('Ziņas', err instanceof Error ? err.message : 'Kļūda')
       setDraft(text)
       if (attachmentUrl) setPendingAttachment(att)
+      setReplyingTo(replyTarget)
     } finally {
       setSending(false)
     }
@@ -397,7 +533,7 @@ export default function DirectMessages({
 
   const threadPanel = (
     <div
-      className="flex-1 flex flex-col border-y border-border-ui bg-surface min-w-0 min-h-0 lg:rounded-2xl lg:border lg:shadow-dg-sm max-lg:border-x-0"
+      className="flex min-h-0 flex-1 flex-col border-y border-border-ui bg-surface min-w-0 lg:rounded-2xl lg:border lg:shadow-dg-sm max-lg:border-x-0"
     >
       {!activeConv ? (
         <div className="flex items-center justify-center p-8 text-ink-muted text-sm min-h-[12rem]">
@@ -435,7 +571,9 @@ export default function DirectMessages({
             </button>
           </div>
           <div
-            className="overflow-y-auto overscroll-y-contain touch-pan-y p-3 sm:p-4 space-y-3 pb-2 max-h-[min(62dvh,calc(100dvh-13rem))] sm:max-h-[min(66dvh,calc(100dvh-11.5rem))] lg:max-h-[min(72vh,calc(100dvh-10rem))]"
+            className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-3 pb-2 sm:p-4 sm:max-h-[min(66dvh,calc(100dvh-11.5rem))] lg:max-h-[min(72vh,calc(100dvh-10rem))] space-y-3 ${
+              activeId && !mobileList ? 'max-lg:pb-[calc(10rem+env(safe-area-inset-bottom,0px))]' : ''
+            }`}
             aria-label="Čata ziņas"
           >
             {loadingMessages ? (
@@ -446,52 +584,88 @@ export default function DirectMessages({
                 const isImg = m.messageType === 'image' && m.attachmentUrl
                 return (
                   <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[min(92%,20rem)] rounded-2xl overflow-hidden text-sm shadow-sm ${
-                        mine ? 'bg-accent text-accent-fg' : 'bg-surface-2 border border-border-ui text-ink'
-                      }`}
-                    >
-                      {!mine && (
-                        <p className="text-[10px] text-ink-muted px-3 pt-2 pb-0.5">
-                          {m.displayName || m.username}
-                        </p>
-                      )}
-                      {isImg && (
-                        <a
-                          href={m.attachmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`block ${mine ? 'bg-accent-fg/10' : 'bg-black/5'}`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={m.attachmentUrl}
-                            alt=""
-                            className="w-full max-h-64 object-cover"
-                            loading="lazy"
-                          />
-                        </a>
-                      )}
-                      {m.content?.trim() ? (
-                        <p
-                          className={`whitespace-pre-wrap break-words px-3 py-2 ${isImg ? 'pt-1.5' : mine ? '' : ''}`}
-                        >
-                          {m.content}
-                        </p>
-                      ) : null}
-                      <div className={`flex items-center justify-end gap-1 px-2 pb-1.5 ${mine ? '' : ''}`}>
+                    <SwipeToReplyWrap onReply={() => setReplyingTo(m)}>
+                      <div
+                        className={`rounded-2xl overflow-hidden text-sm shadow-sm ${
+                          mine ? 'bg-accent text-accent-fg' : 'bg-surface-2 border border-border-ui text-ink'
+                        }`}
+                      >
                         {!mine && (
+                          <p className="text-[10px] text-ink-muted px-3 pt-2 pb-0.5">
+                            {m.displayName || m.username}
+                          </p>
+                        )}
+                        {m.replyTo && (
+                          <div
+                            className={`px-3 pt-1.5 pb-2 border-b ${
+                              mine ? 'border-accent-fg/25 bg-black/10' : 'border-border-ui bg-black/[0.03]'
+                            }`}
+                          >
+                            <p
+                              className={`text-[10px] font-medium ${
+                                mine ? 'text-accent-fg/85' : 'text-ink-muted'
+                              }`}
+                            >
+                              {m.replyTo.displayName || m.replyTo.username}
+                            </p>
+                            <p
+                              className={`text-[11px] line-clamp-2 mt-0.5 ${
+                                mine ? 'text-accent-fg/95' : 'text-ink-muted'
+                              }`}
+                            >
+                              {replySnippet(m.replyTo)}
+                            </p>
+                          </div>
+                        )}
+                        {isImg && (
+                          <a
+                            href={m.attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`block ${mine ? 'bg-accent-fg/10' : 'bg-black/5'}`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={m.attachmentUrl}
+                              alt=""
+                              className="w-full max-h-64 object-cover"
+                              loading="lazy"
+                            />
+                          </a>
+                        )}
+                        {m.content?.trim() ? (
+                          <p
+                            className={`whitespace-pre-wrap break-words px-3 py-2 ${isImg ? 'pt-1.5' : mine ? '' : ''}`}
+                          >
+                            {m.content}
+                          </p>
+                        ) : null}
+                        <div className="flex items-center justify-end gap-1 px-2 pb-1.5">
                           <button
                             type="button"
-                            className="min-h-8 min-w-8 flex items-center justify-center rounded-lg text-ink-muted hover:text-amber-600"
-                            title="Ziņot"
-                            onClick={() => setReportFor(m.id)}
+                            className={`min-h-8 min-w-8 flex items-center justify-center rounded-lg ${
+                              mine
+                                ? 'text-accent-fg/70 hover:text-accent-fg'
+                                : 'text-ink-muted hover:text-accent'
+                            }`}
+                            title="Atbildēt"
+                            onClick={() => setReplyingTo(m)}
                           >
-                            <FlagIcon className="w-3.5 h-3.5" />
+                            <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
                           </button>
-                        )}
+                          {!mine && (
+                            <button
+                              type="button"
+                              className="min-h-8 min-w-8 flex items-center justify-center rounded-lg text-ink-muted hover:text-amber-600"
+                              title="Ziņot"
+                              onClick={() => setReportFor(m.id)}
+                            >
+                              <FlagIcon className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </SwipeToReplyWrap>
                   </div>
                 )
               })
@@ -506,57 +680,98 @@ export default function DirectMessages({
             onChange={(ev) => void handleImageSelected(ev)}
           />
           <form
+            ref={composerRef}
             onSubmit={handleSend}
-            className="shrink-0 border-t border-border-ui bg-surface-2/95 backdrop-blur-md px-2 sm:px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex flex-col gap-2"
+            className={`shrink-0 border-t border-border-ui bg-surface-2/95 backdrop-blur-md px-2 sm:px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
+              activeId && !mobileList
+                ? 'max-lg:fixed max-lg:inset-x-0 max-lg:z-[35] max-lg:rounded-t-2xl max-lg:border-x-0 max-lg:border-b-0 max-lg:shadow-[0_-8px_32px_rgba(0,0,0,0.12)] max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))]'
+                : ''
+            }`}
           >
-            {pendingAttachment && (
-              <div className="flex items-center gap-2 rounded-xl border border-border-ui bg-surface p-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={pendingAttachment.url}
-                  alt=""
-                  className="h-14 w-14 rounded-lg object-cover shrink-0"
-                />
-                <span className="text-xs text-ink-muted flex-1">Gatavs nosūtīšanai. Pievieno parakstu virsū vai sūti tā.</span>
-                <button
-                  type="button"
-                  className="min-h-9 min-w-9 flex items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2"
-                  onClick={() => setPendingAttachment(null)}
-                  aria-label="Noņemt attēlu"
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-            <div className="flex items-end gap-1.5 sm:gap-2">
-              <button
-                type="button"
-                onClick={handlePickImage}
-                disabled={uploading || !activeConv}
-                className="min-h-11 min-w-11 shrink-0 flex items-center justify-center rounded-xl border border-border-ui bg-surface text-ink-muted hover:text-accent hover:border-accent/40 disabled:opacity-40"
-                aria-label="Pievienot attēlu"
+            <div
+              className={
+                replyingTo
+                  ? 'rounded-2xl border border-border-ui bg-surface shadow-sm overflow-hidden'
+                  : 'flex flex-col gap-2'
+              }
+            >
+              {replyingTo && (
+                <div className="flex items-start gap-2 border-b border-border-ui bg-surface-2/90 px-3 py-2.5">
+                  <div className="min-w-0 flex-1 border-l-[3px] border-accent pl-3">
+                    <p className="text-[12px] font-semibold text-ink leading-tight">
+                      Atbilde: {replyingTo.displayName || replyingTo.username}
+                    </p>
+                    <p className="text-[13px] text-ink-muted line-clamp-3 mt-1 leading-snug">
+                      {replySnippet(replyingTo)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="min-h-9 min-w-9 flex shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-surface hover:text-ink"
+                    onClick={() => setReplyingTo(null)}
+                    aria-label="Atcelt atbildi"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+              <div
+                className={`flex flex-col gap-2 ${replyingTo ? 'p-2 sm:p-2.5 bg-surface' : ''}`}
               >
-                {uploading ? (
-                  <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <PhotoIcon className="w-6 h-6" />
+                {pendingAttachment && (
+                  <div className="flex items-center gap-2 rounded-xl border border-border-ui bg-surface-2 p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={pendingAttachment.url}
+                      alt=""
+                      className="h-14 w-14 rounded-lg object-cover shrink-0"
+                    />
+                    <span className="text-xs text-ink-muted flex-1">
+                      Gatavs nosūtīšanai. Pievieno parakstu virsū vai sūti tā.
+                    </span>
+                    <button
+                      type="button"
+                      className="min-h-9 min-w-9 flex items-center justify-center rounded-lg text-ink-muted hover:bg-surface"
+                      onClick={() => setPendingAttachment(null)}
+                      aria-label="Noņemt attēlu"
+                    >
+                      <XMarkIcon className="w-5 h-5" />
+                    </button>
+                  </div>
                 )}
-              </button>
-              <input
-                className="flex-1 min-h-11 rounded-xl border border-border-ui bg-surface px-3 py-2.5 text-[15px] text-ink placeholder:text-ink-muted/70"
-                placeholder="Raksti ziņu…"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                maxLength={5000}
-              />
-              <button
-                type="submit"
-                disabled={!canSend}
-                className="min-h-11 min-w-11 shrink-0 flex items-center justify-center rounded-xl bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-40 shadow-sm"
-                aria-label="Sūtīt"
-              >
-                <PaperAirplaneIcon className="w-5 h-5 -ml-0.5" />
-              </button>
+                <div className="flex items-end gap-1.5 sm:gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePickImage}
+                    disabled={uploading || !activeConv}
+                    className="min-h-11 min-w-11 shrink-0 flex items-center justify-center rounded-xl border border-border-ui bg-surface-2 text-ink-muted hover:text-accent hover:border-accent/40 disabled:opacity-40"
+                    aria-label="Pievienot attēlu"
+                  >
+                    {uploading ? (
+                      <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <PhotoIcon className="w-6 h-6" />
+                    )}
+                  </button>
+                  <input
+                    ref={draftInputRef}
+                    className="flex-1 min-h-11 rounded-xl border border-border-ui bg-surface-2 px-3 py-2.5 text-[15px] text-ink placeholder:text-ink-muted/70 outline-none transition-[box-shadow,border-color] focus:border-accent focus:ring-2 focus:ring-accent/35"
+                    placeholder="Raksti ziņu…"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    maxLength={5000}
+                    enterKeyHint="send"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!canSend}
+                    className="min-h-11 min-w-11 shrink-0 flex items-center justify-center rounded-xl bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-40 shadow-sm"
+                    aria-label="Sūtīt"
+                  >
+                    <PaperAirplaneIcon className="w-5 h-5 -ml-0.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </form>
         </>
@@ -565,12 +780,12 @@ export default function DirectMessages({
   )
 
   return (
-    <div className="w-full max-w-4xl mx-auto -mx-1 sm:mx-0">
-      <h1 className="text-xl sm:text-2xl font-bold text-ink mb-3 sm:mb-4 px-3 sm:px-0 tracking-tight">
+    <div className="mx-auto -mx-1 flex w-full max-w-4xl flex-col min-h-0 sm:mx-0">
+      <h1 className="shrink-0 px-3 text-xl font-bold tracking-tight text-ink sm:px-0 sm:text-2xl mb-3 sm:mb-4">
         Privātās ziņas
       </h1>
 
-      <div className="flex flex-col lg:flex-row gap-0 lg:gap-4 lg:items-stretch">
+      <div className="flex min-h-0 flex-1 flex-col gap-0 lg:flex-row lg:gap-4 lg:items-stretch">
         <div
           className={`w-full shrink-0 lg:w-72 ${
             activeId && !mobileList ? 'hidden lg:block' : 'block'
@@ -579,8 +794,8 @@ export default function DirectMessages({
           {listPanel}
         </div>
         <div
-          className={`flex-1 min-w-0 min-h-0 ${
-            !activeId ? 'hidden lg:block' : mobileList ? 'hidden lg:block' : 'block'
+          className={`flex min-h-0 min-w-0 flex-1 flex-col ${
+            !activeId ? 'hidden lg:block' : mobileList ? 'hidden lg:block' : 'flex'
           }`}
         >
           {threadPanel}

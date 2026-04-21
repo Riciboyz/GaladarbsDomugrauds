@@ -117,7 +117,7 @@ io.on('connection', (socket) => {
     socket.leave(`group:${groupId}`);
   });
 
-  socket.on('dm_message', ({ conversationId, content, messageType, attachmentUrl } = {}) => {
+  socket.on('dm_message', ({ conversationId, content, messageType, attachmentUrl, replyToMessageId } = {}) => {
     const authorId = socket.data.userId;
     const text = String(content || '').trim();
     const att = String(attachmentUrl || '').trim();
@@ -130,7 +130,8 @@ io.on('connection', (socket) => {
         senderId: authorId,
         content,
         messageType: messageType || 'text',
-        attachmentUrl: att
+        attachmentUrl: att,
+        replyToMessageId: replyToMessageId || ''
       },
       (err) => {
         if (err) socket.emit('dm_error', { code: err.message || 'error' });

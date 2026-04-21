@@ -18,6 +18,8 @@ module.exports = function (db, io) {
     if (code === 'forbidden') return res.status(403).json({ success: false, error: 'Forbidden' });
     if (code === 'blocked') return res.status(403).json({ success: false, error: 'Cannot message this user' });
     if (code === 'invalid_attachment') return res.status(400).json({ success: false, error: 'Invalid attachment' });
+    if (code === 'invalid_reply') return res.status(400).json({ success: false, error: 'Invalid reply' });
+    if (code === 'reply_unsupported') return res.status(400).json({ success: false, error: 'Reply not available — refresh the app' });
     return res.status(500).json({ success: false, error: err.message || 'Server error' });
   }
 
@@ -154,10 +156,7 @@ module.exports = function (db, io) {
       (err, conv) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
         if (!conv) return res.status(404).json({ success: false, error: 'Not found' });
-        let sql = `SELECT m.*, u.username, u.display_name, u.avatar
-                   FROM dm_messages m
-                   JOIN users u ON u.id = m.sender_id
-                   WHERE m.conversation_id = ?`;
+        let sql = `${dmCore.DM_SELECT_WITH_REPLY} WHERE m.conversation_id = ?`;
         const params = [conversationId];
         if (before) {
           sql += ` AND datetime(m.created_at) < datetime((SELECT created_at FROM dm_messages WHERE id = ?))`;
@@ -167,23 +166,7 @@ module.exports = function (db, io) {
         params.push(limit);
         db.all(sql, params, (e2, rows) => {
           if (e2) return res.status(500).json({ success: false, error: e2.message });
-          const messages = (rows || []).reverse().map((r) => {
-            const att = safeJsonParse(r.attachments, { messageType: 'text', attachmentUrl: '' });
-            const messageType = att.messageType === 'image' || att.messageType === 'file' ? att.messageType : 'text';
-            const attachmentUrl = typeof att.attachmentUrl === 'string' ? att.attachmentUrl.trim() : '';
-            return {
-              id: r.id,
-              conversationId: r.conversation_id,
-              senderId: r.sender_id,
-              content: r.content,
-              createdAt: toIsoUtc(r.created_at),
-              username: r.username,
-              displayName: r.display_name,
-              avatar: r.avatar,
-              messageType,
-              attachmentUrl
-            };
-          });
+          const messages = (rows || []).reverse().map((r) => dmCore.formatDmMessageRow(r));
           res.json({ success: true, messages });
         });
       }
@@ -194,7 +177,7 @@ module.exports = function (db, io) {
   router.post('/conversations/:conversationId/messages', ...authCreate, (req, res) => {
     const uid = currentUserId(req);
     const { conversationId } = req.params;
-    const { content, messageType, attachmentUrl } = req.body || {};
+    const { content, messageType, attachmentUrl, replyToMessageId } = req.body || {};
     dmCore.insertDmMessage(
       db,
       io,
@@ -204,6 +187,7 @@ module.exports = function (db, io) {
         content,
         messageType: messageType || 'text',
         attachmentUrl: attachmentUrl || '',
+        replyToMessageId: replyToMessageId || '',
         skipNotification: !!req.body?.skipNotification
       },
       (err, payload) => {

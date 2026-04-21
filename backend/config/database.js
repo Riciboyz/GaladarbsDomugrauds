@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS followers (
       try {
         await ensureAdminModerationPatches(db);
         await ensureDmMessageAttachmentsColumn(db);
+        await ensureDmReplyColumn(db);
       } catch (e) {
         console.error('Schema patches:', e.message);
       }
@@ -110,6 +111,30 @@ async function ensureDmMessageAttachmentsColumn(db) {
     }
   } catch (e) {
     console.error('Schema patches (dm_messages.attachments):', e.message);
+  }
+}
+
+/** reply_to_message_id for DM replies; for DBs created before 008. */
+async function ensureDmReplyColumn(db) {
+  const run = (sql) =>
+    new Promise((resolve, reject) => {
+      db.run(sql, (e) => (e ? reject(e) : resolve()));
+    });
+  const all = (sql, params = []) =>
+    new Promise((resolve, reject) => {
+      db.all(sql, params, (e, rows) => (e ? reject(e) : resolve(rows)));
+    });
+  try {
+    const msgCols = columnNames(await all('PRAGMA table_info(dm_messages)'));
+    if (!msgCols.size) return;
+    if (!msgCols.has('reply_to_message_id')) {
+      await run(
+        'ALTER TABLE dm_messages ADD COLUMN reply_to_message_id TEXT REFERENCES dm_messages(id) ON DELETE SET NULL'
+      );
+      await run('CREATE INDEX IF NOT EXISTS idx_dm_messages_reply_to ON dm_messages(reply_to_message_id)');
+    }
+  } catch (e) {
+    console.error('Schema patches (dm_messages.reply_to_message_id):', e.message);
   }
 }
 

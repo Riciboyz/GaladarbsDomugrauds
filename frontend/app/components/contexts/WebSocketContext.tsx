@@ -18,7 +18,8 @@ interface WebSocketContextType {
     conversationId: string,
     content: string,
     messageType?: string,
-    attachmentUrl?: string
+    attachmentUrl?: string,
+    replyToMessageId?: string
   ) => boolean
   joinGroup: (groupId: string) => boolean
   leaveGroup: (groupId: string) => boolean
@@ -177,11 +178,18 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     conversationId: string,
     content: string,
     messageType: string = 'text',
-    attachmentUrl?: string
+    attachmentUrl?: string,
+    replyToMessageId?: string
   ): boolean => {
     return sendMessage({
       type: 'dm_message',
-      data: { conversationId, content, messageType, attachmentUrl: attachmentUrl || '' }
+      data: {
+        conversationId,
+        content,
+        messageType,
+        attachmentUrl: attachmentUrl || '',
+        replyToMessageId: replyToMessageId || ''
+      }
     })
   }
 
