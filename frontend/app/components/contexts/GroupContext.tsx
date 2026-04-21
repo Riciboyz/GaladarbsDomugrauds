@@ -1,7 +1,8 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
 import { useWebSocket } from './WebSocketContext'
+import { useUser } from './UserContext'
 
 // Types
 export interface Group {
@@ -14,6 +15,7 @@ export interface Group {
   createdBy: string
   memberCount?: number
   isMember?: boolean
+  visibility?: 'public' | 'private'
   createdAt: Date | string
   threads?: string[]
   creator?: {
@@ -104,6 +106,12 @@ const mockGroups: Group[] = [
 ]
 
 export function GroupProvider({ children }: { children: ReactNode }) {
+  const { user } = useUser()
+  const userIdRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    userIdRef.current = user?.id
+  }, [user?.id])
+
   const { isConnected, sendGroupMessage: wsSendGroupMessage, joinGroup: wsJoinGroup, leaveGroup: wsLeaveGroup, sendTyping: wsSendTyping, sendStopTyping: wsSendStopTyping } = useWebSocket()
   
   // De-duplicate groups by id while preserving order (first occurrence wins).
@@ -182,7 +190,7 @@ export function GroupProvider({ children }: { children: ReactNode }) {
   const loadGroups = async () => {
     try {
       const response = await fetch('/api/groups', {
-        credentials: 'include'
+        credentials: 'include',
       })
       const data = await response.json()
       
@@ -197,6 +205,7 @@ export function GroupProvider({ children }: { children: ReactNode }) {
           createdBy: g.createdBy,
           memberCount: g.memberCount,
           isMember: g.isMember,
+          visibility: g.visibility === 'private' ? 'private' : 'public',
           createdAt: g.createdAt,
           threads: g.threads || [],
           creator: g.creator,
@@ -226,14 +235,16 @@ export function GroupProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/groups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(groupData),
       })
 
       if (response.ok) {
         const data = await response.json()
-        addGroup(data.group)
+        if (data.group) addGroup(data.group)
       } else {
-        throw new Error('Failed to create group')
+        const errBody = await response.json().catch(() => ({}))
+        throw new Error(errBody.error || 'Failed to create group')
       }
     } catch (err) {
       console.error('Error creating group:', err)
@@ -268,11 +279,16 @@ export function GroupProvider({ children }: { children: ReactNode }) {
             console.log('🆕 Group created:', message.data)
             const incoming = message.data?.group
             if (!incoming) return
+            const mem = Array.isArray(incoming.members) ? incoming.members : []
+            const vis = incoming.visibility === 'private' ? 'private' : 'public'
+            const uid = userIdRef.current
+            if (vis === 'private' && (!uid || !mem.includes(uid))) break
             setGroups(prev => {
               if (prev.some(g => g.id === incoming.id)) return prev
               const next: Group = {
                 ...incoming,
-                members: Array.isArray(incoming.members) ? incoming.members : [],
+                members: mem,
+                visibility: vis,
                 onlineMembers: [],
                 typingUsers: [],
                 lastActivity: new Date(),
@@ -285,10 +301,32 @@ export function GroupProvider({ children }: { children: ReactNode }) {
           case 'group_updated': {
             console.log('🔄 Group updated:', message.data)
             const { groupId, updates, group } = message.data || {}
+            const dropIfPrivate = (g: Group) => {
+              const v = g.visibility === 'private' ? 'private' : 'public'
+              const uid = userIdRef.current
+              const m = g.members || []
+              return v === 'private' && (!uid || !m.includes(uid))
+            }
             if (group && group.id) {
-              applyUpdate(group.id, group)
+              const merged: Group = {
+                ...group,
+                members: Array.isArray(group.members) ? group.members : [],
+                visibility: group.visibility === 'private' ? 'private' : 'public',
+              }
+              if (dropIfPrivate(merged)) {
+                setGroups(prev => persist(prev.filter((g) => g.id !== merged.id)))
+              } else {
+                applyUpdate(group.id, merged)
+              }
             } else if (groupId && updates) {
-              applyUpdate(groupId, updates)
+              setGroups((prev) => {
+                const next = prev.map((g) => (g.id === groupId ? { ...g, ...updates } : g))
+                const hit = next.find((g) => g.id === groupId)
+                if (hit && dropIfPrivate(hit)) {
+                  return persist(prev.filter((g) => g.id !== groupId))
+                }
+                return persist(next)
+              })
             }
             break
           }

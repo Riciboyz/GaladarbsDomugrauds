@@ -42,7 +42,6 @@ html, body {
   color: rgb(var(--ink));
   background-color: rgb(var(--surface));
   min-height: 100%;
-  overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 200ms ease, color 200ms ease;
 }

@@ -9,7 +9,8 @@ import {
   TrashIcon,
   UserMinusIcon,
   PencilIcon,
-  XMarkIcon
+  XMarkIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline'
 
 interface GroupManagementProps {
@@ -25,6 +26,9 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMemberManagement, setShowMemberManagement] = useState(false)
   const [members, setMembers] = useState<any[]>([])
+  const [allMutuals, setAllMutuals] = useState<{ id: string; username: string; displayName: string; avatar?: string }[]>([])
+  const [mutualsLoading, setMutualsLoading] = useState(false)
+  const [addingMemberId, setAddingMemberId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
     name: group.name,
     description: group.description || '',
@@ -36,6 +40,30 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       loadGroupMembers()
     }
   }, [showMemberManagement])
+
+  useEffect(() => {
+    if (!showMemberManagement || group.visibility !== 'private') {
+      setAllMutuals([])
+      return
+    }
+    let cancelled = false
+    setMutualsLoading(true)
+    fetch('/api/users/mutual-follows', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d.success || !Array.isArray(d.users)) return
+        setAllMutuals(d.users)
+      })
+      .catch(() => {
+        if (!cancelled) setAllMutuals([])
+      })
+      .finally(() => {
+        if (!cancelled) setMutualsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [showMemberManagement, group.visibility, group.id])
 
   // Listen for real-time member changes
   useEffect(() => {
@@ -172,6 +200,34 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
     await removeMember(memberId)
   }
 
+  const memberIdSet = new Set(members.map((m) => m.id))
+  const mutualsNotInGroup = allMutuals.filter((u) => !memberIdSet.has(u.id))
+
+  const addMemberById = async (userId: string) => {
+    if (!group?.id || !user?.id) return
+    setAddingMemberId(userId)
+    try {
+      const response = await fetch('/api/groups/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ groupId: group.id, userId }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add member')
+      }
+      success('Pievienots', 'Lietotājs pievienots grupai.')
+      loadGroupMembers()
+      onUpdate()
+    } catch (error) {
+      console.error('Error adding member:', error)
+      showError('Pievienošana', error instanceof Error ? error.message : 'Neizdevās pievienot.')
+    } finally {
+      setAddingMemberId(null)
+    }
+  }
+
   if (!user || group.createdBy !== user.id) {
     return null
   }
@@ -208,8 +264,14 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                     <UsersIcon className="w-4 h-4" />
                     <span>{group.memberCount || group.members?.length || 0} members</span>
                   </div>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full text-emerald-500 bg-emerald-500/15">
-                    Public
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      group.visibility === 'private'
+                        ? 'text-amber-600 bg-amber-500/15'
+                        : 'text-emerald-500 bg-emerald-500/15'
+                    }`}
+                  >
+                    {group.visibility === 'private' ? 'Privāta' : 'Publiska'}
                   </span>
                 </div>
               </div>
@@ -306,6 +368,45 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                 <h5 className="heading-5 text-ink">Group Members</h5>
                 <span className="text-sm text-ink-muted">{members.length} members</span>
               </div>
+
+              {group.visibility === 'private' && (
+                <div className="space-y-2 rounded-lg border border-border-ui p-4 bg-surface">
+                  <h6 className="text-sm font-semibold text-ink">Pievienot biedru</h6>
+                  <p className="text-xs text-ink-muted">
+                    Tikai savstarpējie sekotāji — tu viņiem seko un viņi tev.
+                  </p>
+                  {mutualsLoading ? (
+                    <p className="text-sm text-ink-muted">Ielādē…</p>
+                  ) : mutualsNotInGroup.length === 0 ? (
+                    <p className="text-sm text-ink-muted">
+                      Nav pieejamu savstarpējo sekotāju ārpus grupas.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2 max-h-40 overflow-y-auto">
+                      {mutualsNotInGroup.map((u) => (
+                        <li
+                          key={u.id}
+                          className="flex items-center justify-between gap-2 py-1"
+                        >
+                          <span className="text-sm text-ink truncate">
+                            {u.displayName}{' '}
+                            <span className="text-ink-muted">@{u.username}</span>
+                          </span>
+                          <button
+                            type="button"
+                            disabled={addingMemberId === u.id}
+                            onClick={() => addMemberById(u.id)}
+                            className="btn-secondary shrink-0 flex items-center gap-1 text-xs py-1.5 px-2"
+                          >
+                            <PlusIcon className="w-4 h-4" />
+                            {addingMemberId === u.id ? '…' : 'Pievienot'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {members.length === 0 ? (

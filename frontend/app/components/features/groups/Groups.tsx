@@ -17,6 +17,8 @@ import {
 import GroupManagement from './GroupManagement'
 import SimpleGroupChat from './SimpleGroupChat'
 
+type MutualUser = { id: string; username: string; displayName: string; avatar?: string }
+
 export default function Groups() {
   const { groups, createGroup, loadGroups, joinGroupRealtime, leaveGroupRealtime } = useGroup()
   const { user } = useUser()
@@ -27,10 +29,18 @@ export default function Groups() {
   const [showManagement, setShowManagement] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<any>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [newGroup, setNewGroup] = useState({
+  const [newGroup, setNewGroup] = useState<{
+    name: string
+    description: string
+    visibility: 'public' | 'private'
+  }>({
     name: '',
-    description: ''
+    description: '',
+    visibility: 'public',
   })
+  const [mutualChoices, setMutualChoices] = useState<MutualUser[]>([])
+  const [mutualsLoading, setMutualsLoading] = useState(false)
+  const [selectedAddUserIds, setSelectedAddUserIds] = useState<string[]>([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -75,6 +85,43 @@ export default function Groups() {
     loadGroups()
   }, [])
 
+  useEffect(() => {
+    if (newGroup.visibility !== 'private') setSelectedAddUserIds([])
+  }, [newGroup.visibility])
+
+  useEffect(() => {
+    if (!showCreateModal) {
+      setSelectedAddUserIds([])
+      setMutualChoices([])
+      setNewGroup({ name: '', description: '', visibility: 'public' })
+    }
+  }, [showCreateModal])
+
+  useEffect(() => {
+    if (!showCreateModal || !user || newGroup.visibility !== 'private') {
+      setMutualChoices([])
+      return
+    }
+    let cancelled = false
+    setMutualsLoading(true)
+    fetch('/api/users/mutual-follows', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return
+        if (d.success && Array.isArray(d.users)) setMutualChoices(d.users)
+        else setMutualChoices([])
+      })
+      .catch(() => {
+        if (!cancelled) setMutualChoices([])
+      })
+      .finally(() => {
+        if (!cancelled) setMutualsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [showCreateModal, user?.id, newGroup.visibility])
+
   const allCount = groups.length
   const joinedCount = user ? groups.filter((g) => g.members?.includes(user.id)).length : 0
   const createdCount = user ? groups.filter(g => g.createdBy === user.id).length : 0
@@ -104,13 +151,22 @@ export default function Groups() {
 
     try {
       await createGroup({
-        ...newGroup,
-        createdBy: user?.id
+        name: newGroup.name.trim(),
+        description: newGroup.description.trim(),
+        visibility: newGroup.visibility,
+        addUserIds:
+          newGroup.visibility === 'private' && selectedAddUserIds.length
+            ? selectedAddUserIds
+            : undefined,
       })
-      setNewGroup({ name: '', description: '' })
       setShowCreateModal(false)
+      success('Izveidots', 'Grupa saglabāta.')
     } catch (error) {
       console.error('Error creating group:', error)
+      showError(
+        'Kļūda',
+        error instanceof Error ? error.message : 'Neizdevās izveidot grupu.'
+      )
     }
   }
 
@@ -121,6 +177,7 @@ export default function Groups() {
       const response = await fetch('/api/groups/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ groupId: group.id })
       })
 
@@ -321,7 +378,7 @@ export default function Groups() {
               <div className="absolute inset-0">
                 <div className="absolute top-4 right-4 flex items-center space-x-2">
                   <span className="bg-black/30 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full border border-white/20">
-                    🌐 Public
+                    {group.visibility === 'private' ? '🔒 Privāta' : '🌐 Publiska'}
                   </span>
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
@@ -407,7 +464,7 @@ export default function Groups() {
 
               {/* Action Button */}
               <div className="space-y-3">
-                {user && !group.members?.includes(user.id) && (
+                {user && !group.members?.includes(user.id) && group.visibility !== 'private' && (
                   <button
                     onClick={() => handleJoinGroup(group)}
                     className="w-full bg-accent text-accent-fg px-6 py-3 rounded-xl text-sm font-semibold hover:bg-accent-hover transition-all duration-200 transform hover:scale-[1.02]"
@@ -480,7 +537,7 @@ export default function Groups() {
       {/* Create Group Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="card-elevated w-full max-w-md">
+          <div className="card-elevated w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-border-ui">
               <h3 className="heading-3 text-ink">Create Group</h3>
               <button
@@ -491,7 +548,11 @@ export default function Groups() {
               </button>
             </div>
             
-            <form onSubmit={handleCreateGroup} className="p-6 space-y-4">
+            <form
+              onSubmit={handleCreateGroup}
+              className="p-6 space-y-4"
+              id="create-group-form"
+            >
               <div>
                 <label className="block text-sm font-medium text-ink-muted mb-2">Group Name</label>
                 <input
@@ -513,21 +574,82 @@ export default function Groups() {
                   placeholder="Describe what this group is about..."
                 />
               </div>
-              
-              <p className="text-sm text-ink-muted">
-                All groups are public. Any user can join and chat in real time.
-              </p>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 rounded border-border-ui"
+                  checked={newGroup.visibility === 'private'}
+                  onChange={(e) =>
+                    setNewGroup((prev) => ({
+                      ...prev,
+                      visibility: e.target.checked ? 'private' : 'public',
+                    }))
+                  }
+                />
+                <span>
+                  <span className="block text-sm font-medium text-ink">Privāta grupa</span>
+                  <span className="block text-sm text-ink-muted">
+                    Redz tikai grupas biedri. Pievienot var lietotājus, ar kuriem tev ir savstarpēja sekošana (tu viņiem un viņi tev).
+                  </span>
+                </span>
+              </label>
+
+              {newGroup.visibility === 'private' && (
+                <div className="space-y-2">
+                  <span className="block text-sm font-medium text-ink">
+                    Pievienot biedrus (nav obligāti)
+                  </span>
+                  <p className="text-sm text-ink-muted">
+                    Rāda tikai savstarpējos sekotājus — atzīmē, kurus gribi grupā jau tagad.
+                  </p>
+                  {mutualsLoading ? (
+                    <p className="text-sm text-ink-muted">Ielādē…</p>
+                  ) : mutualChoices.length === 0 ? (
+                    <p className="text-sm text-ink-muted">
+                      Nav savstarpējo sekotāju. Seko kādam, kas arī seko tev, lai varētu pievienot.
+                    </p>
+                  ) : (
+                    <ul className="max-h-48 overflow-y-auto space-y-2 rounded-lg border border-border-ui p-2 bg-surface">
+                      {mutualChoices.map((u) => (
+                        <li key={u.id}>
+                          <label className="flex items-center gap-3 cursor-pointer py-1 px-1 rounded-md hover:bg-surface-2">
+                            <input
+                              type="checkbox"
+                              className="rounded border-border-ui"
+                              checked={selectedAddUserIds.includes(u.id)}
+                              onChange={() =>
+                                setSelectedAddUserIds((prev) =>
+                                  prev.includes(u.id)
+                                    ? prev.filter((id) => id !== u.id)
+                                    : [...prev, u.id]
+                                )
+                              }
+                            />
+                            <span className="text-sm text-ink">
+                              {u.displayName}{' '}
+                              <span className="text-ink-muted">@{u.username}</span>
+                            </span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </form>
             
             <div className="flex items-center justify-end space-x-3 p-6 border-t border-border-ui">
               <button
+                type="button"
                 onClick={() => setShowCreateModal(false)}
                 className="px-4 py-2 text-ink-muted hover:text-ink transition-colors duration-200 font-medium text-sm"
               >
                 Cancel
               </button>
               <button
-                onClick={handleCreateGroup}
+                type="submit"
+                form="create-group-form"
                 className="btn-primary"
               >
                 Create Group

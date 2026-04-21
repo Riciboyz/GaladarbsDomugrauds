@@ -82,7 +82,9 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
       setIsLoading(true)
       console.log('📥 SimpleGroupChat: Loading messages for group:', group.id)
       
-      const response = await fetch(`/api/groups/chat?groupId=${group.id}&limit=50`)
+      const response = await fetch(`/api/groups/chat?groupId=${group.id}&limit=50`, {
+        credentials: 'include',
+      })
       const data = await response.json()
       
       if (response.ok && data.success) {

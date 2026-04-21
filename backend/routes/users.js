@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const crypto = require('crypto');
-const { authenticateToken, optionalAuth, currentUserId, requireRole } = require('../middleware/auth');
+const { authenticateToken, optionalAuth, currentUserId, requireRole, getTokenFromRequest } = require('../middleware/auth');
 const { mapUserPublic, mapUserAdmin, toIsoUtc } = require('../helpers/utils');
 const { logAudit } = require('../helpers/audit');
 
@@ -98,6 +98,33 @@ module.exports = function (db, io) {
         res.json({
           success: true,
           following: (rows || []).map((r) => ({
+            id: r.id,
+            username: r.username,
+            displayName: r.display_name,
+            avatar: r.avatar
+          }))
+        });
+      }
+    );
+  });
+
+  /** Users who follow `me` and whom `me` follows (for private group invites). */
+  router.get('/mutual-follows', optionalAuth, (req, res) => {
+    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+    const uid = currentUserId(req);
+    db.all(
+      `SELECT u.id, u.username, u.display_name, u.avatar
+       FROM users u
+       INNER JOIN followers f1 ON f1.follower_id = ? AND f1.following_id = u.id
+       INNER JOIN followers f2 ON f2.follower_id = u.id AND f2.following_id = ?
+       WHERE u.deleted_at IS NULL
+       ORDER BY u.display_name`,
+      [uid, uid],
+      (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json({
+          success: true,
+          users: (rows || []).map((r) => ({
             id: r.id,
             username: r.username,
             displayName: r.display_name,
