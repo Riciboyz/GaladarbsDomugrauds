@@ -1,6 +1,7 @@
 const { Router } = require('express');
-const { requireRole } = require('../middleware/auth');
+const { requireRole, currentUserId } = require('../middleware/auth');
 const { toIsoUtc } = require('../helpers/utils');
+const { logAudit } = require('../helpers/audit');
 
 module.exports = function (db) {
   const router = Router();
@@ -25,6 +26,56 @@ module.exports = function (db) {
             if (!e2 && r2) out.topicSubmissions = r2.c;
             res.json({ success: true, stats: out });
           }
+        );
+      }
+    );
+  });
+
+  router.get('/dm-reports', requireRole(db, 'admin'), (req, res) => {
+    const status = (req.query.status || '').trim();
+    let sql = `SELECT r.*, rep.username AS reporter_username, rep.display_name AS reporter_display_name,
+                      m.content AS message_content, m.sender_id, m.conversation_id,
+                      s.username AS sender_username, s.display_name AS sender_display_name
+               FROM dm_reports r
+               JOIN users rep ON rep.id = r.reporter_id
+               JOIN dm_messages m ON m.id = r.message_id
+               JOIN users s ON s.id = m.sender_id
+               WHERE 1=1`;
+    const params = [];
+    if (status && ['open', 'reviewed', 'dismissed'].includes(status)) {
+      sql += ' AND r.status = ?';
+      params.push(status);
+    }
+    sql += ' ORDER BY r.created_at DESC LIMIT 200';
+    db.all(sql, params, (err, rows) => {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, reports: rows || [] });
+    });
+  });
+
+  router.patch('/dm-reports/:id', requireRole(db, 'admin'), (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body || {};
+    if (!['reviewed', 'dismissed', 'open'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+    const actorId = currentUserId(req);
+    db.run(
+      `UPDATE dm_reports SET status = ?, reviewed_by = ?, reviewed_at = datetime('now') WHERE id = ?`,
+      [status, actorId, id],
+      function (err) {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!this.changes) return res.status(404).json({ success: false, error: 'Report not found' });
+        logAudit(
+          db,
+          {
+            actorId,
+            action: 'dm_report.status',
+            entityType: 'dm_report',
+            entityId: id,
+            metadata: { status }
+          },
+          () => res.json({ success: true })
         );
       }
     );

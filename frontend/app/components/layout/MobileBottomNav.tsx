@@ -6,6 +6,7 @@ import {
   BellIcon as BellSolid,
   MagnifyingGlassIcon as SearchSolid,
   UserGroupIcon as GroupSolid,
+  InboxIcon as InboxSolid,
   LightBulbIcon as LightBulbSolid,
 } from '@heroicons/react/24/solid'
 
@@ -28,6 +29,7 @@ const SOLID_ICONS: Record<string, any> = {
   notifications: BellSolid,
   search: SearchSolid,
   groups: GroupSolid,
+  messages: InboxSolid,
   suggestions: LightBulbSolid,
 }
 

@@ -14,6 +14,12 @@ interface WebSocketContextType {
   lastMessage: WebSocketMessage | null
   sendMessage: (message: WebSocketMessage) => boolean
   sendGroupMessage: (groupId: string, content: string, messageType?: string, attachmentUrl?: string) => boolean
+  sendDmMessage: (
+    conversationId: string,
+    content: string,
+    messageType?: string,
+    attachmentUrl?: string
+  ) => boolean
   joinGroup: (groupId: string) => boolean
   leaveGroup: (groupId: string) => boolean
   sendTyping: (groupId: string) => boolean
@@ -46,6 +52,8 @@ const FORWARDED_EVENTS = [
   'group_member_joined',
   'group_member_left',
   'group_message',
+  'dm_message',
+  'dm_error',
   'user_typing',
   'user_stopped_typing',
   'user_online',
@@ -165,6 +173,18 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     })
   }
 
+  const sendDmMessage = (
+    conversationId: string,
+    content: string,
+    messageType: string = 'text',
+    attachmentUrl?: string
+  ): boolean => {
+    return sendMessage({
+      type: 'dm_message',
+      data: { conversationId, content, messageType, attachmentUrl: attachmentUrl || '' }
+    })
+  }
+
   const joinGroup = (groupId: string): boolean => {
     console.log('🔌 WebSocketContext: Joining group:', groupId)
     return sendMessage({
@@ -204,6 +224,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     lastMessage,
     sendMessage,
     sendGroupMessage,
+    sendDmMessage,
     joinGroup,
     leaveGroup,
     sendTyping,

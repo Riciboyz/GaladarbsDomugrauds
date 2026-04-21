@@ -16,6 +16,7 @@ import Groups from './features/groups/Groups'
 import RightSidebar from './layout/RightSidebar'
 import TopicSubmission from './features/topics/TopicSubmission'
 import SuggestionsPage from './features/suggestions/SuggestionsPage'
+import DirectMessages from './features/dms/DirectMessages'
 import KeyboardShortcuts from './utility/KeyboardShortcuts'
 import SimpleCreateThread from './features/threads/SimpleCreateThread'
 import { 
@@ -24,10 +25,11 @@ import {
   BellIcon,
   MagnifyingGlassIcon,
   UserGroupIcon,
-  LightBulbIcon
+  LightBulbIcon,
+  InboxIcon
 } from '@heroicons/react/24/outline'
 
-type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'suggestions' | 'user-profile' | 'topic-submission'
+type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'messages' | 'suggestions' | 'user-profile' | 'topic-submission'
 
 export default function MainApp() {
   const { user } = useUser()
@@ -47,11 +49,13 @@ export default function MainApp() {
   const [currentTopicId, setCurrentTopicId] = useState<string | null>(null)
   const [viewedUserId, setViewedUserId] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [dmPeerUserId, setDmPeerUserId] = useState<string | null>(null)
 
   const tabs = [
     { id: 'home', label: 'Sākums', icon: HomeIcon },
     { id: 'search', label: 'Meklēt', icon: MagnifyingGlassIcon },
     { id: 'groups', label: 'Grupas', icon: UserGroupIcon },
+    { id: 'messages', label: 'Ziņas', icon: InboxIcon },
     { id: 'suggestions', label: 'Ieteikumi', icon: LightBulbIcon },
     { id: 'notifications', label: 'Paziņojumi', icon: BellIcon },
     { id: 'profile', label: 'Profils', icon: UserIcon },
@@ -74,6 +78,11 @@ export default function MainApp() {
     setActiveTab('user-profile' as Tab)
   }
 
+  const handleStartDm = (otherUserId: string) => {
+    setDmPeerUserId(otherUserId)
+    setActiveTab('messages')
+  }
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as Tab)
     setDrawerOpen(false)
@@ -84,13 +93,20 @@ export default function MainApp() {
       case 'home':
         return <Feed onUserClick={handleUserProfileClick} />
       case 'profile':
-        return <Profile onUserClick={handleUserProfileClick} />
+        return <Profile onUserClick={handleUserProfileClick} onStartDm={handleStartDm} />
       case 'notifications':
         return <RealtimeNotificationsProvider />
       case 'search':
-        return <Search onUserClick={handleUserProfileClick} />
+        return <Search onUserClick={handleUserProfileClick} onStartDm={handleStartDm} />
       case 'groups':
         return <Groups />
+      case 'messages':
+        return (
+          <DirectMessages
+            initialOtherUserId={dmPeerUserId}
+            onConsumedInitialOther={() => setDmPeerUserId(null)}
+          />
+        )
       case 'suggestions':
         return <SuggestionsPage />
       case 'user-profile':
@@ -102,6 +118,7 @@ export default function MainApp() {
               setActiveTab('home')
             }}
             onUserClick={handleUserProfileClick}
+            onStartDm={handleStartDm}
           />
         ) : <Feed onUserClick={handleUserProfileClick} />
       case 'topic-submission':

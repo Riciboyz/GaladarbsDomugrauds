@@ -6,6 +6,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { initDatabase } = require('./config/database');
 const crypto = require('crypto');
+const dmCore = require('./helpers/dmCore');
 require('dotenv').config();
 
 const DEFAULT_ORIGINS = ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'];
@@ -116,6 +117,27 @@ io.on('connection', (socket) => {
     socket.leave(`group:${groupId}`);
   });
 
+  socket.on('dm_message', ({ conversationId, content, messageType, attachmentUrl } = {}) => {
+    const authorId = socket.data.userId;
+    const text = String(content || '').trim();
+    const att = String(attachmentUrl || '').trim();
+    if (!authorId || !conversationId || (!text && !att)) return;
+    dmCore.insertDmMessage(
+      db,
+      io,
+      {
+        conversationId,
+        senderId: authorId,
+        content,
+        messageType: messageType || 'text',
+        attachmentUrl: att
+      },
+      (err) => {
+        if (err) socket.emit('dm_error', { code: err.message || 'error' });
+      }
+    );
+  });
+
   socket.on('group_message', ({ groupId, content, messageType, attachmentUrl } = {}) => {
     if (!groupId || !content) return;
     const authorId = socket.data.userId;
@@ -195,6 +217,7 @@ async function start() {
   app.use('/api/users', require('./routes/users')(db, io));
   app.use('/api/threads', require('./routes/threads')(db, io));
   app.use('/api/groups', require('./routes/groups')(db, io));
+  app.use('/api/dms', require('./routes/dms')(db, io));
   app.use('/api/notifications', require('./routes/notifications')(db, io));
   app.use('/api', require('./routes/topics')(db, io));
   app.use('/api', require('./routes/suggestions')(db, io));

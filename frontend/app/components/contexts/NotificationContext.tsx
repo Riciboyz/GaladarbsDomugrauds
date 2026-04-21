@@ -7,7 +7,7 @@ import { useUser } from './UserContext'
 export interface Notification {
   id: string
   userId: string
-  type: 'like' | 'dislike' | 'comment' | 'follow' | 'topic_day'
+  type: 'like' | 'dislike' | 'comment' | 'follow' | 'topic_day' | 'dm'
   message: string
   read: boolean
   createdAt: Date

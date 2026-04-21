@@ -66,6 +66,22 @@ type ReportRow = {
   visibility: string
 }
 
+type DmReportRow = {
+  id: string
+  reporter_id: string
+  message_id: string
+  reason: string
+  status: string
+  created_at: string
+  reporter_username: string
+  reporter_display_name: string
+  message_content: string
+  sender_id: string
+  conversation_id: string
+  sender_username: string
+  sender_display_name: string
+}
+
 type TabId = 'overview' | 'users' | 'calendar' | 'moderation' | 'audit' | 'suggestions'
 
 export default function AdminPage() {
@@ -76,6 +92,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [reports, setReports] = useState<ReportRow[]>([])
+  const [dmReports, setDmReports] = useState<DmReportRow[]>([])
   const [topicSuggestions, setTopicSuggestions] = useState<TopicSuggestion[]>([])
   const [featureSuggestions, setFeatureSuggestions] = useState<FeatureSuggestion[]>([])
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
@@ -87,6 +104,7 @@ export default function AdminPage() {
   const [loadingStats, setLoadingStats] = useState(false)
   const [loadingAudit, setLoadingAudit] = useState(false)
   const [loadingReports, setLoadingReports] = useState(false)
+  const [loadingDmReports, setLoadingDmReports] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null)
   const [editingForm, setEditingForm] = useState({ title: '', description: '', date: '' })
@@ -202,6 +220,23 @@ export default function AdminPage() {
       setError(e instanceof Error ? e.message : 'Failed to load reports')
     } finally {
       setLoadingReports(false)
+    }
+  }, [])
+
+  const loadDmReports = useCallback(async () => {
+    setLoadingDmReports(true)
+    setError('')
+    try {
+      const response = await fetch('/api/admin/dm-reports', { credentials: 'include' })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to load DM reports')
+      }
+      setDmReports(data.reports || [])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load DM reports')
+    } finally {
+      setLoadingDmReports(false)
     }
   }, [])
 
@@ -379,9 +414,12 @@ export default function AdminPage() {
   useEffect(() => {
     if (!canAccessPanel) return
     if (tab === 'overview' && canAdmin) void loadStats()
-    if (tab === 'moderation' && canAdmin) void loadReports()
+    if (tab === 'moderation' && canAdmin) {
+      void loadReports()
+      void loadDmReports()
+    }
     if (tab === 'audit' && canAdmin) void loadAudit()
-  }, [tab, canAccessPanel, canAdmin, loadStats, loadReports, loadAudit])
+  }, [tab, canAccessPanel, canAdmin, loadStats, loadReports, loadDmReports, loadAudit])
 
   useEffect(() => {
     if (!canAccessPanel || tab !== 'suggestions' || !canAdmin) return
@@ -627,6 +665,7 @@ export default function AdminPage() {
         throw new Error((data as { error?: string }).error || 'Request failed')
       }
       await loadReports()
+      await loadDmReports()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Request failed')
     }
@@ -1283,6 +1322,7 @@ export default function AdminPage() {
         )}
 
         {tab === 'moderation' && canAdmin && (
+          <>
           <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-ink">Ziņotie ieraksti</h2>
@@ -1358,6 +1398,60 @@ export default function AdminPage() {
               </div>
             )}
           </section>
+
+          <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-ink">Ziņotās privātās ziņas</h2>
+              <button
+                type="button"
+                onClick={() => loadDmReports()}
+                className="rounded-lg bg-surface text-ink border border-border-ui px-3 py-1 text-sm hover:bg-border-ui"
+              >
+                Atsvaidzināt
+              </button>
+            </div>
+            {loadingDmReports ? (
+              <p className="text-ink-muted">Ielādē...</p>
+            ) : dmReports.length === 0 ? (
+              <p className="text-ink-muted">Nav DM ziņojumu.</p>
+            ) : (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                {dmReports.map((r) => (
+                  <article key={r.id} className="rounded-xl border border-border-ui bg-surface p-4 space-y-2">
+                    <div className="text-sm text-ink-muted">
+                      @{r.reporter_username} · {r.status} · {r.created_at}
+                    </div>
+                    <p className="text-xs text-ink-muted">
+                      Ziņa no @{r.sender_username} · saruna {r.conversation_id}
+                    </p>
+                    <p className="text-ink text-sm whitespace-pre-wrap line-clamp-6">{r.message_content}</p>
+                    {r.reason ? <p className="text-xs text-ink-muted">Iemesls: {r.reason}</p> : null}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="rounded-lg bg-accent px-2 py-1 text-xs text-accent-fg hover:bg-accent-hover"
+                        onClick={() =>
+                          moderationAction(`/api/admin/dm-reports/${r.id}`, 'PATCH', { status: 'reviewed' })
+                        }
+                      >
+                        Atzīmēt kā apskatītu
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg bg-surface-2 border border-border-ui px-2 py-1 text-xs text-ink hover:bg-surface"
+                        onClick={() =>
+                          moderationAction(`/api/admin/dm-reports/${r.id}`, 'PATCH', { status: 'dismissed' })
+                        }
+                      >
+                        Noraidīt
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+          </>
         )}
 
         {tab === 'audit' && canAdmin && (

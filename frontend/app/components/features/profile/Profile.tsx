@@ -26,9 +26,10 @@ interface ProfileProps {
   userId?: string
   onBack?: () => void
   onUserClick?: (userId: string) => void
+  onStartDm?: (userId: string) => void
 }
 
-export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
+export default function Profile({ userId, onBack, onUserClick, onStartDm }: ProfileProps) {
   const { user, users, updateUser, followUser, unfollowUser } = useUser()
   const { threads } = useThread()
   const { lastMessage } = useWebSocket()
@@ -453,7 +454,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
             </div>
 
             {/* Action button — full-width on mobile, auto on sm+ */}
-            <div className="flex sm:block sm:flex-shrink-0">
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-start sm:flex-shrink-0 w-full sm:w-auto">
               {isOwnProfile ? (
                 <button
                   onClick={handleEdit}
@@ -463,26 +464,38 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                   <span>Rediģēt profilu</span>
                 </button>
               ) : (
-                <button
-                  onClick={handleFollow}
-                  className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold transition-colors ${
-                    isFollowing
-                      ? 'bg-surface text-ink border border-border-ui hover:bg-surface-2'
-                      : 'bg-accent text-accent-fg hover:bg-accent-hover'
-                  }`}
-                >
-                  {isFollowing ? (
-                    <>
-                      <UserMinusIcon className="w-4 h-4" />
-                      <span>Seko</span>
-                    </>
-                  ) : (
-                    <>
-                      <UserPlusIcon className="w-4 h-4" />
-                      <span>Sekot</span>
-                    </>
+                <>
+                  {user && profileUser && onStartDm && profileUser.id !== user.id && (
+                    <button
+                      type="button"
+                      onClick={() => onStartDm(profileUser.id)}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold border border-border-ui text-ink bg-surface hover:bg-surface-2 transition-colors"
+                    >
+                      <ChatBubbleLeftIcon className="w-4 h-4" />
+                      <span>Ziņa</span>
+                    </button>
                   )}
-                </button>
+                  <button
+                    onClick={handleFollow}
+                    className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold transition-colors ${
+                      isFollowing
+                        ? 'bg-surface text-ink border border-border-ui hover:bg-surface-2'
+                        : 'bg-accent text-accent-fg hover:bg-accent-hover'
+                    }`}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserMinusIcon className="w-4 h-4" />
+                        <span>Seko</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlusIcon className="w-4 h-4" />
+                        <span>Sekot</span>
+                      </>
+                    )}
+                  </button>
+                </>
               )}
             </div>
           </div>

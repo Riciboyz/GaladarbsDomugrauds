@@ -10,9 +10,10 @@ import {
 
 interface SearchProps {
   onUserClick?: (userId: string) => void
+  onStartDm?: (userId: string) => void
 }
 
-export default function Search({ onUserClick }: SearchProps) {
+export default function Search({ onUserClick, onStartDm }: SearchProps) {
   const { user, followUser, unfollowUser, isFollowing } = useUser()
   const [query, setQuery] = useState('')
   const [userSearchResults, setUserSearchResults] = useState<any[]>([])
@@ -150,51 +151,62 @@ export default function Search({ onUserClick }: SearchProps) {
                       </p>
                     </div>
                   ) : (
-                    filteredUsers.map((user) => (
-                      <div key={user.id} className="card-elevated">
+                    filteredUsers.map((u) => (
+                      <div key={u.id} className="card-elevated">
                         <div className="p-4">
                           <div className="flex items-center space-x-3">
                             <div 
                               className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
-                              onClick={() => onUserClick?.(user.id)}
+                              onClick={() => onUserClick?.(u.id)}
                             >
                               <img
-                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=3b82f6&color=fff`}
-                                alt={user.displayName}
+                                src={u.avatar || `https://ui-avatars.com/api/?name=${u.displayName}&background=3b82f6&color=fff`}
+                                alt={u.displayName}
                                 className="w-10 h-10 rounded-lg object-cover"
                               />
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-ink truncate hover:text-accent">
-                                  {user.displayName}
+                                  {u.displayName}
                                 </h3>
-                                <p className="text-sm text-ink-muted">@{user.username}</p>
-                                {user.bio && (
+                                <p className="text-sm text-ink-muted">@{u.username}</p>
+                                {u.bio && (
                                   <p className="text-sm text-ink-muted mt-1 line-clamp-2">
-                                    {user.bio}
+                                    {u.bio}
                                   </p>
                                 )}
                               </div>
                             </div>
-                            <button 
-                              onClick={() => handleFollow(user.id)}
-                              disabled={followLoading === user.id}
-                              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                isFollowing(user.id) 
-                                  ? 'bg-surface text-ink border border-border-ui hover:bg-surface-2' 
-                                  : 'bg-accent text-accent-fg hover:bg-accent-hover'
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                              {followLoading === user.id ? (
-                                <div className="flex items-center space-x-1">
-                                  <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
-                                  <span>Loading...</span>
-                                </div>
-                              ) : isFollowing(user.id) ? (
-                                'Unfollow'
-                              ) : (
-                                'Follow'
+                            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                              {user && u.id !== user.id && onStartDm && (
+                                <button
+                                  type="button"
+                                  onClick={() => onStartDm(u.id)}
+                                  className="px-3 py-2 rounded-lg font-medium text-sm border border-border-ui text-ink hover:bg-surface-2"
+                                >
+                                  Ziņa
+                                </button>
                               )}
-                            </button>
+                              <button 
+                                onClick={() => handleFollow(u.id)}
+                                disabled={followLoading === u.id}
+                                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                                  isFollowing(u.id) 
+                                    ? 'bg-surface text-ink border border-border-ui hover:bg-surface-2' 
+                                    : 'bg-accent text-accent-fg hover:bg-accent-hover'
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              >
+                                {followLoading === u.id ? (
+                                  <div className="flex items-center space-x-1">
+                                    <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Loading...</span>
+                                  </div>
+                                ) : isFollowing(u.id) ? (
+                                  'Unfollow'
+                                ) : (
+                                  'Follow'
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>

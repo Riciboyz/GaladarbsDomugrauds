@@ -16,7 +16,8 @@ function initDatabase() {
     '003_add_user_settings.sql',
     '004_admin_moderation.sql',
     '005_make_groups_public.sql',
-    '006_suggestions.sql'
+    '006_suggestions.sql',
+    '007_direct_messages.sql'
   ];
 
   let bootstrapSql = '';
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS followers (
       if (err) console.error('Schema bootstrap:', err.message);
       try {
         await ensureAdminModerationPatches(db);
+        await ensureDmMessageAttachmentsColumn(db);
       } catch (e) {
         console.error('Schema patches:', e.message);
       }
@@ -85,6 +87,29 @@ async function ensureAdminModerationPatches(db) {
     await run('CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at)');
   } catch (e) {
     console.error('Schema patches (004):', e.message);
+  }
+}
+
+/** dm_messages.attachments JSON (messageType + attachmentUrl), for installs before this column existed. */
+async function ensureDmMessageAttachmentsColumn(db) {
+  const run = (sql) =>
+    new Promise((resolve, reject) => {
+      db.run(sql, (e) => (e ? reject(e) : resolve()));
+    });
+  const all = (sql, params = []) =>
+    new Promise((resolve, reject) => {
+      db.all(sql, params, (e, rows) => (e ? reject(e) : resolve(rows)));
+    });
+  try {
+    const msgCols = columnNames(await all('PRAGMA table_info(dm_messages)'));
+    if (!msgCols.size) return;
+    if (!msgCols.has('attachments')) {
+      await run(
+        `ALTER TABLE dm_messages ADD COLUMN attachments TEXT DEFAULT '{"messageType":"text","attachmentUrl":""}'`
+      );
+    }
+  } catch (e) {
+    console.error('Schema patches (dm_messages.attachments):', e.message);
   }
 }
 

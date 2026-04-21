@@ -7,11 +7,15 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@heroicons/react'],
   },
-  // Reduce the number of files being watched
-  webpack: (config, { isServer }) => {
+  // Reduce file watchers (EMFILE on macOS) and optionally use polling in dev.
+  webpack: (config, { dev }) => {
+    const usePoll =
+      process.env.NEXT_DEV_POLL === '1' ||
+      (process.env.NEXT_DEV_POLL !== '0' && dev && process.platform === 'darwin')
     config.watchOptions = {
       ...config.watchOptions,
-      ignored: ['**/node_modules', '**/.git', '**/.next'],
+      ignored: ['**/node_modules/**', '**/.git/**', '**/.next/**'],
+      ...(usePoll ? { poll: 2000, aggregateTimeout: 400 } : {}),
     }
     // Reduce ChunkLoadError timeouts on slower disks / Windows Defender scans
     config.output = { ...config.output, chunkLoadTimeout: 120000 }

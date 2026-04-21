@@ -69,6 +69,8 @@ export default function RealtimeNotificationsProvider() {
         return <ChatBubbleLeftIcon className="w-5 h-5 text-accent" />
       case 'follow':
         return <UserPlusIcon className="w-5 h-5 text-emerald-500" />
+      case 'dm':
+        return <ChatBubbleLeftIcon className="w-5 h-5 text-accent" />
       default:
         return <BellIcon className="w-5 h-5 text-ink-muted" />
     }
@@ -84,6 +86,8 @@ export default function RealtimeNotificationsProvider() {
         return `${notification.fromUser?.displayName || 'Someone'} commented on your thread`
       case 'follow':
         return `${notification.fromUser?.displayName || 'Someone'} started following you`
+      case 'dm':
+        return notification.message || 'Jauna privātā ziņa'
       default:
         return notification.message || 'New notification'
     }

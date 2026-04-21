@@ -26,9 +26,12 @@ else
     exit 1
 fi
 
-# Start Frontend
+# Start Frontend (polling on macOS avoids EMFILE → broken HMR / 500 on /_next chunks)
 echo "📦 Starting Frontend Server..."
 cd ../frontend
+if [ "$(uname -s)" = "Darwin" ]; then
+  export NEXT_DEV_POLL=1
+fi
 npm run dev &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"

@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:poll": "NEXT_DEV_POLL=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
