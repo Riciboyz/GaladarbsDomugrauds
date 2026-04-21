@@ -15,6 +15,7 @@ import Search from './features/search/Search'
 import Groups from './features/groups/Groups'
 import RightSidebar from './layout/RightSidebar'
 import TopicSubmission from './features/topics/TopicSubmission'
+import SuggestionsPage from './features/suggestions/SuggestionsPage'
 import KeyboardShortcuts from './utility/KeyboardShortcuts'
 import SimpleCreateThread from './features/threads/SimpleCreateThread'
 import { 
@@ -22,10 +23,11 @@ import {
   UserIcon, 
   BellIcon,
   MagnifyingGlassIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  LightBulbIcon
 } from '@heroicons/react/24/outline'
 
-type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'user-profile' | 'topic-submission'
+type Tab = 'home' | 'profile' | 'notifications' | 'search' | 'groups' | 'suggestions' | 'user-profile' | 'topic-submission'
 
 export default function MainApp() {
   const { user } = useUser()
@@ -50,6 +52,7 @@ export default function MainApp() {
     { id: 'home', label: 'Sākums', icon: HomeIcon },
     { id: 'search', label: 'Meklēt', icon: MagnifyingGlassIcon },
     { id: 'groups', label: 'Grupas', icon: UserGroupIcon },
+    { id: 'suggestions', label: 'Ieteikumi', icon: LightBulbIcon },
     { id: 'notifications', label: 'Paziņojumi', icon: BellIcon },
     { id: 'profile', label: 'Profils', icon: UserIcon },
   ]
@@ -88,6 +91,8 @@ export default function MainApp() {
         return <Search onUserClick={handleUserProfileClick} />
       case 'groups':
         return <Groups />
+      case 'suggestions':
+        return <SuggestionsPage />
       case 'user-profile':
         return viewedUserId ? (
           <Profile 

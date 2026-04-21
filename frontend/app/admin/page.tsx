@@ -2,6 +2,15 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useUser } from '../components/contexts/UserContext'
+import type {
+  FeatureSuggestion,
+  FeatureSuggestionStatus,
+  TopicSuggestion,
+} from '../components/features/suggestions/types'
+import {
+  FEATURE_CATEGORY_LABELS,
+  FEATURE_STATUS_LABELS,
+} from '../components/features/suggestions/types'
 
 type TopicDay = {
   id: string
@@ -57,7 +66,7 @@ type ReportRow = {
   visibility: string
 }
 
-type TabId = 'overview' | 'users' | 'calendar' | 'moderation' | 'audit'
+type TabId = 'overview' | 'users' | 'calendar' | 'moderation' | 'audit' | 'suggestions'
 
 export default function AdminPage() {
   const { user, isLoading } = useUser()
@@ -67,6 +76,12 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [reports, setReports] = useState<ReportRow[]>([])
+  const [topicSuggestions, setTopicSuggestions] = useState<TopicSuggestion[]>([])
+  const [featureSuggestions, setFeatureSuggestions] = useState<FeatureSuggestion[]>([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const [suggestionActionId, setSuggestionActionId] = useState<string | null>(null)
+  const [topicSuggestionFilter, setTopicSuggestionFilter] = useState<'pending' | 'all'>('pending')
+  const [featureSuggestionFilter, setFeatureSuggestionFilter] = useState<FeatureSuggestionStatus | 'all'>('all')
   const [loadingTopicDays, setLoadingTopicDays] = useState(true)
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [loadingStats, setLoadingStats] = useState(false)
@@ -190,12 +205,189 @@ export default function AdminPage() {
     }
   }, [])
 
+  const loadTopicSuggestions = useCallback(async () => {
+    setLoadingSuggestions(true)
+    setError('')
+    try {
+      const response = await fetch(
+        `/api/topic-suggestions?status=${topicSuggestionFilter}&sort=new`,
+        { credentials: 'include' }
+      )
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to load topic suggestions')
+      }
+      setTopicSuggestions(data.suggestions || [])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load topic suggestions')
+    } finally {
+      setLoadingSuggestions(false)
+    }
+  }, [topicSuggestionFilter])
+
+  const loadFeatureSuggestions = useCallback(async () => {
+    setLoadingSuggestions(true)
+    setError('')
+    try {
+      const response = await fetch(
+        `/api/feature-suggestions?status=${featureSuggestionFilter}&sort=new&category=all`,
+        { credentials: 'include' }
+      )
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to load feature suggestions')
+      }
+      setFeatureSuggestions(data.suggestions || [])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load feature suggestions')
+    } finally {
+      setLoadingSuggestions(false)
+    }
+  }, [featureSuggestionFilter])
+
+  const approveTopicSuggestion = async (id: string, defaultTitle: string) => {
+    const iso = window.prompt(
+      `Datums (YYYY-MM-DD), kad publicēt "${defaultTitle}":`,
+      today
+    )
+    if (!iso) return
+    const d = iso.trim().slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      setError('Nederīgs datums')
+      return
+    }
+    setSuggestionActionId(id)
+    setError('')
+    setSuccess('')
+    try {
+      const response = await fetch(`/api/topic-suggestions/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ date: d }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Approve failed')
+      }
+      setSuccess(`Ieteikums publicēts kā dienas tēma (${d}).`)
+      await loadTopicSuggestions()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Approve failed')
+    } finally {
+      setSuggestionActionId(null)
+    }
+  }
+
+  const rejectTopicSuggestion = async (id: string) => {
+    const reason = window.prompt('Iemesls (neobligāti):', '')
+    if (reason === null) return
+    setSuggestionActionId(id)
+    setError('')
+    setSuccess('')
+    try {
+      const response = await fetch(`/api/topic-suggestions/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: reason.trim() }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Reject failed')
+      }
+      setSuccess('Ieteikums noraidīts.')
+      await loadTopicSuggestions()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Reject failed')
+    } finally {
+      setSuggestionActionId(null)
+    }
+  }
+
+  const deleteTopicSuggestion = async (id: string) => {
+    if (!window.confirm('Dzēst šo ieteikumu?')) return
+    setSuggestionActionId(id)
+    setError('')
+    try {
+      const response = await fetch(`/api/topic-suggestions/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Delete failed')
+      }
+      await loadTopicSuggestions()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed')
+    } finally {
+      setSuggestionActionId(null)
+    }
+  }
+
+  const updateFeatureSuggestion = async (
+    id: string,
+    patch: { status?: FeatureSuggestionStatus; adminNote?: string }
+  ) => {
+    setSuggestionActionId(id)
+    setError('')
+    setSuccess('')
+    try {
+      const response = await fetch(`/api/feature-suggestions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(patch),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Update failed')
+      }
+      setFeatureSuggestions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, ...(data.suggestion || {}) } : s))
+      )
+      setSuccess('Atjaunināts.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Update failed')
+    } finally {
+      setSuggestionActionId(null)
+    }
+  }
+
+  const deleteFeatureSuggestion = async (id: string) => {
+    if (!window.confirm('Dzēst šo ieteikumu?')) return
+    setSuggestionActionId(id)
+    setError('')
+    try {
+      const response = await fetch(`/api/feature-suggestions/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Delete failed')
+      }
+      await loadFeatureSuggestions()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed')
+    } finally {
+      setSuggestionActionId(null)
+    }
+  }
+
   useEffect(() => {
     if (!canAccessPanel) return
     if (tab === 'overview' && canAdmin) void loadStats()
     if (tab === 'moderation' && canAdmin) void loadReports()
     if (tab === 'audit' && canAdmin) void loadAudit()
   }, [tab, canAccessPanel, canAdmin, loadStats, loadReports, loadAudit])
+
+  useEffect(() => {
+    if (!canAccessPanel || tab !== 'suggestions' || !canAdmin) return
+    void loadTopicSuggestions()
+    void loadFeatureSuggestions()
+  }, [tab, canAccessPanel, canAdmin, loadTopicSuggestions, loadFeatureSuggestions])
 
   useEffect(() => {
     if (!canAccessPanel || tab !== 'overview' || !canAdmin) return
@@ -490,6 +682,7 @@ export default function AdminPage() {
     { id: 'overview', label: 'Pārskats', adminOnly: true },
     { id: 'users', label: 'Lietotāji', adminOnly: true },
     { id: 'calendar', label: 'Daily Topic kalendārs', adminOnly: true },
+    { id: 'suggestions', label: 'Ieteikumi', adminOnly: true },
     { id: 'moderation', label: 'Moderācija', adminOnly: true },
     { id: 'audit', label: 'Audit žurnāls', adminOnly: true },
   ]
@@ -926,6 +1119,169 @@ export default function AdminPage() {
           </>
         )}
 
+        {tab === 'suggestions' && canAdmin && (
+          <>
+            <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold text-ink">Dienas tēmu ieteikumi</h2>
+                <div className="flex gap-2">
+                  {(['pending', 'all'] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setTopicSuggestionFilter(s)}
+                      className={`rounded-lg px-3 py-1 text-xs font-medium border transition ${
+                        topicSuggestionFilter === s
+                          ? 'bg-accent text-accent-fg border-accent'
+                          : 'bg-surface text-ink-muted border-border-ui hover:text-ink'
+                      }`}
+                    >
+                      {s === 'pending' ? 'Gaida apstiprinājumu' : 'Visi'}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => loadTopicSuggestions()}
+                    className="rounded-lg bg-surface text-ink border border-border-ui px-3 py-1 text-sm hover:bg-border-ui"
+                  >
+                    Atsvaidzināt
+                  </button>
+                </div>
+              </div>
+
+              {loadingSuggestions ? (
+                <p className="text-ink-muted">Ielādē...</p>
+              ) : topicSuggestions.length === 0 ? (
+                <p className="text-ink-muted">Nav ieteikumu.</p>
+              ) : (
+                <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+                  {topicSuggestions.map((s) => (
+                    <article
+                      key={s.id}
+                      className="rounded-xl border border-border-ui bg-surface p-4 space-y-2"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-ink break-words">{s.title}</h3>
+                          <p className="text-xs text-ink-muted">
+                            @{s.author?.username} · {new Date(s.created_at).toLocaleString()} ·{' '}
+                            balsis: {s.votes} ({s.vote_count})
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-lg px-2 py-1 text-xs border ${
+                            s.status === 'approved'
+                              ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                              : s.status === 'rejected'
+                              ? 'bg-red-500/15 text-red-500 border-red-500/30'
+                              : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                          }`}
+                        >
+                          {s.status}
+                        </span>
+                      </div>
+                      {s.description && (
+                        <p className="text-ink text-sm whitespace-pre-wrap">{s.description}</p>
+                      )}
+                      {s.image_url && (
+                        <img
+                          src={s.image_url}
+                          alt={s.title}
+                          className="max-h-64 rounded-lg border border-border-ui"
+                        />
+                      )}
+                      {s.admin_note && (
+                        <p className="text-xs text-ink-muted">
+                          <span className="font-semibold text-ink">Piezīme:</span> {s.admin_note}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {s.status !== 'approved' && (
+                          <button
+                            type="button"
+                            disabled={suggestionActionId === s.id}
+                            onClick={() => approveTopicSuggestion(s.id, s.title)}
+                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-500 disabled:opacity-60"
+                          >
+                            Publicēt kā dienas tēmu...
+                          </button>
+                        )}
+                        {s.status !== 'rejected' && (
+                          <button
+                            type="button"
+                            disabled={suggestionActionId === s.id}
+                            onClick={() => rejectTopicSuggestion(s.id)}
+                            className="rounded-lg bg-surface-2 border border-border-ui text-ink px-3 py-1.5 text-xs hover:bg-surface disabled:opacity-60"
+                          >
+                            Noraidīt
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={suggestionActionId === s.id}
+                          onClick={() => deleteTopicSuggestion(s.id)}
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-500 disabled:opacity-60"
+                        >
+                          Dzēst
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold text-ink">Vispārīgie ieteikumi</h2>
+                <div className="flex flex-wrap gap-2">
+                  {(['all', 'pending', 'planned', 'in_progress', 'done', 'rejected'] as const).map(
+                    (s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setFeatureSuggestionFilter(s)}
+                        className={`rounded-lg px-3 py-1 text-xs font-medium border transition ${
+                          featureSuggestionFilter === s
+                            ? 'bg-accent text-accent-fg border-accent'
+                            : 'bg-surface text-ink-muted border-border-ui hover:text-ink'
+                        }`}
+                      >
+                        {s === 'all' ? 'Visi' : FEATURE_STATUS_LABELS[s]}
+                      </button>
+                    )
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => loadFeatureSuggestions()}
+                    className="rounded-lg bg-surface text-ink border border-border-ui px-3 py-1 text-sm hover:bg-border-ui"
+                  >
+                    Atsvaidzināt
+                  </button>
+                </div>
+              </div>
+
+              {loadingSuggestions ? (
+                <p className="text-ink-muted">Ielādē...</p>
+              ) : featureSuggestions.length === 0 ? (
+                <p className="text-ink-muted">Nav ieteikumu.</p>
+              ) : (
+                <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+                  {featureSuggestions.map((s) => (
+                    <FeatureSuggestionAdminCard
+                      key={s.id}
+                      suggestion={s}
+                      busy={suggestionActionId === s.id}
+                      onUpdate={(patch) => updateFeatureSuggestion(s.id, patch)}
+                      onDelete={() => deleteFeatureSuggestion(s.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
         {tab === 'moderation' && canAdmin && (
           <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
             <div className="flex justify-between items-center mb-4">
@@ -1053,5 +1409,89 @@ export default function AdminPage() {
         )}
       </div>
     </main>
+  )
+}
+
+function FeatureSuggestionAdminCard({
+  suggestion,
+  busy,
+  onUpdate,
+  onDelete,
+}: {
+  suggestion: FeatureSuggestion
+  busy: boolean
+  onUpdate: (patch: { status?: FeatureSuggestionStatus; adminNote?: string }) => void
+  onDelete: () => void
+}) {
+  const [note, setNote] = useState(suggestion.admin_note || '')
+  const [status, setStatus] = useState<FeatureSuggestionStatus>(suggestion.status)
+
+  useEffect(() => {
+    setNote(suggestion.admin_note || '')
+    setStatus(suggestion.status)
+  }, [suggestion.id, suggestion.admin_note, suggestion.status])
+
+  return (
+    <article className="rounded-xl border border-border-ui bg-surface p-4 space-y-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-ink break-words">{suggestion.title}</h3>
+          <p className="text-xs text-ink-muted">
+            @{suggestion.author?.username} · {new Date(suggestion.created_at).toLocaleString()} ·{' '}
+            balsis: {suggestion.votes} ({suggestion.vote_count})
+          </p>
+        </div>
+        <span className="rounded-lg bg-surface-2 px-2 py-1 text-xs border border-border-ui text-ink-muted">
+          {FEATURE_CATEGORY_LABELS[suggestion.category] || suggestion.category}
+        </span>
+      </div>
+      {suggestion.description && (
+        <p className="text-ink text-sm whitespace-pre-wrap">{suggestion.description}</p>
+      )}
+      {suggestion.image_url && (
+        <img
+          src={suggestion.image_url}
+          alt={suggestion.title}
+          className="max-h-64 rounded-lg border border-border-ui"
+        />
+      )}
+      <div className="flex flex-wrap gap-2 items-center">
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as FeatureSuggestionStatus)}
+          className="rounded-lg bg-surface-2 text-ink border border-border-ui text-sm p-1.5"
+        >
+          {(['pending', 'planned', 'in_progress', 'done', 'rejected'] as FeatureSuggestionStatus[]).map(
+            (st) => (
+              <option key={st} value={st}>
+                {FEATURE_STATUS_LABELS[st]}
+              </option>
+            )
+          )}
+        </select>
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Admin piezīme (neobligāti)"
+          className="flex-1 min-w-[180px] rounded-lg bg-surface-2 text-ink border border-border-ui p-1.5 text-sm"
+        />
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onUpdate({ status, adminNote: note })}
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs text-accent-fg hover:bg-accent-hover disabled:opacity-60"
+        >
+          Saglabāt
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onDelete}
+          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-500 disabled:opacity-60"
+        >
+          Dzēst
+        </button>
+      </div>
+    </article>
   )
 }

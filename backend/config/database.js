@@ -14,7 +14,8 @@ function initDatabase() {
     '001_initial_schema.sql',
     '002_add_group_roles.sql',
     '003_add_user_settings.sql',
-    '004_admin_moderation.sql'
+    '004_admin_moderation.sql',
+    '006_suggestions.sql'
   ];
 
   let bootstrapSql = '';

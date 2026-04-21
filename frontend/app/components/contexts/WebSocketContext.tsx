@@ -55,6 +55,14 @@ const FORWARDED_EVENTS = [
   'daily_topic_updated',
   'daily_topic_deleted',
   'topic_submission_created',
+  'topic_suggestion_created',
+  'topic_suggestion_updated',
+  'topic_suggestion_deleted',
+  'topic_suggestion_vote_updated',
+  'feature_suggestion_created',
+  'feature_suggestion_updated',
+  'feature_suggestion_deleted',
+  'feature_suggestion_vote_updated',
 ] as const
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {

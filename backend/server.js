@@ -180,6 +180,7 @@ app.use('/api/threads', require('./routes/threads')(db, io));
 app.use('/api/groups', require('./routes/groups')(db, io));
 app.use('/api/notifications', require('./routes/notifications')(db, io));
 app.use('/api', require('./routes/topics')(db, io));
+app.use('/api', require('./routes/suggestions')(db, io));
 app.use('/api/admin', require('./routes/admin')(db));
 app.use('/api/reports', require('./routes/reports')(db));
 app.use('/api', require('./routes/upload')());

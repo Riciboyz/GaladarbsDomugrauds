@@ -6,6 +6,7 @@ import {
   BellIcon as BellSolid,
   MagnifyingGlassIcon as SearchSolid,
   UserGroupIcon as GroupSolid,
+  LightBulbIcon as LightBulbSolid,
 } from '@heroicons/react/24/solid'
 
 interface Tab {
@@ -27,6 +28,7 @@ const SOLID_ICONS: Record<string, any> = {
   notifications: BellSolid,
   search: SearchSolid,
   groups: GroupSolid,
+  suggestions: LightBulbSolid,
 }
 
 export default function MobileBottomNav({
