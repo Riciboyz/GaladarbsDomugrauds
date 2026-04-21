@@ -194,32 +194,32 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-surface">
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           {/* Ultra-Minimal Logo */}
           <div className="text-center mb-8">
             <div
-              className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-4"
+              className="w-12 h-12 bg-accent text-accent-fg rounded-xl flex items-center justify-center mx-auto mb-4"
               style={{ width: 48, height: 48 }}
             >
-              <ChatBubbleLeftRightIcon className="w-6 h-6 text-white" style={{ width: 24, height: 24 }} />
+              <ChatBubbleLeftRightIcon className="w-6 h-6" style={{ width: 24, height: 24 }} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">DomuGrauds</h1>
-            <p className="text-gray-600">Dalies ar savām domām, sazinies ar citiem</p>
+            <h1 className="text-2xl font-bold text-ink mb-2">DomuGrauds</h1>
+            <p className="text-ink-muted">Dalies ar savām domām, sazinies ar citiem</p>
           </div>
 
           {/* Ultra-Clean Auth Form */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+          <div className="bg-surface-2 rounded-xl shadow-lg border border-border-ui">
             <div className="p-8">
               {/* Ultra-Minimal Tabs */}
-              <div className="flex mb-8 bg-gray-100 p-1 rounded-lg">
+              <div className="flex mb-8 bg-surface p-1 rounded-lg">
                 <button
                   onClick={() => setIsLogin(true)}
                   className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-all duration-200 ${
                     isLogin
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-surface-2 text-ink shadow-sm'
+                      : 'text-ink-muted hover:text-ink'
                   }`}
                 >
                   Login
@@ -228,8 +228,8 @@ export default function AuthPage() {
                   onClick={() => setIsLogin(false)}
                   className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-all duration-200 ${
                     !isLogin
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-surface-2 text-ink shadow-sm'
+                      : 'text-ink-muted hover:text-ink'
                   }`}
                 >
                   Sign Up
@@ -241,19 +241,19 @@ export default function AuthPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink mb-2">
                     Email Address
                   </label>
                   <div className="relative">
                     <EnvelopeIcon
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-ink-muted/70"
                       style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16 }}
                     />
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                      className="w-full pl-10 pr-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
                       placeholder="Enter your email"
                       required
                     />
@@ -262,26 +262,26 @@ export default function AuthPage() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink mb-2">
                     Password
                   </label>
                   <div className="relative">
                     <LockClosedIcon
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-ink-muted/70"
                       style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16 }}
                     />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                      className="w-full pl-10 pr-10 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
                       placeholder="Enter your password"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-ink-muted/70 hover:text-ink transition-colors duration-200"
                     >
                       {showPassword ? (
                         <EyeSlashIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
@@ -301,10 +301,10 @@ export default function AuthPage() {
                       ].map((rule) => (
                         <li
                           key={rule.label}
-                          className={`flex items-center space-x-2 ${rule.ok ? 'text-green-600' : 'text-gray-500'}`}
+                          className={`flex items-center space-x-2 ${rule.ok ? 'text-emerald-500' : 'text-ink-muted'}`}
                         >
                           <span
-                            className={`inline-block w-1.5 h-1.5 rounded-full ${rule.ok ? 'bg-green-500' : 'bg-gray-300'}`}
+                            className={`inline-block w-1.5 h-1.5 rounded-full ${rule.ok ? 'bg-emerald-500' : 'bg-border-ui'}`}
                           />
                           <span>{rule.label}</span>
                         </li>
@@ -317,19 +317,19 @@ export default function AuthPage() {
                 {!isLogin && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-ink mb-2">
                         Username
                       </label>
                       <div className="relative">
                         <UserIcon
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-ink-muted/70"
                           style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16 }}
                         />
                         <input
                           type="text"
                           value={formData.username}
                           onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                          className="w-full pl-10 pr-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
                           placeholder="Choose a username"
                           required
                         />
@@ -337,27 +337,27 @@ export default function AuthPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-ink mb-2">
                         Display Name
                       </label>
                       <input
                         type="text"
                         value={formData.displayName}
                         onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                        className="w-full px-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
                         placeholder="Your display name"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-ink mb-2">
                         Bio (Optional)
                       </label>
                       <textarea
                         value={formData.bio}
                         onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm resize-none h-20"
+                        className="w-full px-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm resize-none h-20"
                         placeholder="Tell us about yourself..."
                       />
                     </div>
@@ -375,7 +375,7 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  className="w-full bg-accent text-accent-fg py-3 px-4 rounded-lg font-medium hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
                   {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
                 </button>
@@ -383,20 +383,20 @@ export default function AuthPage() {
               ) : (
               <form onSubmit={handleVerifyCode} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink mb-2">
                     Ievadi 6‑ciparu kodu
                   </label>
                   <input
                     type="text"
                     value={twoFactorCode}
                     onChange={(e) => setTwoFactorCode(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                    className="w-full px-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
                     placeholder="123456"
                     maxLength={6}
                     required
                   />
                   {devShownCode && (
-                    <p className="mt-2 text-xs text-gray-600">Kods (parādīts tikai dev režīmā): <span className="font-mono">{devShownCode}</span></p>
+                    <p className="mt-2 text-xs text-ink-muted">Kods (parādīts tikai dev režīmā): <span className="font-mono">{devShownCode}</span></p>
                   )}
                 </div>
                 {errorMessage && (
@@ -407,7 +407,7 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  className="w-full bg-accent text-accent-fg py-3 px-4 rounded-lg font-medium hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
                   {loading ? 'Please wait...' : 'Verify Code'}
                 </button>
@@ -419,7 +419,7 @@ export default function AuthPage() {
                 <button
                   onClick={handleQuickLogin}
                   disabled={loading}
-                  className="text-sm text-gray-500 hover:text-blue-600 font-medium transition-colors duration-200"
+                  className="text-sm text-ink-muted hover:text-accent font-medium transition-colors duration-200"
                 >
                   Quick Test Login (testuser1@example.com)
                 </button>

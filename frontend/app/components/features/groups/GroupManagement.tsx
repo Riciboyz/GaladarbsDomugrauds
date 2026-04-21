@@ -179,8 +179,8 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="card-elevated w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h3 className="heading-3 text-gray-900">Group Management</h3>
+        <div className="flex items-center justify-between p-6 border-b border-border-ui">
+          <h3 className="heading-3 text-ink">Group Management</h3>
           <button
             onClick={onClose}
             className="btn-icon"
@@ -193,22 +193,22 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
           {/* Group Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-surface rounded-xl flex items-center justify-center">
                 {group.avatar ? (
                   <img src={group.avatar} alt={group.name} className="w-16 h-16 rounded-xl object-cover" />
                 ) : (
-                  <UserGroupIcon className="w-8 h-8 text-gray-600" />
+                  <UserGroupIcon className="w-8 h-8 text-ink-muted" />
                 )}
               </div>
               <div>
-                <h4 className="heading-4 text-gray-900">{group.name}</h4>
-                <p className="body-regular text-gray-600">{group.description}</p>
-                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                <h4 className="heading-4 text-ink">{group.name}</h4>
+                <p className="body-regular text-ink-muted">{group.description}</p>
+                <div className="flex items-center space-x-4 mt-2 text-sm text-ink-muted">
                   <div className="flex items-center space-x-1">
                     <UsersIcon className="w-4 h-4" />
                     <span>{group.memberCount || group.members?.length || 0} members</span>
                   </div>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full text-green-600 bg-green-100">
+                  <span className="px-2 py-1 text-xs font-medium rounded-full text-emerald-500 bg-emerald-500/15">
                     Public
                   </span>
                 </div>
@@ -236,7 +236,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
             
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="btn-secondary text-red-600 hover:text-red-700 flex items-center space-x-2"
+              className="btn-secondary text-red-500 hover:text-red-400 flex items-center space-x-2"
             >
               <TrashIcon className="w-4 h-4" />
               <span>Delete Group</span>
@@ -245,11 +245,11 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
 
           {/* Edit Form */}
           {isEditing && (
-            <form onSubmit={handleUpdateGroup} className="space-y-4 p-4 bg-gray-50 rounded-lg">
-              <h5 className="heading-5 text-gray-900">Edit Group Details</h5>
+            <form onSubmit={handleUpdateGroup} className="space-y-4 p-4 bg-surface rounded-lg">
+              <h5 className="heading-5 text-ink">Edit Group Details</h5>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Group Name</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Group Name</label>
                 <input
                   type="text"
                   value={editForm.name}
@@ -261,7 +261,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Description</label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
@@ -271,7 +271,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Avatar URL</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Avatar URL</label>
                 <input
                   type="url"
                   value={editForm.avatar}
@@ -285,7 +285,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 font-medium text-sm"
+                  className="px-4 py-2 text-ink-muted hover:text-ink transition-colors duration-200 font-medium text-sm"
                 >
                   Cancel
                 </button>
@@ -303,34 +303,34 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
           {showMemberManagement && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h5 className="heading-5 text-gray-900">Group Members</h5>
-                <span className="text-sm text-gray-500">{members.length} members</span>
+                <h5 className="heading-5 text-ink">Group Members</h5>
+                <span className="text-sm text-ink-muted">{members.length} members</span>
               </div>
               
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {members.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <UsersIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <div className="text-center py-8 text-ink-muted">
+                    <UsersIcon className="w-12 h-12 mx-auto mb-2 text-ink-muted/50" />
                     <p>No members found</p>
                   </div>
                 ) : (
                   members.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div key={member.id} className="flex items-center justify-between p-3 bg-surface rounded-lg hover:bg-surface-2 transition-colors">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-border-ui rounded-full flex items-center justify-center">
                           {member.avatar ? (
                             <img src={member.avatar} alt={member.displayName} className="w-10 h-10 rounded-full object-cover" />
                           ) : (
-                            <span className="text-sm font-medium text-gray-600">
+                            <span className="text-sm font-medium text-ink-muted">
                               {member.displayName?.charAt(0) || 'U'}
                             </span>
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{member.displayName}</p>
-                          <p className="text-xs text-gray-500">@{member.username}</p>
+                          <p className="text-sm font-medium text-ink">{member.displayName}</p>
+                          <p className="text-xs text-ink-muted">@{member.username}</p>
                           {member.id === group.createdBy && (
-                            <span className="inline-block px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full mt-1">
+                            <span className="inline-block px-2 py-1 text-xs font-medium text-accent bg-accent/15 rounded-full mt-1">
                               Creator
                             </span>
                           )}
@@ -340,7 +340,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                       {member.id !== group.createdBy && (
                         <button
                           onClick={() => handleRemoveMember(member.id)}
-                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Remove member"
                         >
                           <UserMinusIcon className="w-4 h-4" />
@@ -356,21 +356,21 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
 
           {/* Delete Confirmation */}
           {showDeleteConfirm && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <h5 className="heading-5 text-red-900 mb-2">Delete Group</h5>
-              <p className="body-regular text-red-700 mb-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <h5 className="heading-5 text-red-500 mb-2">Delete Group</h5>
+              <p className="body-regular text-ink mb-4">
                 Are you sure you want to delete "{group.name}"? This action cannot be undone and will remove all group data including messages and member information.
               </p>
               <div className="flex items-center justify-end space-x-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 font-medium text-sm"
+                  className="px-4 py-2 text-ink-muted hover:text-ink transition-colors duration-200 font-medium text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteGroup}
-                  className="btn-secondary text-red-600 hover:text-red-700 flex items-center space-x-2"
+                  className="btn-secondary text-red-500 hover:text-red-400 flex items-center space-x-2"
                 >
                   <TrashIcon className="w-4 h-4" />
                   <span>Delete Group</span>

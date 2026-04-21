@@ -31,30 +31,30 @@ function ToastComponent({ toast, onRemove }: ToastProps) {
       case 'warning':
         return <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500" />
       case 'info':
-        return <InformationCircleIcon className="h-6 w-6 text-blue-500" />
+        return <InformationCircleIcon className="h-6 w-6 text-accent" />
       default:
-        return <InformationCircleIcon className="h-6 w-6 text-blue-500" />
+        return <InformationCircleIcon className="h-6 w-6 text-accent" />
     }
   }
 
   const getBackgroundColor = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-50 border-green-200'
+        return 'border-green-500/40'
       case 'error':
-        return 'bg-red-50 border-red-200'
+        return 'border-red-500/40'
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'border-yellow-500/40'
       case 'info':
-        return 'bg-blue-50 border-blue-200'
+        return 'border-accent/40'
       default:
-        return 'bg-blue-50 border-blue-200'
+        return 'border-accent/40'
     }
   }
 
   return (
     <div
-      className={`max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto border-l-4 ${getBackgroundColor()} transform transition-all duration-300 ease-in-out`}
+      className={`max-w-sm w-full bg-surface-2 shadow-lg rounded-lg pointer-events-auto border border-border-ui border-l-4 ${getBackgroundColor()} transform transition-all duration-300 ease-in-out`}
     >
       <div className="p-4">
         <div className="flex items-start">
@@ -62,17 +62,17 @@ function ToastComponent({ toast, onRemove }: ToastProps) {
             {getIcon()}
           </div>
           <div className="ml-3 w-0 flex-1 pt-0.5">
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-medium text-ink">
               {toast.title}
             </p>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-ink-muted">
               {toast.message}
             </p>
           </div>
           <div className="ml-4 flex-shrink-0 flex">
             <button
               onClick={() => onRemove(toast.id)}
-              className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="bg-surface-2 rounded-md inline-flex text-ink-muted/60 hover:text-ink focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
             >
               <span className="sr-only">Close</span>
               <XMarkIcon className="h-5 w-5" />

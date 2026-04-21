@@ -53,7 +53,7 @@ export default function EmojiPicker({ onEmojiSelect, isOpen: externalIsOpen, onC
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 bg-white border border-secondary-200 rounded-xl shadow-lg z-50 w-80 max-h-96 overflow-hidden">
+        <div className="absolute bottom-full left-0 mb-2 bg-surface-2 border border-border-ui rounded-xl shadow-lg z-50 w-80 max-h-96 overflow-hidden">
           {/* Categories */}
           <div className="flex border-b border-secondary-200 p-2">
             {Object.keys(emojiCategories).map((category) => (

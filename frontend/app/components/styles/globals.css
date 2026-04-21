@@ -2,22 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Default tema (Forest light). ThemeProvider overraidos sos uz <html> */
 :root {
-  --foreground-rgb: 17, 24, 39;
-  --dg-surface: 249, 250, 251;
+  --surface: 247 249 247;
+  --surface-2: 255 255 255;
+  --ink: 26 46 26;
+  --ink-muted: 82 102 82;
+  --border: 218 226 218;
+  --accent: 45 90 45;
+  --accent-hover: 34 70 34;
+  --accent-fg: 255 255 255;
+
+  /* Backwards compat ar veco design system */
+  --dg-surface: var(--surface);
+  --dg-ink: rgb(var(--ink));
+  --dg-ink-2: rgb(var(--ink-muted));
 }
 
-html,
-body {
-  color: rgb(var(--foreground-rgb));
-  background-color: rgb(var(--dg-surface));
+html.dark {
+  --surface: 15 23 18;
+  --surface-2: 23 34 26;
+  --ink: 232 240 232;
+  --ink-muted: 160 178 160;
+  --border: 40 56 42;
+  --accent: 120 180 120;
+  --accent-hover: 142 196 142;
+  --accent-fg: 12 24 14;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html, body {
+  color: rgb(var(--ink));
+  background-color: rgb(var(--surface));
   min-height: 100%;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 body {
   overflow-x: clip;
+  position: relative;
+}
+
+/* Ambient atmosphere: two soft accent-tinted radial blobs that breathe the
+   current palette into the page without muddying content. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      60rem 40rem at 85% -10%,
+      rgb(var(--accent) / 0.10),
+      transparent 70%
+    ),
+    radial-gradient(
+      55rem 45rem at -10% 110%,
+      rgb(var(--accent) / 0.06),
+      transparent 70%
+    );
+  transition: background 200ms ease;
+}
+
+html.dark body::before {
+  background:
+    radial-gradient(
+      60rem 40rem at 85% -10%,
+      rgb(var(--accent) / 0.18),
+      transparent 70%
+    ),
+    radial-gradient(
+      55rem 45rem at -10% 110%,
+      rgb(var(--accent) / 0.10),
+      transparent 70%
+    );
 }
 
 @layer utilities {
@@ -27,90 +95,90 @@ body {
 }
 
 /* Design System */
-.dg-h1 { font: 700 44px/1.15 var(--font-playfair), serif; color: var(--dg-ink); }
-.dg-h2 { font: 700 30px/1.2  var(--font-playfair), serif; color: var(--dg-ink); }
-.dg-text { font: 400 16px/1.65 var(--font-inter), system-ui, sans-serif; color: var(--dg-ink-2); }
-.dg-text-sm { font-size: 14px; color: var(--dg-ink-2); }
+.dg-h1 { font: 700 44px/1.15 var(--font-playfair), serif; color: rgb(var(--ink)); }
+.dg-h2 { font: 700 30px/1.2  var(--font-playfair), serif; color: rgb(var(--ink)); }
+.dg-text { font: 400 16px/1.65 var(--font-inter), system-ui, sans-serif; color: rgb(var(--ink-muted)); }
+.dg-text-sm { font-size: 14px; color: rgb(var(--ink-muted)); }
 
 /* Button styles */
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+  @apply bg-accent hover:bg-accent-hover text-accent-fg px-4 py-2 rounded-lg font-medium transition-colors;
 }
 
 .btn-secondary {
-  @apply bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+  @apply bg-surface-2 hover:bg-border-ui text-ink border border-border-ui px-4 py-2 rounded-lg font-medium transition-colors;
 }
 
 .btn-ghost {
-  @apply bg-white/40 dark:bg-white/10 border border-white/50 text-gray-800 dark:text-gray-200 px-5 py-2.5 rounded-xl font-medium backdrop-blur-md hover:bg-white/60 dark:hover:bg-white/15 transition-all duration-200;
+  @apply bg-surface-2/40 border border-border-ui text-ink px-5 py-2.5 rounded-xl font-medium backdrop-blur-md hover:bg-surface-2/70 transition-all duration-200;
 }
 
 .btn-icon {
-  @apply p-2 hover:bg-gray-100 rounded-lg transition-colors;
+  @apply p-2 hover:bg-surface-2 rounded-lg transition-colors;
 }
 
 /* Card styles */
 .card {
-  @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-gray-200/60;
+  @apply bg-surface-2/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-border-ui/60;
 }
 
 .card-elevated {
-  @apply bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-gray-200/70;
+  @apply bg-surface-2/90 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-border-ui/70;
 }
 
 .card-glass {
-  @apply bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-200/50;
+  @apply bg-surface-2/70 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-border-ui/50;
 }
 
 /* Text styles */
 .heading-1 {
-  @apply text-3xl font-bold text-gray-900;
+  @apply text-3xl font-bold text-ink;
 }
 
 .heading-2 {
-  @apply text-2xl font-semibold text-gray-900;
+  @apply text-2xl font-semibold text-ink;
 }
 
 .heading-3 {
-  @apply text-xl font-semibold text-gray-900;
+  @apply text-xl font-semibold text-ink;
 }
 
 .heading-4 {
-  @apply text-lg font-semibold text-gray-900;
+  @apply text-lg font-semibold text-ink;
 }
 
 .body-regular {
-  @apply text-base text-gray-700;
+  @apply text-base text-ink;
 }
 
 .text-muted {
-  @apply text-gray-500;
+  @apply text-ink-muted;
 }
 
 /* Input styles */
 .input {
-  @apply w-full px-3 py-2 bg-white text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  @apply w-full px-3 py-2 bg-surface-2 text-ink placeholder-ink-muted/70 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent;
 }
 
 .input-textarea {
-  @apply w-full px-3 py-2 bg-white text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none;
+  @apply w-full px-3 py-2 bg-surface-2 text-ink placeholder-ink-muted/70 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none;
 }
 
 /* Layout styles */
 .dg-bg {
-  @apply bg-gray-50;
+  @apply bg-surface;
 }
 
 .dg-ink {
-  @apply text-gray-900;
+  @apply text-ink;
 }
 
 .sidebar {
-  @apply bg-white border-r border-gray-200;
+  @apply bg-surface-2 border-r border-border-ui;
 }
 
 .header {
-  @apply bg-white border-b border-gray-200;
+  @apply bg-surface-2 border-b border-border-ui;
 }
 
 /* Mobile: reserve space for fixed top bar (h-14 + safe area) and bottom nav (h-16 + safe area) */

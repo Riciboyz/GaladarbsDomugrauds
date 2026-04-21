@@ -378,8 +378,8 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
   })()
 
   return (
-    <div id={`thread-${thread.id}`} className={`${isReply ? 'ml-8 border-l border-gray-200' : ''}`}>
-      <div className="p-4 sm:p-5 bg-white border border-gray-100 rounded-2xl shadow-dg-sm hover:shadow-dg-md transition-shadow duration-200">
+    <div id={`thread-${thread.id}`} className={`${isReply ? 'ml-8 border-l border-border-ui' : ''}`}>
+      <div className="p-4 sm:p-5 bg-surface-2 border border-border-ui rounded-2xl shadow-dg-sm hover:shadow-dg-md transition-shadow duration-200">
         {/* Thread Header */}
         <div className="flex items-start gap-3 mb-3">
           <img
@@ -392,17 +392,17 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-1.5 min-w-0">
               <h3
-                className="font-semibold text-gray-900 truncate text-[15px] cursor-pointer hover:text-brand-green-700 leading-tight"
+                className="font-semibold text-ink truncate text-[15px] cursor-pointer hover:text-accent leading-tight"
                 onClick={() => onUserClick?.(author.id)}
               >
                 {author.displayName}
               </h3>
-              <span className="text-[13px] text-gray-400 flex-shrink-0">·</span>
-              <span className="text-[13px] text-gray-500 whitespace-nowrap flex-shrink-0">
+              <span className="text-[13px] text-ink-muted/60 flex-shrink-0">·</span>
+              <span className="text-[13px] text-ink-muted whitespace-nowrap flex-shrink-0">
                 {relativeTime}
               </span>
             </div>
-            <p className="text-[13px] text-gray-500 truncate leading-tight">
+            <p className="text-[13px] text-ink-muted truncate leading-tight">
               @{author.username}
             </p>
           </div>
@@ -413,8 +413,8 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
               disabled={isFollowingUser}
               className={`flex-shrink-0 inline-flex items-center justify-center h-8 px-3 rounded-full text-[12px] font-semibold transition-all ${
                 isFollowing
-                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                  : 'bg-gray-900 text-white hover:bg-gray-800'
+                  ? 'bg-surface text-ink hover:bg-border-ui border border-border-ui'
+                  : 'bg-accent text-accent-fg hover:bg-accent-hover'
               } ${isFollowingUser ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isFollowingUser ? (
@@ -431,14 +431,14 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                   setShowOptions(!showOptions)
                 }}
                 aria-label="Vairāk"
-                className="inline-flex items-center justify-center w-8 h-8 -mr-1 -mt-1 rounded-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                className="inline-flex items-center justify-center w-8 h-8 -mr-1 -mt-1 rounded-full text-ink-muted hover:bg-surface active:bg-border-ui transition-colors"
               >
                 <EllipsisHorizontalIcon className="w-5 h-5" />
               </button>
 
               {showOptions && (
                 <div
-                  className="absolute right-0 top-9 min-w-[140px] bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden"
+                  className="absolute right-0 top-9 min-w-[140px] bg-surface-2 border border-border-ui rounded-xl shadow-lg z-10 overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -454,7 +454,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         </div>
 
         {/* Thread Content */}
-        <div className="text-gray-800 text-[15px] mb-3 whitespace-pre-wrap break-words leading-relaxed">
+        <div className="text-ink text-[15px] mb-3 whitespace-pre-wrap break-words leading-relaxed">
           {thread.content}
         </div>
 
@@ -472,7 +472,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                   {attachments.map((attachment: string, index: number) => (
                     <div
                       key={index}
-                      className="relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50"
+                      className="relative overflow-hidden rounded-xl border border-border-ui bg-surface"
                     >
                       <img
                         src={attachment}
@@ -495,7 +495,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         })()}
 
         {/* Thread Actions — evenly spaced on mobile */}
-        <div className="flex items-center justify-between sm:justify-start sm:gap-6 text-gray-500 pt-1">
+        <div className="flex items-center justify-between sm:justify-start sm:gap-6 text-ink-muted pt-1">
           <button
             onClick={handleLike}
             disabled={isLiking}
@@ -518,7 +518,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
             disabled={isLiking}
             aria-label="Nepatīk"
             className={`inline-flex items-center gap-1.5 h-8 px-1 rounded-lg transition-colors ${
-              isDisliked ? 'text-blue-500' : 'hover:text-blue-500'
+              isDisliked ? 'text-accent' : 'hover:text-accent'
             }`}
           >
             {isDisliked ? <HandThumbDownFilledIcon className="w-5 h-5" /> : <HandThumbDownIcon className="w-5 h-5" />}
@@ -533,7 +533,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
           <button
             onClick={() => setShowComments(!showComments)}
             aria-label="Komentāri"
-            className="inline-flex items-center gap-1.5 h-8 px-1 rounded-lg hover:text-brand-green-700 transition-colors"
+            className="inline-flex items-center gap-1.5 h-8 px-1 rounded-lg hover:text-accent transition-colors"
           >
             <ChatBubbleLeftIcon className="w-5 h-5" />
             <span className="text-[13px] font-medium tabular-nums">{thread.replies?.length || 0}</span>
@@ -549,7 +549,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                 setShowReport(true)
               }}
               aria-label="Ziņot"
-              className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-gray-500 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-ink-muted hover:text-amber-700 hover:bg-amber-50 transition-colors"
             >
               <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 21V4" />
@@ -560,25 +560,25 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         </div>
 
         {showReport && user && (
-          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-amber-900">Ziņot par ierakstu</p>
+          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
+            <p className="text-sm font-medium text-amber-500">Ziņot par ierakstu</p>
             <textarea
               value={reportReason}
               onChange={(e) => setReportReason(e.target.value)}
               placeholder="Īss iemesls (neobligāti)"
-              className="w-full rounded-lg border border-amber-200 p-2 text-sm bg-white"
+              className="w-full rounded-lg border border-amber-500/30 p-2 text-sm bg-surface-2 text-ink placeholder-ink-muted/70"
               rows={2}
             />
             {reportStatus === 'ok' && (
-              <p className="text-sm text-green-700">Ziņojums nosūtīts moderācijai.</p>
+              <p className="text-sm text-emerald-500">Ziņojums nosūtīts moderācijai.</p>
             )}
             {reportStatus === 'error' && (
-              <p className="text-sm text-red-700">{reportError || 'Ziņojums neizdevās'}</p>
+              <p className="text-sm text-red-500">{reportError || 'Ziņojums neizdevās'}</p>
             )}
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
+                className="px-3 py-1 text-sm text-ink-muted hover:text-ink"
                 onClick={() => {
                   setShowReport(false)
                   setReportStatus(null)
@@ -590,7 +590,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
               <button
                 type="button"
                 disabled={reportSubmitting}
-                className="px-3 py-1 text-sm rounded-lg bg-amber-800 text-white disabled:opacity-50"
+                className="px-3 py-1 text-sm rounded-lg bg-amber-600 text-white hover:bg-amber-500 disabled:opacity-50"
                 onClick={async () => {
                   setReportSubmitting(true)
                   setReportError(null)
@@ -626,7 +626,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
 
         {/* Comments Section */}
         {showComments && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-border-ui">
             <div className="space-y-3">
               {thread.replies?.map((comment: any) => {
                 // Priekšroka iestrādātajam autoram no backend (piem., tikko reģistrēts
@@ -641,10 +641,10 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                     />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-medium text-gray-900 text-sm">{commentAuthor?.displayName || 'Unknown User'}</span>
-                        <span className="text-xs text-gray-500">@{commentAuthor?.username || 'unknown'}</span>
-                        <span className="text-xs text-gray-400">·</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="font-medium text-ink text-sm">{commentAuthor?.displayName || 'Unknown User'}</span>
+                        <span className="text-xs text-ink-muted">@{commentAuthor?.username || 'unknown'}</span>
+                        <span className="text-xs text-ink-muted/60">·</span>
+                        <span className="text-xs text-ink-muted">
                           {(() => {
                             try {
                               const date = new Date(comment.createdAt)
@@ -658,7 +658,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                           })()}
                         </span>
                       </div>
-                      <p className="text-gray-700 text-sm leading-relaxed">{comment.content}</p>
+                      <p className="text-ink/90 text-sm leading-relaxed">{comment.content}</p>
                     </div>
                   </div>
                 )
@@ -677,20 +677,20 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder="Write a comment..."
-                      className="w-full p-3 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-green-700 focus:border-brand-green-700 text-sm resize-none"
+                      className="w-full p-3 bg-surface-2 text-ink border border-border-ui rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-sm resize-none"
                       rows={2}
                     />
                     <div className="flex justify-end space-x-2 mt-2">
                       <button
                         onClick={() => setShowComments(false)}
-                        className="px-3 py-1 text-gray-500 hover:text-gray-700 text-sm"
+                        className="px-3 py-1 text-ink-muted hover:text-ink text-sm"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleComment}
                         disabled={!commentText.trim() || isSubmittingComment}
-                        className="px-4 py-1 bg-brand-green-700 text-white rounded-lg hover:bg-brand-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        className="px-4 py-1 bg-accent text-accent-fg rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
                         {isSubmittingComment ? 'Posting...' : 'Reply'}
                       </button>

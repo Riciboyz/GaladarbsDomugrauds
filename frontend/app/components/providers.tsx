@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { UserProvider } from './contexts/UserContext'
 import { ThreadProvider } from './contexts/ThreadContext'
 import { GroupProvider } from './contexts/GroupContext'
@@ -17,21 +18,23 @@ function ToastWrapper() {
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ToastProvider>
-      <UserProvider>
-        <WebSocketProvider>
-          <ThreadProvider>
-            <GroupProvider>
-              <NotificationProvider>
-                <TopicDayProvider>
-                  {children}
-                  <ToastWrapper />
-                </TopicDayProvider>
-              </NotificationProvider>
-            </GroupProvider>
-          </ThreadProvider>
-        </WebSocketProvider>
-      </UserProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <UserProvider>
+          <WebSocketProvider>
+            <ThreadProvider>
+              <GroupProvider>
+                <NotificationProvider>
+                  <TopicDayProvider>
+                    {children}
+                    <ToastWrapper />
+                  </TopicDayProvider>
+                </NotificationProvider>
+              </GroupProvider>
+            </ThreadProvider>
+          </WebSocketProvider>
+        </UserProvider>
+      </ToastProvider>
+    </ThemeProvider>
   )
 }

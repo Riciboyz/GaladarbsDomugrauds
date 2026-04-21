@@ -253,25 +253,25 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
       <div className="w-full max-w-4xl h-[80vh] flex flex-col">
         <div className="card-elevated flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between p-4 border-b border-border-ui">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center">
                 {group?.avatar ? (
                   <img src={group.avatar} alt={group.name} className="w-10 h-10 rounded-xl object-cover" />
                 ) : (
-                  <span className="text-lg font-semibold text-gray-600">
+                  <span className="text-lg font-semibold text-ink-muted">
                     {group?.name?.charAt(0) || 'G'}
                   </span>
                 )}
               </div>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h3 className="heading-4 text-gray-900">{group?.name || 'Group Chat'}</h3>
+                  <h3 className="heading-4 text-ink">{group?.name || 'Group Chat'}</h3>
                   <div className={`w-2 h-2 rounded-full ${
                     isConnected ? 'bg-green-500' : 'bg-red-500'
                   }`} title={isConnected ? 'Connected' : 'Disconnected'}></div>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-ink-muted">
                   {group?.memberCount || group?.members?.length || 0} members
                   {isConnected && ' • Real-time enabled'}
                 </p>
@@ -290,11 +290,11 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
               </div>
             ) : messages.length === 0 ? (
               <div className="flex items-center justify-center h-32">
-                <p className="text-gray-500">No messages yet. Start the conversation!</p>
+                <p className="text-ink-muted">No messages yet. Start the conversation!</p>
               </div>
             ) : (
               <>
@@ -305,11 +305,11 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                   >
                     <div className={`flex space-x-2 max-w-xs lg:max-w-md ${isOwnMessage(message) ? 'flex-row-reverse space-x-reverse' : ''}`}>
                       {!isOwnMessage(message) && (
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-border-ui rounded-full flex items-center justify-center flex-shrink-0">
                           {message.avatar ? (
                             <img src={message.avatar} alt={message.username} className="w-8 h-8 rounded-full object-cover" />
                           ) : (
-                            <span className="text-sm font-medium text-gray-600">
+                            <span className="text-sm font-medium text-ink-muted">
                               {message.username?.charAt(0) || 'U'}
                             </span>
                           )}
@@ -318,8 +318,8 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                       
                       <div className={`px-4 py-2 rounded-lg ${
                         isOwnMessage(message)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
+                          ? 'bg-accent text-accent-fg'
+                          : 'bg-surface text-ink'
                       }`}>
                         {!isOwnMessage(message) && (
                           <p className="text-xs font-medium mb-1 opacity-75">
@@ -343,18 +343,18 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                               href={message.attachment_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                              className="inline-flex items-center space-x-2 px-4 py-2 bg-surface-2 hover:bg-border-ui rounded-lg transition-colors"
                             >
-                              <PaperClipIcon className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm font-medium text-gray-700">
+                              <PaperClipIcon className="w-4 h-4 text-ink-muted" />
+                              <span className="text-sm font-medium text-ink">
                                 {message.content.replace(/^[^\s]+ /, '')}
                               </span>
-                              <span className="text-xs text-gray-500">Download</span>
+                              <span className="text-xs text-ink-muted">Download</span>
                             </a>
                           </div>
                         )}
                         <p className={`text-xs mt-1 ${
-                          isOwnMessage(message) ? 'text-blue-100' : 'text-gray-500'
+                          isOwnMessage(message) ? 'text-accent-fg/75' : 'text-ink-muted'
                         }`}>
                           {formatTime(message.created_at)}
                         </p>
@@ -368,7 +368,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
           </div>
 
           {/* Message Input */}
-          <div className="p-4 border-t border-gray-100">
+          <div className="p-4 border-t border-border-ui">
             <form onSubmit={sendMessage} className="flex items-center space-x-2">
               <div className="flex-1 relative">
                 <input
@@ -384,7 +384,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="btn-icon text-gray-400 hover:text-gray-600"
+                    className="btn-icon text-ink-muted/60 hover:text-ink"
                     title="Attach files"
                   >
                     <PaperClipIcon className="w-4 h-4" />
@@ -396,13 +396,13 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                     disabled={isUploading}
                     className={`btn-icon transition-colors ${
                       isUploading 
-                        ? 'text-gray-300 cursor-not-allowed' 
-                        : 'text-gray-400 hover:text-gray-600'
+                        ? 'text-ink-muted/40 cursor-not-allowed' 
+                        : 'text-ink-muted/60 hover:text-ink'
                     }`}
                     title={isUploading ? 'Uploading...' : 'Attach image'}
                   >
                     {isUploading ? (
-                      <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-border-ui border-t-ink rounded-full animate-spin"></div>
                     ) : (
                       <PhotoIcon className="w-4 h-4" />
                     )}
@@ -439,7 +439,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
           <div className="relative max-w-4xl max-h-[90vh] w-full">
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10"
+              className="absolute -top-12 right-0 text-white hover:text-white/70 transition-colors z-10"
             >
               <XMarkIcon className="w-8 h-8" />
             </button>

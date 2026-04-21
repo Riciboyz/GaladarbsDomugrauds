@@ -41,26 +41,26 @@ export default class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
+        <div className="min-h-screen flex items-center justify-center bg-surface">
+          <div className="max-w-md w-full bg-surface-2 rounded-2xl shadow-lg p-8 text-center border border-border-ui">
+            <div className="w-16 h-16 bg-red-500/15 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />
             </div>
             
-            <h2 className="heading-3 text-gray-900 mb-4">
+            <h2 className="heading-3 text-ink mb-4">
               Something went wrong
             </h2>
             
-            <p className="body-regular text-gray-600 mb-6">
+            <p className="body-regular text-ink-muted mb-6">
               We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mb-6 text-left">
-                <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2">
+                <summary className="cursor-pointer text-sm font-medium text-ink-muted mb-2">
                   Error Details
                 </summary>
-                <pre className="text-xs text-red-600 bg-red-50 p-3 rounded-lg overflow-auto">
+                <pre className="text-xs text-red-500 bg-red-500/10 p-3 rounded-lg overflow-auto">
                   {this.state.error.stack}
                 </pre>
               </details>

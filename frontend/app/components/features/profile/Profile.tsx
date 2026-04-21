@@ -373,9 +373,9 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="card p-12 text-center">
-          <UserIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="heading-3 text-gray-900 mb-2">User not found</h3>
-          <p className="body-regular text-gray-600">This profile doesn't exist or has been removed.</p>
+          <UserIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
+          <h3 className="heading-3 text-ink mb-2">User not found</h3>
+          <p className="body-regular text-ink-muted">This profile doesn't exist or has been removed.</p>
         </div>
       </div>
     )
@@ -388,7 +388,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
         <div className="mb-4">
           <button
             onClick={onBack}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+            className="flex items-center space-x-2 text-ink-muted hover:text-ink transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -399,34 +399,34 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
       )}
       
       {/* Profile Header — responsive: stacks on mobile, row on desktop */}
-      <div className="bg-white rounded-2xl shadow-dg-sm border border-gray-100 mb-6 overflow-hidden">
+      <div className="bg-surface-2 rounded-2xl shadow-dg-sm border border-border-ui mb-6 overflow-hidden">
         <div className="p-5 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
             <div className="flex items-start gap-4 min-w-0">
               <img
                 src={profileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.displayName || profileUser.username || 'U')}&background=2d5a2d&color=fff&bold=true`}
                 alt={profileUser.displayName}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-2 ring-white shadow-dg-sm flex-shrink-0"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-2 ring-surface-2 shadow-dg-sm flex-shrink-0"
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-bold text-ink truncate tracking-tight">
                     {profileUser.displayName}
                   </h1>
                   {(profileUser as any).verified && (
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-[11px] font-bold leading-none">✓</span>
+                    <div className="w-5 h-5 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-accent-fg text-[11px] font-bold leading-none">✓</span>
                     </div>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 truncate">@{profileUser.username}</p>
+                <p className="text-sm text-ink-muted truncate">@{profileUser.username}</p>
                 {profileUser.bio && (
-                  <p className="text-[15px] text-gray-700 mt-3 leading-relaxed break-words">
+                  <p className="text-[15px] text-ink mt-3 leading-relaxed break-words">
                     {profileUser.bio}
                   </p>
                 )}
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-[13px] text-gray-500">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-[13px] text-ink-muted">
                   <div className="flex items-center gap-1.5">
                     <CalendarIcon className="w-4 h-4" />
                     <span>Pievienojās {joinedLabel ?? '—'}</span>
@@ -442,7 +442,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                       <LinkIcon className="w-4 h-4 flex-shrink-0" />
                       <a
                         href={(profileUser as any).website}
-                        className="text-brand-green-700 hover:underline truncate"
+                        className="text-accent hover:underline truncate"
                       >
                         {(profileUser as any).website}
                       </a>
@@ -457,7 +457,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
               {isOwnProfile ? (
                 <button
                   onClick={handleEdit}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 active:bg-gray-700 transition-colors"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl bg-accent text-accent-fg text-sm font-semibold hover:bg-accent-hover transition-colors"
                 >
                   <PencilIcon className="w-4 h-4" />
                   <span>Rediģēt profilu</span>
@@ -467,8 +467,8 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                   onClick={handleFollow}
                   className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl text-sm font-semibold transition-colors ${
                     isFollowing
-                      ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      : 'bg-brand-green-700 text-white hover:bg-brand-green-600 active:bg-brand-green-900'
+                      ? 'bg-surface text-ink border border-border-ui hover:bg-surface-2'
+                      : 'bg-accent text-accent-fg hover:bg-accent-hover'
                   }`}
                 >
                   {isFollowing ? (
@@ -488,32 +488,32 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
           </div>
 
           {/* Stats — 4-col grid on mobile, row on desktop */}
-          <div className="grid grid-cols-4 gap-2 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-4 gap-2 pt-4 border-t border-border-ui">
             <button
               onClick={handleShowFollowers}
-              className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1 rounded-lg hover:bg-surface transition-colors"
             >
-              <span className="text-base sm:text-lg font-bold text-gray-900">
+              <span className="text-base sm:text-lg font-bold text-ink">
                 {followers.length || profileUser.followers?.length || 0}
               </span>
-              <span className="text-[11px] sm:text-sm text-gray-500">Sekotāji</span>
+              <span className="text-[11px] sm:text-sm text-ink-muted">Sekotāji</span>
             </button>
             <button
               onClick={handleShowFollowing}
-              className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1 rounded-lg hover:bg-surface transition-colors"
             >
-              <span className="text-base sm:text-lg font-bold text-gray-900">
+              <span className="text-base sm:text-lg font-bold text-ink">
                 {following.length || profileUser.following?.length || 0}
               </span>
-              <span className="text-[11px] sm:text-sm text-gray-500">Seko</span>
+              <span className="text-[11px] sm:text-sm text-ink-muted">Seko</span>
             </button>
             <div className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1">
-              <span className="text-base sm:text-lg font-bold text-gray-900">{userThreads.length}</span>
-              <span className="text-[11px] sm:text-sm text-gray-500">Ieraksti</span>
+              <span className="text-base sm:text-lg font-bold text-ink">{userThreads.length}</span>
+              <span className="text-[11px] sm:text-sm text-ink-muted">Ieraksti</span>
             </div>
             <div className="flex flex-col items-center sm:flex-row sm:items-baseline sm:gap-1.5 py-1">
-              <span className="text-base sm:text-lg font-bold text-gray-900">{totalLikes}</span>
-              <span className="text-[11px] sm:text-sm text-gray-500">Patīk</span>
+              <span className="text-base sm:text-lg font-bold text-ink">{totalLikes}</span>
+              <span className="text-[11px] sm:text-sm text-ink-muted">Patīk</span>
             </div>
           </div>
         </div>
@@ -527,20 +527,20 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-[slideUp_0.25s_ease-out]"
+            className="bg-surface-2 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-[slideUp_0.25s_ease-out]"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             {/* Drag handle for mobile */}
             <div className="sm:hidden flex justify-center pt-2.5 pb-1">
-              <div className="w-10 h-1 rounded-full bg-gray-300" />
+              <div className="w-10 h-1 rounded-full bg-border-ui" />
             </div>
 
-            <div className="flex items-center justify-between px-5 sm:px-6 h-14 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-lg font-bold text-gray-900 tracking-tight">Rediģēt profilu</h3>
+            <div className="flex items-center justify-between px-5 sm:px-6 h-14 border-b border-border-ui flex-shrink-0">
+              <h3 className="text-lg font-bold text-ink tracking-tight">Rediģēt profilu</h3>
               <button
                 onClick={() => setIsEditing(false)}
                 aria-label="Aizvērt"
-                className="inline-flex items-center justify-center w-9 h-9 -mr-1 rounded-xl text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                className="inline-flex items-center justify-center w-9 h-9 -mr-1 rounded-xl text-ink-muted hover:bg-surface active:bg-border-ui transition-colors"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -553,7 +553,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                   <img
                     src={avatarPreview || `https://ui-avatars.com/api/?name=${encodeURIComponent(editData.displayName || 'U')}&background=2d5a2d&color=fff&bold=true`}
                     alt="Profile preview"
-                    className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white shadow-dg-sm cursor-pointer"
+                    className="w-20 h-20 rounded-2xl object-cover ring-2 ring-surface-2 shadow-dg-sm cursor-pointer"
                     onClick={() => document.getElementById('avatar-upload')?.click()}
                   />
                   {isUploading && (
@@ -587,15 +587,15 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 mb-0.5">Profila attēls</p>
-                  <p className="text-xs text-gray-500 leading-snug">
+                  <p className="text-sm font-semibold text-ink mb-0.5">Profila attēls</p>
+                  <p className="text-xs text-ink-muted leading-snug">
                     Nospied, lai augšupielādētu (max 5 MB)
                   </p>
                   {avatarPreview && (
                     <button
                       type="button"
                       onClick={handleRemoveAvatar}
-                      className="mt-1.5 text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+                      className="mt-1.5 text-xs text-red-500 hover:text-red-400 font-medium transition-colors"
                     >
                       Noņemt attēlu
                     </button>
@@ -604,7 +604,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Vārds</label>
+                <label className="block text-sm font-semibold text-ink-muted mb-1.5">Vārds</label>
                 <input
                   type="text"
                   value={editData.displayName}
@@ -615,7 +615,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Lietotājvārds</label>
+                <label className="block text-sm font-semibold text-ink-muted mb-1.5">Lietotājvārds</label>
                 <input
                   type="text"
                   value={editData.username}
@@ -626,7 +626,7 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Bio</label>
+                <label className="block text-sm font-semibold text-ink-muted mb-1.5">Bio</label>
                 <textarea
                   value={editData.bio}
                   onChange={(e) => setEditData(prev => ({ ...prev, bio: e.target.value }))}
@@ -634,30 +634,30 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                   placeholder="Pastāsti par sevi..."
                   maxLength={160}
                 />
-                <p className="text-xs text-gray-500 mt-1 text-right">{editData.bio.length}/160</p>
+                <p className="text-xs text-ink-muted mt-1 text-right">{editData.bio.length}/160</p>
               </div>
 
               {editError && (
                 <div
                   role="alert"
-                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                  className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500"
                 >
                   {editError}
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-gray-100 flex-shrink-0">
+            <div className="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-border-ui flex-shrink-0">
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-4 h-10 rounded-xl text-gray-700 hover:bg-gray-100 active:bg-gray-200 font-semibold text-sm transition-colors"
+                className="px-4 h-10 rounded-xl text-ink hover:bg-surface active:bg-border-ui font-semibold text-sm transition-colors"
               >
                 Atcelt
               </button>
               <button
                 onClick={handleSave}
                 disabled={isUploading}
-                className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-brand-green-700 text-white font-semibold text-sm hover:bg-brand-green-600 active:bg-brand-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-accent text-accent-fg font-semibold text-sm hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isUploading ? (
                   <>
@@ -677,8 +677,8 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
       {showFollowers && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card-elevated w-full max-w-md max-h-96 overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h3 className="heading-3 text-gray-900">Followers</h3>
+            <div className="flex items-center justify-between p-6 border-b border-border-ui">
+              <h3 className="heading-3 text-ink">Followers</h3>
               <button
                 onClick={() => setShowFollowers(false)}
                 className="btn-icon"
@@ -689,19 +689,19 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
             <div className="overflow-y-auto max-h-80">
               {loadingFollowers ? (
                 <div className="flex items-center justify-center p-8">
-                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="ml-2 text-gray-600">Loading followers...</span>
+                  <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-ink-muted">Loading followers...</span>
                 </div>
               ) : followers.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <div className="p-8 text-center text-ink-muted">
+                  <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-ink-muted/60" />
                   <p>No followers yet</p>
                 </div>
               ) : (
                 followers.map((follower) => {
                   const isFollowingFollower = user && (user.following || []).includes(follower.id)
                   return (
-                    <div key={follower.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200">
+                    <div key={follower.id} className="flex items-center justify-between p-4 hover:bg-surface transition-colors duration-200">
                       <div 
                         className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
                         onClick={() => {
@@ -715,8 +715,8 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                           className="w-8 h-8 rounded-lg object-cover"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 truncate text-sm hover:text-blue-600">{follower.displayName}</p>
-                          <p className="text-xs text-gray-500">@{follower.username}</p>
+                          <p className="font-semibold text-ink truncate text-sm hover:text-accent">{follower.displayName}</p>
+                          <p className="text-xs text-ink-muted">@{follower.username}</p>
                         </div>
                       </div>
                       {!isOwnProfile && user && follower.id !== user.id && (
@@ -737,8 +737,8 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                           }}
                           className={`px-3 py-1 text-xs rounded-full font-medium transition-colors duration-200 ${
                             isFollowingFollower
-                              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                              ? 'bg-surface text-ink border border-border-ui hover:bg-surface-2'
+                              : 'bg-accent text-accent-fg hover:bg-accent-hover'
                           }`}
                         >
                           {isFollowingFollower ? 'Following' : 'Follow'}
@@ -757,8 +757,8 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
       {showFollowing && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card-elevated w-full max-w-md max-h-96 overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h3 className="heading-3 text-gray-900">Following</h3>
+            <div className="flex items-center justify-between p-6 border-b border-border-ui">
+              <h3 className="heading-3 text-ink">Following</h3>
               <button
                 onClick={() => setShowFollowing(false)}
                 className="btn-icon"
@@ -769,17 +769,17 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
             <div className="overflow-y-auto max-h-80">
               {loadingFollowing ? (
                 <div className="flex items-center justify-center p-8">
-                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="ml-2 text-gray-600">Loading following...</span>
+                  <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-ink-muted">Loading following...</span>
                 </div>
               ) : following.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <div className="p-8 text-center text-ink-muted">
+                  <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-ink-muted/60" />
                   <p>Not following anyone yet</p>
                 </div>
               ) : (
                 following.map((followingUser) => (
-                  <div key={followingUser.id} className="flex items-center space-x-3 p-4 hover:bg-gray-50 transition-colors duration-200">
+                  <div key={followingUser.id} className="flex items-center space-x-3 p-4 hover:bg-surface transition-colors duration-200">
                     <div 
                       className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
                       onClick={() => {
@@ -793,8 +793,8 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
                         className="w-8 h-8 rounded-lg object-cover"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate text-sm hover:text-blue-600">{followingUser.displayName}</p>
-                        <p className="text-xs text-gray-500">@{followingUser.username}</p>
+                        <p className="font-semibold text-ink truncate text-sm hover:text-accent">{followingUser.displayName}</p>
+                        <p className="text-xs text-ink-muted">@{followingUser.username}</p>
                       </div>
                     </div>
                   </div>
@@ -809,9 +809,9 @@ export default function Profile({ userId, onBack, onUserClick }: ProfileProps) {
       <div className="space-y-4">
         {userThreads.length === 0 ? (
           <div className="card p-12 text-center">
-            <ChatBubbleLeftIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="heading-3 text-gray-900 mb-2">No threads yet</h3>
-            <p className="body-regular text-gray-600">
+            <ChatBubbleLeftIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
+            <h3 className="heading-3 text-ink mb-2">No threads yet</h3>
+            <p className="body-regular text-ink-muted">
               {isOwnProfile ? "You haven't posted any threads yet." : `${profileUser.displayName} hasn't posted any threads yet.`}
             </p>
           </div>

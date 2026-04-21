@@ -38,7 +38,7 @@ export default function MobileBottomNav({
   return (
     <nav
       aria-label="Primary"
-      className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/85 backdrop-blur-xl border-t border-gray-200/70 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface-2/85 backdrop-blur-xl border-t border-border-ui/70 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <ul
@@ -64,17 +64,17 @@ export default function MobileBottomNav({
                 <span
                   className={`relative flex items-center justify-center h-9 w-12 rounded-2xl transition-all duration-200 ease-out ${
                     isActive
-                      ? 'bg-brand-green-700/10 scale-100'
+                      ? 'bg-accent/10 scale-100'
                       : 'bg-transparent scale-95 group-active:scale-90'
                   }`}
                 >
                   <Icon
                     className={`w-[22px] h-[22px] transition-colors duration-200 ${
-                      isActive ? 'text-brand-green-700' : 'text-gray-500 group-hover:text-gray-700'
+                      isActive ? 'text-accent' : 'text-ink-muted group-hover:text-ink'
                     }`}
                   />
                   {showBadge && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center ring-2 ring-surface-2">
                       <span className="text-white text-[10px] font-bold leading-none tracking-tight">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
@@ -84,8 +84,8 @@ export default function MobileBottomNav({
                 <span
                   className={`text-[10.5px] leading-none tracking-tight transition-colors duration-200 ${
                     isActive
-                      ? 'text-brand-green-700 font-semibold'
-                      : 'text-gray-500 font-medium group-hover:text-gray-700'
+                      ? 'text-accent font-semibold'
+                      : 'text-ink-muted font-medium group-hover:text-ink'
                   }`}
                 >
                   {tab.label}

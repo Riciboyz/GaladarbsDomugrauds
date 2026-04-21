@@ -462,25 +462,25 @@ export default function AdminPage() {
   }, [calYear, calMonth])
 
   const statusColor = (s?: string) => {
-    if (s === 'published') return 'bg-emerald-100 text-emerald-900 border-emerald-200'
-    if (s === 'scheduled') return 'bg-amber-100 text-amber-900 border-amber-200'
-    return 'bg-gray-100 text-gray-800 border-gray-200'
+    if (s === 'published') return 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+    if (s === 'scheduled') return 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+    return 'bg-surface text-ink border-border-ui'
   }
 
   if (isLoading) {
-    return <main className="p-8 text-gray-700">Loading...</main>
+    return <main className="p-8 text-ink-muted">Loading...</main>
   }
 
   if (!user) {
-    return <main className="p-8 text-gray-700">Please login first.</main>
+    return <main className="p-8 text-ink-muted">Please login first.</main>
   }
 
   if (!canAccessPanel) {
     return (
-      <main className="min-h-screen bg-gray-50 p-8">
-        <div className="mx-auto max-w-4xl rounded-2xl border border-red-200 bg-red-50 p-6">
-          <h1 className="text-2xl font-bold text-red-900">Forbidden</h1>
-          <p className="mt-2 text-red-700">Administratora piekļuve nepieciešama.</p>
+      <main className="min-h-screen bg-surface p-8">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+          <h1 className="text-2xl font-bold text-red-500">Forbidden</h1>
+          <p className="mt-2 text-ink">Administratora piekļuve nepieciešama.</p>
         </div>
       </main>
     )
@@ -495,17 +495,17 @@ export default function AdminPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <main className="min-h-screen bg-surface">
       <div className="mx-auto max-w-6xl p-6 md:p-10 space-y-6">
-        <header className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <header className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin panelis</h1>
-              <p className="text-gray-600 mt-2">
+              <h1 className="text-3xl font-bold text-ink">Admin panelis</h1>
+              <p className="text-ink-muted mt-2">
                 Metrikas, lietotāji, daily topics, moderācija un audits.
               </p>
             </div>
-            <div className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+            <div className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-fg">
               @{user.username} · {user.role}
             </div>
           </div>
@@ -519,8 +519,8 @@ export default function AdminPage() {
                   onClick={() => setTab(t.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                     tab === t.id
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      ? 'bg-accent text-accent-fg'
+                      : 'bg-surface text-ink hover:bg-border-ui'
                   }`}
                 >
                   {t.label}
@@ -531,41 +531,41 @@ export default function AdminPage() {
         </header>
 
         {success && (
-          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">{success}</div>
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-emerald-500">{success}</div>
         )}
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">{error}</div>
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-500">{error}</div>
         )}
 
         {tab === 'overview' && canAdmin && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+          <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm space-y-4">
             <div className="flex flex-wrap items-end gap-3">
-              <h2 className="text-xl font-semibold text-gray-900">Dienas metrikas</h2>
+              <h2 className="text-xl font-semibold text-ink">Dienas metrikas</h2>
               <input
                 type="date"
                 value={statsDate}
                 onChange={(e) => setStatsDate(e.target.value)}
-                className="rounded-lg border border-gray-300 px-2 py-1 text-sm"
+                className="rounded-lg bg-surface text-ink border border-border-ui px-2 py-1 text-sm"
               />
               <button
                 type="button"
                 onClick={() => loadStats()}
-                className="rounded-lg bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300"
+                className="rounded-lg bg-surface text-ink border border-border-ui px-3 py-1 text-sm hover:bg-border-ui"
               >
                 Atsvaidzināt
               </button>
             </div>
             {loadingStats ? (
-              <p className="text-gray-600">Ielādē...</p>
+              <p className="text-ink-muted">Ielādē...</p>
             ) : stats ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   ['Jauni lietotāji', stats.newUsers],
                   ['Topic submissions', stats.topicSubmissions],
                 ].map(([label, val]) => (
-                  <div key={String(label)} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-sm text-gray-600">{label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{val}</p>
+                  <div key={String(label)} className="rounded-xl border border-border-ui bg-surface p-4">
+                    <p className="text-sm text-ink-muted">{label}</p>
+                    <p className="text-2xl font-bold text-ink">{val}</p>
                   </div>
                 ))}
               </div>
@@ -574,25 +574,25 @@ export default function AdminPage() {
         )}
 
         {tab === 'users' && canAdmin && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">Lietotāju pārvaldība</h2>
+          <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm space-y-4">
+            <h2 className="text-xl font-semibold text-ink">Lietotāju pārvaldība</h2>
             <div className="flex flex-wrap gap-3 items-end">
               <input
                 value={userFilters.q}
                 onChange={(e) => setUserFilters((f) => ({ ...f, q: e.target.value }))}
                 placeholder="Meklēt (username, vārds, e-pasts)"
-                className="min-w-[200px] flex-1 rounded-xl border border-gray-300 p-2.5 text-sm"
+                className="min-w-[200px] flex-1 rounded-xl bg-surface text-ink placeholder-ink-muted/70 border border-border-ui p-2.5 text-sm"
               />
               <select
                 value={userFilters.role}
                 onChange={(e) => setUserFilters((f) => ({ ...f, role: e.target.value }))}
-                className="rounded-xl border border-gray-300 p-2.5 text-sm"
+                className="rounded-xl bg-surface text-ink border border-border-ui p-2.5 text-sm"
               >
                 <option value="">Visas lomas</option>
                 <option value="user">user</option>
                 <option value="admin">admin</option>
               </select>
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-ink-muted">
                 <input
                   type="checkbox"
                   checked={userFilters.includeDeleted}
@@ -603,26 +603,26 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => loadUsers()}
-                className="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-800"
+                className="rounded-xl bg-accent px-4 py-2 text-sm text-accent-fg hover:bg-accent-hover"
               >
                 Filtrēt
               </button>
             </div>
             {loadingUsers ? (
-              <p className="text-gray-600">Ielādē...</p>
+              <p className="text-ink-muted">Ielādē...</p>
             ) : (
               <div className="space-y-3 max-h-[70vh] overflow-y-auto">
                 {users.map((u) => (
                   <article
                     key={u.id}
-                    className="rounded-xl border border-gray-200 bg-gray-50 p-4 flex flex-wrap gap-3 items-start justify-between"
+                    className="rounded-xl border border-border-ui bg-surface p-4 flex flex-wrap gap-3 items-start justify-between"
                   >
                     <div className="min-w-0">
-                      <p className="font-semibold text-gray-900">
-                        {u.displayName} <span className="text-sm text-gray-600">@{u.username}</span>
+                      <p className="font-semibold text-ink">
+                        {u.displayName} <span className="text-sm text-ink-muted">@{u.username}</span>
                       </p>
-                      <p className="text-sm text-gray-600">{u.email}</p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="text-sm text-ink-muted">{u.email}</p>
+                      <p className="mt-1 text-xs text-ink-muted">
                         Loma: {u.role || 'user'}
                         {u.deletedAt ? ' · dzēsts' : ''}
                         {u.bannedUntil ? ` · ban līdz ${u.bannedUntil}` : ''}
@@ -634,7 +634,7 @@ export default function AdminPage() {
                           value={u.role === 'admin' ? 'admin' : 'user'}
                           disabled={userActionLoadingId === u.id || u.id === user.id}
                           onChange={(e) => patchUser(u, { role: e.target.value })}
-                          className="rounded-lg border border-gray-300 text-sm p-1"
+                          className="rounded-lg bg-surface-2 text-ink border border-border-ui text-sm p-1"
                         >
                           <option value="user">user</option>
                           <option value="admin">admin</option>
@@ -693,12 +693,12 @@ export default function AdminPage() {
 
         {tab === 'calendar' && canAdmin && (
           <>
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Kalendārs</h2>
+            <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-ink mb-3">Kalendārs</h2>
               <div className="flex flex-wrap gap-3 items-center mb-4">
                 <button
                   type="button"
-                  className="rounded-lg border px-2 py-1 text-sm"
+                  className="rounded-lg border border-border-ui text-ink px-2 py-1 text-sm hover:bg-surface"
                   onClick={() => {
                     if (calMonth <= 1) {
                       setCalMonth(12)
@@ -708,12 +708,12 @@ export default function AdminPage() {
                 >
                   ←
                 </button>
-                <span className="font-medium">
+                <span className="font-medium text-ink">
                   {calYear}.{String(calMonth).padStart(2, '0')}
                 </span>
                 <button
                   type="button"
-                  className="rounded-lg border px-2 py-1 text-sm"
+                  className="rounded-lg border border-border-ui text-ink px-2 py-1 text-sm hover:bg-surface"
                   onClick={() => {
                     if (calMonth >= 12) {
                       setCalMonth(1)
@@ -725,9 +725,9 @@ export default function AdminPage() {
                 </button>
               </div>
               {loadingTopicDays ? (
-                <p className="text-gray-600">Ielādē...</p>
+                <p className="text-ink-muted">Ielādē...</p>
               ) : (
-                <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500 mb-1">
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-ink-muted mb-1">
                   {['P', 'O', 'T', 'C', 'Pk', 'S', 'Sv'].map((d) => (
                     <div key={d}>{d}</div>
                   ))}
@@ -737,12 +737,12 @@ export default function AdminPage() {
                       <div
                         key={idx}
                         className={`min-h-[72px] rounded-lg border p-1 text-left ${
-                          c.day ? 'border-gray-200 bg-white' : 'border-transparent bg-transparent'
+                          c.day ? 'border-border-ui bg-surface' : 'border-transparent bg-transparent'
                         }`}
                       >
                         {c.day != null && (
                           <>
-                            <div className="text-xs font-semibold text-gray-800">{c.day}</div>
+                            <div className="text-xs font-semibold text-ink">{c.day}</div>
                             {td && (
                               <div className={`mt-0.5 truncate rounded border px-0.5 text-[10px] ${statusColor(td.status)}`}>
                                 {td.title.slice(0, 18)}
@@ -758,35 +758,35 @@ export default function AdminPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-2">Bulk create (7 dienas, draft)</h3>
+            <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
+              <h3 className="font-semibold text-ink mb-2">Bulk create (7 dienas, draft)</h3>
               <div className="flex flex-wrap gap-2 items-center">
                 <input
                   type="date"
                   value={bulkStart}
                   onChange={(e) => setBulkStart(e.target.value)}
-                  className="rounded-lg border border-gray-300 p-2 text-sm"
+                  className="rounded-lg bg-surface text-ink border border-border-ui p-2 text-sm"
                 />
                 <button
                   type="button"
                   disabled={submitting}
                   onClick={() => bulkWeek()}
-                  className="rounded-xl bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-60"
+                  className="rounded-xl bg-accent px-4 py-2 text-sm text-accent-fg hover:bg-accent-hover disabled:opacity-60"
                 >
                   Izveidot nedēļu
                 </button>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900">Pievienot Daily Topic</h2>
+            <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold mb-4 text-ink">Pievienot Daily Topic</h2>
               <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
                 <input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
                   placeholder="Topic title"
                   required
-                  className="w-full rounded-xl border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                  className="w-full rounded-xl border border-border-ui bg-surface p-3 text-ink placeholder-ink-muted/70 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
                 <input
                   type="date"
@@ -794,12 +794,12 @@ export default function AdminPage() {
                   onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
                   required
                   min={today}
-                  className="w-full rounded-xl border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                  className="w-full rounded-xl border border-border-ui bg-surface p-3 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
                 <select
                   value={form.status}
                   onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
-                  className="rounded-xl border border-gray-300 bg-white p-3 text-sm md:col-span-2"
+                  className="rounded-xl border border-border-ui bg-surface text-ink p-3 text-sm md:col-span-2"
                 >
                   <option value="draft">draft</option>
                   <option value="scheduled">scheduled</option>
@@ -810,13 +810,13 @@ export default function AdminPage() {
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Description"
                   rows={4}
-                  className="md:col-span-2 w-full rounded-xl border border-gray-300 bg-white p-3 text-gray-900 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                  className="md:col-span-2 w-full rounded-xl border border-border-ui bg-surface p-3 text-ink placeholder-ink-muted/70 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
                 <div className="md:col-span-2">
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="rounded-xl bg-gray-900 px-5 py-2.5 font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
+                    className="rounded-xl bg-accent px-5 py-2.5 font-medium text-accent-fg transition hover:bg-accent-hover disabled:opacity-60"
                   >
                     {submitting ? 'Saving...' : 'Create Daily Topic'}
                   </button>
@@ -824,24 +824,24 @@ export default function AdminPage() {
               </form>
             </section>
 
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900">Topic days (mēnesis)</h2>
+            <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold mb-4 text-ink">Topic days (mēnesis)</h2>
               {loadingTopicDays ? (
-                <p className="text-gray-600">Loading...</p>
+                <p className="text-ink-muted">Loading...</p>
               ) : topicDays.length === 0 ? (
-                <p className="text-gray-600">Nav ierakstu šajā mēnesī.</p>
+                <p className="text-ink-muted">Nav ierakstu šajā mēnesī.</p>
               ) : (
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
                   {topicDays.map((topicDay) => (
-                    <article key={topicDay.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <article key={topicDay.id} className="rounded-xl border border-border-ui bg-surface p-4">
                       <div className="flex flex-wrap gap-2 items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-ink">
                           {editingTopicId === topicDay.id ? 'Edit Topic' : topicDay.title}
                         </h3>
                         <span className={`rounded-lg px-2 py-1 text-xs border ${statusColor(topicDay.status)}`}>
                           {topicDay.status || 'published'}
                         </span>
-                        <span className="rounded-lg bg-white px-2 py-1 text-sm text-gray-600 border border-gray-200">
+                        <span className="rounded-lg bg-surface-2 px-2 py-1 text-sm text-ink-muted border border-border-ui">
                           {editingTopicId === topicDay.id ? editingForm.date : topicDay.date}
                         </span>
                       </div>
@@ -850,33 +850,33 @@ export default function AdminPage() {
                           <input
                             value={editingForm.title}
                             onChange={(e) => setEditingForm((prev) => ({ ...prev, title: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white p-2.5 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                            className="w-full rounded-lg border border-border-ui bg-surface-2 p-2.5 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                           />
                           <textarea
                             value={editingForm.description}
                             onChange={(e) => setEditingForm((prev) => ({ ...prev, description: e.target.value }))}
                             rows={3}
-                            className="w-full rounded-lg border border-gray-300 bg-white p-2.5 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                            className="w-full rounded-lg border border-border-ui bg-surface-2 p-2.5 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                           />
                           <input
                             type="date"
                             value={editingForm.date}
                             onChange={(e) => setEditingForm((prev) => ({ ...prev, date: e.target.value }))}
-                            className="w-full md:w-64 rounded-lg border border-gray-300 bg-white p-2.5 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                            className="w-full md:w-64 rounded-lg border border-border-ui bg-surface-2 p-2.5 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                           />
                           <div className="flex gap-2 flex-wrap">
                             <button
                               type="button"
                               onClick={() => saveTopicEdit(topicDay.id)}
                               disabled={topicActionLoadingId === topicDay.id}
-                              className="rounded-lg bg-gray-900 px-3 py-1.5 text-white transition hover:bg-gray-800 disabled:opacity-60"
+                              className="rounded-lg bg-accent px-3 py-1.5 text-accent-fg transition hover:bg-accent-hover disabled:opacity-60"
                             >
                               {topicActionLoadingId === topicDay.id ? 'Saving...' : 'Save'}
                             </button>
                             <button
                               type="button"
                               onClick={cancelEditTopic}
-                              className="rounded-lg bg-white border border-gray-300 px-3 py-1.5 text-gray-900 transition hover:bg-gray-100"
+                              className="rounded-lg bg-surface-2 border border-border-ui px-3 py-1.5 text-ink transition hover:bg-surface"
                             >
                               Cancel
                             </button>
@@ -884,12 +884,12 @@ export default function AdminPage() {
                         </div>
                       ) : (
                         <>
-                          {topicDay.description && <p className="text-gray-700 mt-2">{topicDay.description}</p>}
+                          {topicDay.description && <p className="text-ink mt-2">{topicDay.description}</p>}
                           <div className="flex gap-2 mt-3 flex-wrap">
                             <button
                               type="button"
                               onClick={() => startEditTopic(topicDay)}
-                              className="rounded-lg bg-gray-900 px-3 py-1.5 text-white transition hover:bg-gray-800"
+                              className="rounded-lg bg-accent px-3 py-1.5 text-accent-fg transition hover:bg-accent-hover"
                             >
                               Edit
                             </button>
@@ -899,7 +899,7 @@ export default function AdminPage() {
                                 type="button"
                                 disabled={topicActionLoadingId === topicDay.id}
                                 onClick={() => setTopicStatus(topicDay.id, st)}
-                                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-gray-100 disabled:opacity-50"
+                                className="rounded-lg border border-border-ui bg-surface-2 text-ink px-2 py-1 text-xs hover:bg-surface disabled:opacity-50"
                               >
                                 {st}
                               </button>
@@ -915,7 +915,7 @@ export default function AdminPage() {
                           </div>
                         </>
                       )}
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-ink-muted mt-2">
                         Created by {topicDay.created_by_display_name || topicDay.created_by_username || 'unknown'}
                       </p>
                     </article>
@@ -927,50 +927,50 @@ export default function AdminPage() {
         )}
 
         {tab === 'moderation' && canAdmin && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Ziņotie ieraksti</h2>
+              <h2 className="text-xl font-semibold text-ink">Ziņotie ieraksti</h2>
               <button
                 type="button"
                 onClick={() => loadReports()}
-                className="rounded-lg bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300"
+                className="rounded-lg bg-surface text-ink border border-border-ui px-3 py-1 text-sm hover:bg-border-ui"
               >
                 Atsvaidzināt
               </button>
             </div>
             {loadingReports ? (
-              <p className="text-gray-600">Ielādē...</p>
+              <p className="text-ink-muted">Ielādē...</p>
             ) : reports.length === 0 ? (
-              <p className="text-gray-600">Nav atvērtu ziņojumu.</p>
+              <p className="text-ink-muted">Nav atvērtu ziņojumu.</p>
             ) : (
               <div className="space-y-4 max-h-[75vh] overflow-y-auto">
                 {reports.map((r) => (
-                  <article key={r.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-2">
-                    <div className="text-sm text-gray-600">
+                  <article key={r.id} className="rounded-xl border border-border-ui bg-surface p-4 space-y-2">
+                    <div className="text-sm text-ink-muted">
                       @{r.reporter_username} · {r.status} · {r.created_at}
                     </div>
-                    <p className="text-xs text-gray-500">Thread {r.thread_id}</p>
-                    <p className="text-gray-800 text-sm whitespace-pre-wrap line-clamp-4">{r.thread_content}</p>
-                    {r.reason ? <p className="text-xs text-gray-600">Iemesls: {r.reason}</p> : null}
-                    <p className="text-xs">visibility: {r.visibility}</p>
+                    <p className="text-xs text-ink-muted">Thread {r.thread_id}</p>
+                    <p className="text-ink text-sm whitespace-pre-wrap line-clamp-4">{r.thread_content}</p>
+                    {r.reason ? <p className="text-xs text-ink-muted">Iemesls: {r.reason}</p> : null}
+                    <p className="text-xs text-ink-muted">visibility: {r.visibility}</p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        className="rounded-lg bg-gray-800 px-2 py-1 text-xs text-white"
+                        className="rounded-lg bg-accent px-2 py-1 text-xs text-accent-fg hover:bg-accent-hover"
                         onClick={() => moderationAction(`/api/reports/${r.id}`, 'PATCH', { status: 'reviewed' })}
                       >
                         Atzīmēt kā apskatītu
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg bg-gray-500 px-2 py-1 text-xs text-white"
+                        className="rounded-lg bg-surface-2 border border-border-ui px-2 py-1 text-xs text-ink hover:bg-surface"
                         onClick={() => moderationAction(`/api/reports/${r.id}`, 'PATCH', { status: 'dismissed' })}
                       >
                         Noraidīt
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg bg-amber-700 px-2 py-1 text-xs text-white"
+                        className="rounded-lg bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-500"
                         onClick={() =>
                           moderationAction(`/api/threads/${r.thread_id}/moderation`, 'PATCH', { action: 'hide' })
                         }
@@ -979,7 +979,7 @@ export default function AdminPage() {
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg bg-emerald-700 px-2 py-1 text-xs text-white"
+                        className="rounded-lg bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-500"
                         onClick={() =>
                           moderationAction(`/api/threads/${r.thread_id}/moderation`, 'PATCH', { action: 'unhide' })
                         }
@@ -988,7 +988,7 @@ export default function AdminPage() {
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg bg-red-700 px-2 py-1 text-xs text-white"
+                        className="rounded-lg bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-500"
                         onClick={() => {
                           if (!window.confirm('Dzēst šo pavedienu/komentāru?')) return
                           moderationAction(`/api/threads/admin/${r.thread_id}`, 'DELETE')
@@ -1005,44 +1005,44 @@ export default function AdminPage() {
         )}
 
         {tab === 'audit' && canAdmin && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Admin aktivitātes</h2>
+              <h2 className="text-xl font-semibold text-ink">Admin aktivitātes</h2>
               <button
                 type="button"
                 onClick={() => loadAudit()}
-                className="rounded-lg bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300"
+                className="rounded-lg bg-surface text-ink border border-border-ui px-3 py-1 text-sm hover:bg-border-ui"
               >
                 Atsvaidzināt
               </button>
             </div>
             {loadingAudit ? (
-              <p className="text-gray-600">Ielādē...</p>
+              <p className="text-ink-muted">Ielādē...</p>
             ) : (
               <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
                 <table className="min-w-full text-left text-sm">
-                  <thead className="sticky top-0 bg-white border-b">
+                  <thead className="sticky top-0 bg-surface-2 border-b border-border-ui">
                     <tr>
-                      <th className="p-2">Laiks</th>
-                      <th className="p-2">Administrators</th>
-                      <th className="p-2">Darbība</th>
-                      <th className="p-2">Entītāte</th>
-                      <th className="p-2">Metadati</th>
+                      <th className="p-2 text-ink">Laiks</th>
+                      <th className="p-2 text-ink">Administrators</th>
+                      <th className="p-2 text-ink">Darbība</th>
+                      <th className="p-2 text-ink">Entītāte</th>
+                      <th className="p-2 text-ink">Metadati</th>
                     </tr>
                   </thead>
                   <tbody>
                     {auditLogs.map((a) => (
-                      <tr key={a.id} className="border-b border-gray-100 align-top">
-                        <td className="p-2 whitespace-nowrap text-gray-600">{a.createdAt}</td>
-                        <td className="p-2">
+                      <tr key={a.id} className="border-b border-border-ui align-top">
+                        <td className="p-2 whitespace-nowrap text-ink-muted">{a.createdAt}</td>
+                        <td className="p-2 text-ink">
                           @{a.actorUsername}
-                          <div className="text-xs text-gray-500">{a.actorDisplayName}</div>
+                          <div className="text-xs text-ink-muted">{a.actorDisplayName}</div>
                         </td>
-                        <td className="p-2 font-mono text-xs">{a.action}</td>
-                        <td className="p-2 text-xs">
-                          {a.entityType} {a.entityId ? <span className="text-gray-500">{a.entityId}</span> : ''}
+                        <td className="p-2 font-mono text-xs text-ink">{a.action}</td>
+                        <td className="p-2 text-xs text-ink">
+                          {a.entityType} {a.entityId ? <span className="text-ink-muted">{a.entityId}</span> : ''}
                         </td>
-                        <td className="p-2 max-w-md break-all font-mono text-[11px] text-gray-700">{a.metadata}</td>
+                        <td className="p-2 max-w-md break-all font-mono text-[11px] text-ink">{a.metadata}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -82,13 +82,13 @@ export default function Search({ onUserClick }: SearchProps) {
     <div className="max-w-2xl mx-auto">
       {/* Ultra-Minimal Header */}
       <div className="mb-6">
-        <h1 className="heading-1 text-gray-900">Search</h1>
-        <p className="body-regular text-gray-600 mt-1">Find people and connect with users</p>
+        <h1 className="heading-1 text-ink">Search</h1>
+        <p className="body-regular text-ink-muted mt-1">Find people and connect with users</p>
       </div>
 
       {/* Search Input */}
       <div className="relative mb-6">
-        <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+        <MagnifyingGlassIcon className="w-5 h-5 text-ink-muted/60 absolute left-3 top-1/2 transform -translate-y-1/2" />
         <input
           type="text"
           placeholder="Search for users..."
@@ -99,7 +99,7 @@ export default function Search({ onUserClick }: SearchProps) {
         {query && (
           <button
             onClick={() => setQuery('')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-ink-muted/60 hover:text-ink"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -114,13 +114,13 @@ export default function Search({ onUserClick }: SearchProps) {
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
               activeTab === tab.id
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                ? 'bg-accent/15 text-accent'
+                : 'text-ink-muted hover:text-ink hover:bg-surface-2'
             }`}
           >
             {tab.name}
             {tab.count > 0 && (
-              <span className="ml-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
+              <span className="ml-2 px-2 py-0.5 text-xs bg-surface-2 text-ink-muted rounded-full">
                 {tab.count}
               </span>
             )}
@@ -133,8 +133,8 @@ export default function Search({ onUserClick }: SearchProps) {
         <div>
           {isSearching ? (
             <div className="card p-12 text-center">
-              <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="body-regular text-gray-600">Searching...</p>
+              <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="body-regular text-ink-muted">Searching...</p>
             </div>
           ) : (
             <div>
@@ -143,9 +143,9 @@ export default function Search({ onUserClick }: SearchProps) {
                 <div className="space-y-3">
                   {filteredUsers.length === 0 ? (
                     <div className="card p-12 text-center">
-                      <UserIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="heading-3 text-gray-900 mb-2">No users found</h3>
-                      <p className="body-regular text-gray-600">
+                      <UserIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
+                      <h3 className="heading-3 text-ink mb-2">No users found</h3>
+                      <p className="body-regular text-ink-muted">
                         Try searching with a different username or name
                       </p>
                     </div>
@@ -164,12 +164,12 @@ export default function Search({ onUserClick }: SearchProps) {
                                 className="w-10 h-10 rounded-lg object-cover"
                               />
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 truncate hover:text-blue-600">
+                                <h3 className="font-semibold text-ink truncate hover:text-accent">
                                   {user.displayName}
                                 </h3>
-                                <p className="text-sm text-gray-500">@{user.username}</p>
+                                <p className="text-sm text-ink-muted">@{user.username}</p>
                                 {user.bio && (
-                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                  <p className="text-sm text-ink-muted mt-1 line-clamp-2">
                                     {user.bio}
                                   </p>
                                 )}
@@ -178,10 +178,10 @@ export default function Search({ onUserClick }: SearchProps) {
                             <button 
                               onClick={() => handleFollow(user.id)}
                               disabled={followLoading === user.id}
-                              className={`btn-secondary text-sm ${
+                              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                                 isFollowing(user.id) 
-                                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                                  ? 'bg-surface text-ink border border-border-ui hover:bg-surface-2' 
+                                  : 'bg-accent text-accent-fg hover:bg-accent-hover'
                               } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
                               {followLoading === user.id ? (
@@ -209,9 +209,9 @@ export default function Search({ onUserClick }: SearchProps) {
       ) : (
         /* Empty State */
         <div className="card p-12 text-center">
-          <UserIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="heading-3 text-gray-900 mb-2">Start searching for users</h3>
-          <p className="body-regular text-gray-600">
+          <UserIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
+          <h3 className="heading-3 text-ink mb-2">Start searching for users</h3>
+          <p className="body-regular text-ink-muted">
             Enter a name or username to find people to connect with
           </p>
         </div>

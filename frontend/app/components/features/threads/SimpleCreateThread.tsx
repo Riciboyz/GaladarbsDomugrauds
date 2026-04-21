@@ -236,7 +236,7 @@ export default function SimpleCreateThread({
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:text-blue-700 underline"
+            className="text-accent hover:text-accent-hover underline"
           >
             {part}
           </a>
@@ -252,8 +252,8 @@ export default function SimpleCreateThread({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="card-elevated w-full max-w-lg">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h3 className="heading-3 text-gray-900">
+        <div className="flex items-center justify-between p-6 border-b border-border-ui">
+          <h3 className="heading-3 text-ink">
             {parentId ? 'Atbildēt uz Domu' : 'Izveidot Jaunu Domu'}
           </h3>
           <Button
@@ -276,8 +276,8 @@ export default function SimpleCreateThread({
                 className="w-8 h-8 rounded-lg object-cover"
               />
               <div>
-                <h4 className="font-semibold text-gray-900 text-sm">{user.displayName}</h4>
-                <p className="text-xs text-gray-500">@{user.username}</p>
+                <h4 className="font-semibold text-ink text-sm">{user.displayName}</h4>
+                <p className="text-xs text-ink-muted">@{user.username}</p>
               </div>
             </div>
 
@@ -287,12 +287,12 @@ export default function SimpleCreateThread({
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder={parentId ? "Write your reply..." : "What's happening?"}
-                className="w-full h-32 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 placeholder-gray-500 text-sm"
+                className="w-full h-32 px-4 py-3 border border-border-ui bg-surface rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none text-ink placeholder-ink-muted text-sm"
                 disabled={isSubmitting}
                 maxLength={500}
               />
               <div className="flex justify-between items-center mt-2">
-                <span className="text-xs text-gray-500">{content.length}/500</span>
+                <span className="text-xs text-ink-muted">{content.length}/500</span>
               </div>
             </div>
 
@@ -323,9 +323,9 @@ export default function SimpleCreateThread({
 
             {/* Content Preview */}
             {content && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                <div className="text-sm text-gray-900">
+              <div className="mb-6 p-4 bg-surface rounded-lg border border-border-ui">
+                <p className="text-sm text-ink-muted mb-2">Preview:</p>
+                <div className="text-sm text-ink">
                   {renderContent(content)}
                 </div>
               </div>
@@ -333,7 +333,7 @@ export default function SimpleCreateThread({
           </div>
 
           {/* Actions */}
-          <div className="p-6 border-t border-gray-100 bg-gray-50/50">
+          <div className="p-6 border-t border-border-ui bg-surface/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-1">
                 {/* Image Upload */}

@@ -135,7 +135,7 @@ const QuickSearchBar = forwardRef<{ focus: () => void }, QuickSearchBarProps>(({
     <div ref={searchRef} className={`relative ${className}`}>
       {/* Search Input */}
       <div className="relative">
-        <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+        <MagnifyingGlassIcon className="w-5 h-5 text-ink-muted/60 absolute left-3 top-1/2 transform -translate-y-1/2" />
         <input
           ref={inputRef}
           type="text"
@@ -145,7 +145,7 @@ const QuickSearchBar = forwardRef<{ focus: () => void }, QuickSearchBarProps>(({
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
           onKeyDown={handleKeyDown}
-          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+          className="w-full pl-10 pr-10 py-2 bg-surface-2 text-ink placeholder-ink-muted/70 border border-border-ui rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all duration-200"
         />
         {query && (
           <button
@@ -154,7 +154,7 @@ const QuickSearchBar = forwardRef<{ focus: () => void }, QuickSearchBarProps>(({
               setShowResults(false)
               setSelectedIndex(-1)
             }}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-ink-muted/60 hover:text-ink transition-colors"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -163,16 +163,16 @@ const QuickSearchBar = forwardRef<{ focus: () => void }, QuickSearchBarProps>(({
 
       {/* Search Results Dropdown */}
       {showResults && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-surface-2 border border-border-ui rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
           {isSearching ? (
             <div className="p-4 text-center">
-              <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-              <p className="text-sm text-gray-600">Meklē...</p>
+              <div className="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full mx-auto mb-2"></div>
+              <p className="text-sm text-ink-muted">Meklē...</p>
             </div>
           ) : searchResults.length === 0 ? (
             <div className="p-4 text-center">
-              <UserIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">Nav atrasts neviens lietotājs</p>
+              <UserIcon className="w-8 h-8 text-ink-muted/60 mx-auto mb-2" />
+              <p className="text-sm text-ink-muted">Nav atrasts neviens lietotājs</p>
             </div>
           ) : (
             <div className="py-1">
@@ -182,8 +182,8 @@ const QuickSearchBar = forwardRef<{ focus: () => void }, QuickSearchBarProps>(({
                   onClick={() => handleUserClick(user.id)}
                   className={`px-4 py-3 cursor-pointer transition-colors flex items-center space-x-3 ${
                     index === selectedIndex
-                      ? 'bg-blue-50 border-l-4 border-blue-500'
-                      : 'hover:bg-gray-50'
+                      ? 'bg-accent/10 border-l-4 border-accent'
+                      : 'hover:bg-surface'
                   }`}
                 >
                   <img
@@ -192,10 +192,10 @@ const QuickSearchBar = forwardRef<{ focus: () => void }, QuickSearchBarProps>(({
                     className="w-8 h-8 rounded-full object-cover"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-ink truncate">
                       {user.displayName}
                     </p>
-                    <p className="text-xs text-gray-500">@{user.username}</p>
+                    <p className="text-xs text-ink-muted">@{user.username}</p>
                   </div>
                 </div>
               ))}

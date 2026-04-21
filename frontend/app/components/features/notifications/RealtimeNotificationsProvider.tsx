@@ -64,13 +64,13 @@ export default function RealtimeNotificationsProvider() {
       case 'like':
         return <HeartIcon className="w-5 h-5 text-red-500" />
       case 'dislike':
-        return <HeartIcon className="w-5 h-5 text-gray-500 rotate-180" />
+        return <HeartIcon className="w-5 h-5 text-ink-muted rotate-180" />
       case 'comment':
-        return <ChatBubbleLeftIcon className="w-5 h-5 text-blue-500" />
+        return <ChatBubbleLeftIcon className="w-5 h-5 text-accent" />
       case 'follow':
-        return <UserPlusIcon className="w-5 h-5 text-green-500" />
+        return <UserPlusIcon className="w-5 h-5 text-emerald-500" />
       default:
-        return <BellIcon className="w-5 h-5 text-gray-500" />
+        return <BellIcon className="w-5 h-5 text-ink-muted" />
     }
   }
 
@@ -117,13 +117,13 @@ export default function RealtimeNotificationsProvider() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="heading-1 text-gray-900">Notifications</h1>
+            <h1 className="heading-1 text-ink">Notifications</h1>
             <div className="flex items-center gap-2 mt-1">
-              <p className="body-regular text-gray-600">
+              <p className="body-regular text-ink-muted">
                 {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
               </p>
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-xs text-gray-500">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+              <span className="text-xs text-ink-muted">
                 {isConnected ? 'Live updates' : 'Offline'}
               </span>
             </div>
@@ -143,11 +143,11 @@ export default function RealtimeNotificationsProvider() {
       <div className="space-y-2">
         {filteredNotifications.length === 0 ? (
           <div className="card p-12 text-center">
-            <BellIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="heading-3 text-gray-900 mb-2">
+            <BellIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
+            <h3 className="heading-3 text-ink mb-2">
               No notifications yet
             </h3>
-            <p className="body-regular text-gray-600">
+            <p className="body-regular text-ink-muted">
               When you get notifications, they'll appear here automatically
             </p>
           </div>
@@ -157,7 +157,7 @@ export default function RealtimeNotificationsProvider() {
               key={notification.id}
               data-notification-id={notification.id}
               className={`card-elevated transition-all duration-200 ${
-                !notification.read && !(notification as any).is_read ? 'bg-blue-50/50 border-blue-200' : 'bg-gray-50/50 border-gray-200'
+                !notification.read && !(notification as any).is_read ? 'bg-accent/10 border-accent/30' : 'bg-surface border-border-ui'
               }`}
             >
               <div className="p-4">
@@ -172,12 +172,12 @@ export default function RealtimeNotificationsProvider() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className={`body-regular ${
-                          notification.read || (notification as any).is_read ? 'text-gray-600' : 'text-gray-900'
+                          notification.read || (notification as any).is_read ? 'text-ink-muted' : 'text-ink'
                         }`}>
                           {getNotificationMessage(notification)}
                         </p>
                         <p className={`text-sm mt-1 ${
-                          notification.read || (notification as any).is_read ? 'text-gray-400' : 'text-gray-500'
+                          notification.read || (notification as any).is_read ? 'text-ink-muted/60' : 'text-ink-muted'
                         }`}>
                           {new Date(notification.createdAt).toLocaleString()}
                         </p>
@@ -185,12 +185,12 @@ export default function RealtimeNotificationsProvider() {
                       
                       <div className="flex items-center space-x-2 ml-4">
                         {!notification.read && !(notification as any).is_read && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-accent rounded-full"></div>
                         )}
                         {!notification.read && !(notification as any).is_read && (
                           <button
                             onClick={() => handleMarkAsRead(notification.id)}
-                            className="btn-icon text-gray-400 hover:text-gray-600"
+                            className="btn-icon text-ink-muted/60 hover:text-ink-muted"
                           >
                             <CheckIcon className="w-4 h-4" />
                           </button>

@@ -9,6 +9,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        accent: {
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          hover: 'rgb(var(--accent-hover) / <alpha-value>)',
+          fg: 'rgb(var(--accent-fg) / <alpha-value>)',
+        },
+        surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          2: 'rgb(var(--surface-2) / <alpha-value>)',
+        },
+        ink: {
+          DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
+          muted: 'rgb(var(--ink-muted) / <alpha-value>)',
+        },
+        'border-ui': 'rgb(var(--border) / <alpha-value>)',
         brand: {
           green: {
             900: '#1a2e1a',

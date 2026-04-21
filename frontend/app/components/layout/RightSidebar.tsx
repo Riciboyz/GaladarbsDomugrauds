@@ -112,7 +112,7 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
       <div className="sticky top-0 pt-2 pb-8" style={{ height: 'calc(100vh - 2rem)' }}>
         <div className="space-y-4">
           {/* Greeting / Profile Card */}
-          <section className="rounded-3xl bg-white/70 backdrop-blur-md border border-gray-100 shadow-dg-md overflow-hidden">
+          <section className="rounded-3xl bg-surface-2/70 backdrop-blur-md border border-border-ui shadow-dg-md overflow-hidden">
             <div className="p-5">
               <div className="flex items-center gap-4">
                 <div className="relative">
@@ -121,11 +121,11 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
                     alt={user?.displayName || 'User'}
                     className="w-12 h-12 rounded-2xl object-cover shadow-dg-sm"
                   />
-                  <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-gradient-to-br from-brand-green-600 to-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-dg-sm">✨</span>
+                  <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-fg text-[10px] font-bold flex items-center justify-center shadow-dg-sm">✨</span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-500">Welcome back</p>
-                  <p className="font-semibold text-gray-900 truncate">{user?.displayName || 'DomuGrauds user'}</p>
+                  <p className="text-sm text-ink-muted">Welcome back</p>
+                  <p className="font-semibold text-ink truncate">{user?.displayName || 'DomuGrauds user'}</p>
                 </div>
               </div>
               {/* Removed stats grid for a cleaner header */}
@@ -134,24 +134,24 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
 
           {/* Today Topic */}
           {!isLoadingTopic && todayTopic && (
-            <section className="rounded-3xl bg-gradient-to-br from-brand-rose-50/70 via-white to-brand-green-50/60 border border-gray-100 shadow-dg-md overflow-hidden">
+            <section className="rounded-3xl bg-gradient-to-br from-accent/15 to-surface-2 border border-border-ui shadow-dg-md overflow-hidden">
               <div className="p-5">
-                <div className="flex items-center gap-2 text-brand-green-700">
+                <div className="flex items-center gap-2 text-accent">
                   <CalendarDaysIcon className="h-5 w-5" />
                   <span className="text-sm font-semibold">Today’s Topic</span>
                 </div>
-                <h3 
-                  className="mt-2 font-playfair text-xl leading-snug text-gray-900 cursor-pointer hover:text-brand-green-700 transition-colors"
+                <h3
+                  className="mt-2 font-playfair text-xl leading-snug text-ink cursor-pointer hover:text-accent transition-colors"
                   onClick={() => todayTopic && onOpenTopicSubmission?.(todayTopic.id)}
                 >
                   {todayTopic.title || 'Daily Thoughts'}
                 </h3>
                 {todayTopic.description && (
-                  <p className="mt-1 text-sm text-gray-600 line-clamp-3">{todayTopic.description}</p>
+                  <p className="mt-1 text-sm text-ink-muted line-clamp-3">{todayTopic.description}</p>
                 )}
                 <button
                   onClick={() => todayTopic && onOpenTopicSubmission?.(todayTopic.id)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-accent text-accent-fg text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
                   Share your take
                   <ArrowTopRightOnSquareIcon className="h-4 w-4" />
@@ -160,8 +160,8 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
                   <div className="mt-4 space-y-2">
                     {todaysTop.map(item => (
                       <a key={item.id} href={`#thread-${item.id}`} className="block group">
-                        <p className="text-sm text-gray-900 line-clamp-2 group-hover:underline">{item.title || 'Untitled'}</p>
-                        <p className="text-xs text-gray-500">Score {item.score}</p>
+                        <p className="text-sm text-ink line-clamp-2 group-hover:underline">{item.title || 'Untitled'}</p>
+                        <p className="text-xs text-ink-muted">Score {item.score}</p>
                       </a>
                     ))}
                   </div>
@@ -171,15 +171,15 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
           )}
 
           {/* Discover / Suggestions */}
-          <section className="rounded-3xl bg-white/70 backdrop-blur-md border border-gray-100 shadow-dg-md overflow-hidden">
+          <section className="rounded-3xl bg-surface-2/70 backdrop-blur-md border border-border-ui shadow-dg-md overflow-hidden">
             <div className="p-5">
-              <div className="flex items-center gap-2 text-gray-800">
+              <div className="flex items-center gap-2 text-ink">
                 <SparklesIcon className="h-5 w-5" />
                 <span className="text-sm font-semibold">Discover people</span>
               </div>
               <div className="mt-3 space-y-3">
                 {suggestedUsers.length === 0 && (
-                  <p className="text-sm text-gray-500">Fresh suggestions will appear here.</p>
+                  <p className="text-sm text-ink-muted">Fresh suggestions will appear here.</p>
                 )}
                 {suggestedUsers.map(suggestedUser => (
                   <div key={suggestedUser.id} className="flex items-center justify-between">
@@ -190,13 +190,13 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
                         className="w-9 h-9 rounded-2xl shadow-dg-sm object-cover"
                       />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{suggestedUser.displayName}</p>
-                        <p className="text-xs text-gray-500 truncate">@{suggestedUser.username}</p>
+                        <p className="text-sm font-medium text-ink truncate">{suggestedUser.displayName}</p>
+                        <p className="text-xs text-ink-muted truncate">@{suggestedUser.username}</p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => followUser(suggestedUser.id)}
-                      className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-accent-fg bg-accent hover:bg-accent-hover transition-colors"
                     >
                       <UserPlusIcon className="h-4 w-4" /> Follow
                     </button>
@@ -208,15 +208,15 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
 
           {/* Notifications */}
           {unreadCount > 0 && (
-            <section className="rounded-3xl bg-white/70 backdrop-blur-md border border-gray-100 shadow-dg-md overflow-hidden">
+            <section className="rounded-3xl bg-surface-2/70 backdrop-blur-md border border-border-ui shadow-dg-md overflow-hidden">
               <div className="p-5">
-                <div className="flex items-center gap-2 text-gray-800">
+                <div className="flex items-center gap-2 text-ink">
                   <BellIcon className="h-5 w-5" />
                   <span className="text-sm font-semibold">Notifications</span>
                   <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unreadCount}</span>
                 </div>
-                <p className="mt-2 text-sm text-gray-600">You have {unreadCount} unread notifications</p>
-                <button className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                <p className="mt-2 text-sm text-ink-muted">You have {unreadCount} unread notifications</p>
+                <button className="mt-3 text-sm text-accent hover:text-accent-hover font-medium">
                   View all notifications
                 </button>
               </div>
