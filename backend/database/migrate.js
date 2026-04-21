@@ -9,6 +9,21 @@ const fs = require('fs');
 const path = require('path');
 const database = require('./db');
 
+/** Remove leading full-line `--` comments so split(';') chunks are not dropped by mistake. */
+function stripLeadingSqlComments(sql) {
+  let s = sql.trim();
+  while (s.length) {
+    const lineEnd = s.indexOf('\n');
+    const firstLine = (lineEnd === -1 ? s : s.slice(0, lineEnd)).trim();
+    if (!firstLine || firstLine.startsWith('--')) {
+      s = lineEnd === -1 ? '' : s.slice(lineEnd + 1).trim();
+      continue;
+    }
+    break;
+  }
+  return s.trim();
+}
+
 class MigrationManager {
   constructor() {
     this.migrationsDir = path.join(__dirname, 'migrations');
@@ -260,13 +275,9 @@ class MigrationManager {
   }
 
   async executeMigration(migration) {
-    // Split SQL by semicolon and execute each statement
-    const statements = migration.content
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt && !stmt.startsWith('--'));
-
-    for (const statement of statements) {
+    const rawChunks = migration.content.split(';').map((s) => s.trim()).filter(Boolean);
+    for (const chunk of rawChunks) {
+      const statement = stripLeadingSqlComments(chunk);
       if (statement) {
         await database.query(statement);
       }

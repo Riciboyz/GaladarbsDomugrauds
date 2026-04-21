@@ -31,7 +31,8 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.set('trust proxy', 1);
 
-const { db, dbPath } = initDatabase();
+let db;
+let dbPath;
 
 // One-time sanitize: older uploads stored absolute URLs (e.g.
 // `http://localhost:3001/uploads/xyz.webp`) which are unreachable for any
@@ -57,7 +58,6 @@ function sanitizeLegacyAvatarUrls() {
     });
   });
 }
-sanitizeLegacyAvatarUrls();
 
 // Remove `blob:` entries from thread attachments. Blob URLs only exist in the
 // author's browser memory, so other users (and even the author after refresh)
@@ -95,7 +95,6 @@ function sanitizeThreadBlobAttachments() {
     }
   );
 }
-sanitizeThreadBlobAttachments();
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -173,18 +172,6 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {});
 });
 
-// Routes
-app.use('/api/auth', require('./routes/auth')(db));
-app.use('/api/users', require('./routes/users')(db, io));
-app.use('/api/threads', require('./routes/threads')(db, io));
-app.use('/api/groups', require('./routes/groups')(db, io));
-app.use('/api/notifications', require('./routes/notifications')(db, io));
-app.use('/api', require('./routes/topics')(db, io));
-app.use('/api', require('./routes/suggestions')(db, io));
-app.use('/api/admin', require('./routes/admin')(db));
-app.use('/api/reports', require('./routes/reports')(db));
-app.use('/api', require('./routes/upload')());
-
 app.get('/health', (_req, res) => {
   res.json({
     status: 'OK',
@@ -195,15 +182,42 @@ app.get('/health', (_req, res) => {
 });
 
 const PORT = parseInt(process.env.PORT, 10) || 3001;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Database: ${dbPath}`);
-  console.log(`Health: http://localhost:${PORT}/health`);
-  console.log(`Frontend: http://localhost:3000`);
+
+async function start() {
+  const conn = await initDatabase();
+  db = conn.db;
+  dbPath = conn.dbPath;
+
+  sanitizeLegacyAvatarUrls();
+  sanitizeThreadBlobAttachments();
+
+  app.use('/api/auth', require('./routes/auth')(db));
+  app.use('/api/users', require('./routes/users')(db, io));
+  app.use('/api/threads', require('./routes/threads')(db, io));
+  app.use('/api/groups', require('./routes/groups')(db, io));
+  app.use('/api/notifications', require('./routes/notifications')(db, io));
+  app.use('/api', require('./routes/topics')(db, io));
+  app.use('/api', require('./routes/suggestions')(db, io));
+  app.use('/api/admin', require('./routes/admin')(db));
+  app.use('/api/reports', require('./routes/reports')(db));
+  app.use('/api', require('./routes/upload')());
+
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Database: ${dbPath}`);
+    console.log(`Health: http://localhost:${PORT}/health`);
+    console.log(`Frontend: http://localhost:3000`);
+  });
+}
+
+start().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
 
 process.on('SIGINT', () => {
   console.log('\nShutting down...');
+  if (!db) return process.exit(0);
   db.close((err) => {
     if (err) console.error('Error closing database:', err);
     process.exit(0);
