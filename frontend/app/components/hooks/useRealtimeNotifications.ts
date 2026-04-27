@@ -20,7 +20,8 @@ export function useRealtimeNotifications() {
         console.log('🔄 Backup polling notifications for user:', user.id)
         const response = await fetch(`/api/notifications?userId=${user.id}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
         })
         
         if (response.ok) {
@@ -39,9 +40,10 @@ export function useRealtimeNotifications() {
                     id: notification.id,
                     type: notification.type,
                     message: notification.message,
-                    userId: notification.userId,
-                    read: notification.read,
-                    createdAt: new Date(notification.created_at)
+                    userId: notification.userId || notification.user_id,
+                    read: notification.read === true || notification.read === 1 || notification.read === '1',
+                    createdAt: new Date(notification.createdAt || notification.created_at || Date.now()),
+                    relatedId: notification.relatedId || notification.related_id
                   })
                 } else {
                   console.log('📬 Notification already exists in UI, skipping')
@@ -68,6 +70,23 @@ export function useRealtimeNotifications() {
       }
     }
   }, [user?.id, addNotification])
+
+  useEffect(() => {
+    if (!user || !lastMessage || lastMessage.type !== 'new_notification') return
+    const payload = lastMessage.data
+    if (!payload?.id) return
+    const targetUserId = payload.userId || payload.user_id
+    if (targetUserId && targetUserId !== user.id) return
+    addNotification({
+      id: payload.id,
+      type: payload.type,
+      message: payload.message || payload.title || '',
+      userId: targetUserId || user.id,
+      read: payload.read === true || payload.read === 1 || payload.read === '1',
+      createdAt: new Date(payload.createdAt || payload.created_at || Date.now()),
+      relatedId: payload.relatedId || payload.related_id
+    })
+  }, [addNotification, lastMessage, user?.id])
 
   // Handle real-time notifications via WebSocket
   useEffect(() => {

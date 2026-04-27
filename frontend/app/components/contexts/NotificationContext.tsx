@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { useUser } from './UserContext'
 
 // Types
@@ -34,88 +34,27 @@ export function useNotification() {
   return context
 }
 
-// Mock data
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    userId: '1',
-    type: 'like',
-    message: 'Jane Smith liked your thread',
-    read: false,
-    createdAt: new Date('2023-12-01T10:30:00'),
-    relatedId: '1'
-  },
-  {
-    id: '2',
-    userId: '1',
-    type: 'follow',
-    message: 'Sarah Jones started following you',
-    read: false,
-    createdAt: new Date('2023-12-01T11:00:00')
-  },
-  {
-    id: '3',
-    userId: '1',
-    type: 'comment',
-    message: 'Mike Wilson commented on your thread',
-    read: true,
-    createdAt: new Date('2023-12-01T12:00:00'),
-    relatedId: '1'
-  },
-  {
-    id: '4',
-    userId: '1',
-    type: 'topic_day',
-    message: 'Jauna dienas tēma: "Parādi savu mīluli" tagad ir aktīva!',
-    read: false,
-    createdAt: new Date('2023-12-01T09:00:00'),
-    relatedId: '1'
-  }
-]
-
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const { user } = useUser()
 
-  // Load notifications from API when user is authenticated
-  useEffect(() => {
-    if (user?.id) {
-      loadNotificationsFromAPI()
-    } else {
-      // Clear notifications when user logs out
-      setNotifications([])
+  const normalizeNotification = useCallback((raw: any): Notification | null => {
+    if (!raw?.id) return null
+    return {
+      id: String(raw.id),
+      userId: String(raw.userId || raw.user_id || ''),
+      type: raw.type,
+      message: raw.message || raw.title || '',
+      read: raw.read === true || raw.read === 1 || raw.read === '1',
+      createdAt: new Date(raw.createdAt || raw.created_at || Date.now()),
+      relatedId: raw.relatedId || raw.related_id || raw?.data?.relatedId,
     }
-  }, [user?.id]) // Only depend on user ID, not the entire user object
+  }, [])
 
-  // Listen for real-time notifications via the shared websocket-message bus.
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const detail = (event as CustomEvent).detail
-      if (!detail || detail.type !== 'new_notification') return
-      const raw = detail.data || {}
-      const normalized: Notification = {
-        id: raw.id,
-        userId: raw.userId || raw.user_id,
-        type: raw.type,
-        message: raw.message || raw.title || '',
-        read: !!raw.read,
-        createdAt: new Date(raw.createdAt || raw.created_at || Date.now()),
-        relatedId: raw.relatedId,
-      }
-      if (!normalized.id) return
-      // Only accept notifications addressed to the currently logged-in user.
-      if (user?.id && normalized.userId && normalized.userId !== user.id) return
-      console.log('🔔 NotificationContext: Real-time notification received:', normalized)
-      addNotification(normalized)
-    }
-
-    window.addEventListener('websocket-message', handler as EventListener)
-    return () => window.removeEventListener('websocket-message', handler as EventListener)
-  }, [user?.id])
-
-  const loadNotificationsFromAPI = async () => {
+  const loadNotificationsFromAPI = useCallback(async () => {
+    if (!user?.id) return
     try {
-      console.log('🔄 Loading notifications from API for user:', user?.id)
+      console.log('🔄 Loading notifications from API for user:', user.id)
       const response = await fetch('/api/notifications', {
         credentials: 'include'
       })
@@ -130,27 +69,51 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       console.log('📡 Notifications API response data:', data)
       
       if (data.success) {
-        // Convert string dates back to Date objects and normalize field names
-        const notificationsWithDates = data.notifications.map((notification: any) => ({
-          ...notification,
-          userId: notification.userId, // Use consistent user ID field
-          read: notification.read, // Use consistent read field
-          createdAt: new Date(notification.createdAt || notification.created_at)
-        }))
-        setNotifications(notificationsWithDates)
-        console.log('✅ Loaded notifications:', notificationsWithDates.length, 'notifications')
-        console.log('📬 Notifications data:', notificationsWithDates)
+        const notificationsNormalized = (
+          (data.notifications || [])
+            .map((notification: any) => normalizeNotification(notification))
+            .filter(Boolean) as Notification[]
+        )
+          .filter((notification) => notification.userId === user.id)
+        setNotifications(notificationsNormalized)
+        console.log('✅ Loaded notifications:', notificationsNormalized.length, 'notifications')
       } else {
         console.error('❌ Failed to load notifications:', data.error)
-        // Fallback to mock data if API fails
-        setNotifications(mockNotifications)
+        setNotifications([])
       }
     } catch (error) {
       console.error('❌ Error loading notifications:', error)
-      // Fallback to mock data if API fails
-      setNotifications(mockNotifications)
+      setNotifications([])
     }
-  }
+  }, [normalizeNotification, user?.id])
+
+  // Load notifications from API when user is authenticated
+  useEffect(() => {
+    if (user?.id) {
+      loadNotificationsFromAPI()
+    } else {
+      // Clear notifications when user logs out
+      setNotifications([])
+    }
+  }, [user?.id, loadNotificationsFromAPI]) // Only depend on user ID, not the entire user object
+
+  // Listen for real-time notifications via the shared websocket-message bus.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail
+      if (!detail || detail.type !== 'new_notification') return
+      const raw = detail.data || {}
+      const normalized = normalizeNotification(raw)
+      if (!normalized?.id) return
+      // Only accept notifications addressed to the currently logged-in user.
+      if (user?.id && normalized.userId && normalized.userId !== user.id) return
+      console.log('🔔 NotificationContext: Real-time notification received:', normalized)
+      addNotification(normalized)
+    }
+
+    window.addEventListener('websocket-message', handler as EventListener)
+    return () => window.removeEventListener('websocket-message', handler as EventListener)
+  }, [normalizeNotification, user?.id])
 
   const addNotification = (notification: Notification) => {
     console.log('🔔 Adding notification:', notification)

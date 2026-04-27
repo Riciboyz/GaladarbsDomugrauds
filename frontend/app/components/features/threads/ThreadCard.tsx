@@ -102,6 +102,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
             const notificationResponse = await fetch('/api/notifications/send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({
                 type: 'like',
                 fromUserId: user.id,
@@ -153,6 +154,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
             const notificationResponse = await fetch('/api/notifications/send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({
                 type: 'dislike',
                 fromUserId: user.id,
@@ -326,6 +328,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
             const notificationResponse = await fetch('/api/notifications/send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({
                 type: 'comment',
                 fromUserId: user.id,
