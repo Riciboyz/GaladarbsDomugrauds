@@ -1,7 +1,7 @@
 'use client'
 
 import { useUser } from './components/contexts/UserContext'
-import AuthPage from './components/features/auth/AuthPage'
+import LandingPage from './components/features/auth/LandingPage'
 import MainApp from './components/MainApp'
 
 export default function Home() {
@@ -9,7 +9,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen dg-bg">
-      {user ? <MainApp /> : <AuthPage />}
+      {user ? <MainApp /> : <LandingPage />}
     </main>
   )
 }
