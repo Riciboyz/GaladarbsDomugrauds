@@ -715,7 +715,7 @@ export default function Groups() {
             {/* Content */}
             <div className="p-6">
               <p className="text-ink mb-4">
-                Vai tiešām vēlies dzēst <span className="font-semibold">"{groupToDelete.name}"</span>? 
+                Vai tiešām vēlies dzēst <span className="font-semibold">&quot;{groupToDelete.name}&quot;</span>?
                 Tas neatgriezeniski dzēsīs grupu un visu tās saturu.
               </p>
               
@@ -791,7 +791,7 @@ export default function Groups() {
             <div className="p-6">
               <div className="mb-6">
                 <p className="text-ink mb-2">
-                  Vai tiešām vēlies pamest <span className="font-semibold text-ink">"{groupToLeave.name}"</span>?
+                  Vai tiešām vēlies pamest <span className="font-semibold text-ink">&quot;{groupToLeave.name}&quot;</span>?
                 </p>
                 <p className="text-sm text-ink-muted">
                   Tu vairs nesaņemsi paziņojumus no šīs grupas un nevarēsi piedalīties grupas diskusijās.

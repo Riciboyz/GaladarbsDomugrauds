@@ -23,6 +23,10 @@ jobs:
     - name: Install Backend Dependencies
       working-directory: ./backend
       run: npm ci
+
+    - name: Run Backend Linting
+      working-directory: ./backend
+      run: npm run lint
     
     - name: Run Database Migrations
       working-directory: ./backend
@@ -33,6 +37,10 @@ jobs:
     - name: Check Schema Drift
       working-directory: ./backend
       run: npm run db:drift-check
+
+    - name: Run Backend Tests
+      working-directory: ./backend
+      run: npm run test
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -54,6 +62,10 @@ jobs:
     - name: Run Frontend Linting
       working-directory: ./frontend
       run: npm run lint
+
+    - name: Run Frontend Tests
+      working-directory: ./frontend
+      run: npm run test
     
     - name: Build Frontend
       working-directory: ./frontend

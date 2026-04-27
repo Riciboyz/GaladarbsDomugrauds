@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useUser } from '../../contexts/UserContext'
 import { useThread } from '../../contexts/ThreadContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -14,7 +15,8 @@ import {
 } from '@heroicons/react/24/outline'
 
 export default function AuthPage() {
-  const { setUser } = useUser()
+  const { user, setUser } = useUser()
+  const router = useRouter()
   const { loadThreadsFromAPI } = useThread()
   const { success, error: showError } = useToast()
   
@@ -32,6 +34,22 @@ export default function AuthPage() {
   const [twoFactorRequired, setTwoFactorRequired] = useState(false)
   const [twoFactorCode, setTwoFactorCode] = useState('')
   const [devShownCode, setDevShownCode] = useState('')
+
+  useEffect(() => {
+    if (user) {
+      router.replace('/')
+    }
+  }, [user, router])
+
+  const hydrateSessionUser = async () => {
+    const meResponse = await fetch('/api/auth/me', {
+      credentials: 'include',
+    })
+    if (!meResponse.ok) return null
+    const meData = await meResponse.json()
+    if (!meData?.success || !meData?.user) return null
+    return meData.user
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,9 +122,16 @@ export default function AuthPage() {
       }
 
       if (response.ok) {
-        setUser(data.user)
+        const hydratedUser = await hydrateSessionUser()
+        if (!hydratedUser) {
+          setErrorMessage('Konts izveidots, bet sesiju neizdevās ielādēt. Mēģini pieslēgties vēlreiz.')
+          showError('Sesijas kļūda', 'Lūdzu pieslēdzies vēlreiz.')
+          return
+        }
+        setUser(hydratedUser)
         await loadThreadsFromAPI()
         success('Laipni lūgts!', 'Tu esi veiksmīgi pieslēdzies.')
+        router.replace('/')
       } else {
         setErrorMessage(data.error || 'Radās kļūda')
         showError('Pieslēgšanās neizdevās', data.error || 'Radās kļūda')
@@ -133,11 +158,18 @@ export default function AuthPage() {
       })
       const data = await resp.json()
       if (resp.ok) {
-        setUser(data.user)
+        const hydratedUser = await hydrateSessionUser()
+        if (!hydratedUser) {
+          setErrorMessage('Kods pieņemts, bet sesiju neizdevās ielādēt.')
+          showError('Sesijas kļūda', 'Lūdzu pieslēdzies vēlreiz.')
+          return
+        }
+        setUser(hydratedUser)
         await loadThreadsFromAPI()
         setTwoFactorRequired(false)
         setTwoFactorCode('')
         success('Laipni lūgts!', 'Tu esi veiksmīgi pieslēdzies.')
+        router.replace('/')
       } else {
         setErrorMessage(data.error || 'Nederīgs kods')
         showError('2FA neizdevās', data.error || 'Nederīgs kods')

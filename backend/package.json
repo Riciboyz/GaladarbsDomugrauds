@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "lint": "node scripts/lint.js",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "build": "node --check server.js",
     "db:migrate": "node database/migrate.js migrate",
     "db:baseline": "node database/migrate.js baseline",
     "db:drift-check": "node database/migrate.js drift-check",

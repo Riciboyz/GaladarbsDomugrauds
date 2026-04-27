@@ -10,8 +10,8 @@ const { initDatabase } = require('./config/database');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const dmCore = require('./helpers/dmCore');
-const { JWT_SECRET } = require('./middleware/auth');
 require('dotenv').config();
+const { JWT_SECRET } = require('./middleware/auth');
 
 const DEFAULT_ORIGINS = ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'];
 const EXTRA_ORIGINS = (process.env.CORS_ORIGIN || '')
@@ -36,18 +36,21 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.set('trust proxy', process.env.TRUST_PROXY === '1' ? 1 : 0);
+const isDev = process.env.NODE_ENV !== 'production';
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: isDev ? 5000 : 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => isDev,
   message: { error: 'Too many requests, try again later' }
 }));
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: isDev ? 200 : 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => isDev,
   message: { error: 'Too many login attempts, try again later' }
 });
 

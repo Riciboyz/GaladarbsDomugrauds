@@ -8,7 +8,8 @@
     "dev:poll": "NEXT_DEV_POLL=1 next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test \"tests/**/*.test.js\""
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",

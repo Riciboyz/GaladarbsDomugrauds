@@ -6,9 +6,14 @@ const dmCore = require('../helpers/dmCore');
 
 module.exports = function (db, io) {
   const router = Router();
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   const auth = [authenticateToken, loadAuthUser(db)];
   const authCreate = [...auth, assertUserCanCreateContent(db)];
+
+  function isUuid(value) {
+    return typeof value === 'string' && UUID_RE.test(value.trim());
+  }
 
   function mapErr(res, err) {
     const code = err && err.message;
@@ -99,9 +104,12 @@ module.exports = function (db, io) {
   /** POST /api/dms/conversations { otherUserId } */
   router.post('/conversations', ...auth, (req, res) => {
     const uid = currentUserId(req);
-    const { otherUserId } = req.body || {};
+    const otherUserId = typeof req.body?.otherUserId === 'string' ? req.body.otherUserId.trim() : '';
     if (!otherUserId || otherUserId === uid) {
       return res.status(400).json({ success: false, error: 'otherUserId required' });
+    }
+    if (!isUuid(otherUserId)) {
+      return res.status(400).json({ success: false, error: 'Invalid otherUserId' });
     }
     db.get(
       `SELECT id FROM users WHERE id = ? AND deleted_at IS NULL`,
@@ -147,28 +155,48 @@ module.exports = function (db, io) {
   /** GET /api/dms/conversations/:conversationId/messages */
   router.get('/conversations/:conversationId/messages', ...auth, (req, res) => {
     const uid = currentUserId(req);
-    const { conversationId } = req.params;
-    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
+    const conversationId = String(req.params?.conversationId || '').trim();
+    if (!isUuid(conversationId)) {
+      return res.status(400).json({ success: false, error: 'Invalid conversationId' });
+    }
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 100) : 50;
     const before = (req.query.before || '').trim();
+    if (before && !isUuid(before)) {
+      return res.status(400).json({ success: false, error: 'Invalid before cursor' });
+    }
     db.get(
       `SELECT id, user_a, user_b FROM dm_conversations WHERE id = ? AND (user_a = ? OR user_b = ?)`,
       [conversationId, uid, uid],
       (err, conv) => {
         if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!conv) return res.status(404).json({ success: false, error: 'Not found' });
-        let sql = `${dmCore.DM_SELECT_WITH_REPLY} WHERE m.conversation_id = ?`;
-        const params = [conversationId];
-        if (before) {
-          sql += ` AND datetime(m.created_at) < datetime((SELECT created_at FROM dm_messages WHERE id = ?))`;
-          params.push(before);
-        }
-        sql += ` ORDER BY datetime(m.created_at) DESC LIMIT ?`;
-        params.push(limit);
-        db.all(sql, params, (e2, rows) => {
-          if (e2) return res.status(500).json({ success: false, error: 'Database error' });
-          const messages = (rows || []).reverse().map((r) => dmCore.formatDmMessageRow(r));
-          res.json({ success: true, messages });
-        });
+        const fetchMessages = (beforeCreatedAt) => {
+          let sql = `${dmCore.DM_SELECT_WITH_REPLY} WHERE m.conversation_id = ?`;
+          const params = [conversationId];
+          if (beforeCreatedAt) {
+            sql += ` AND datetime(m.created_at) < datetime(?)`;
+            params.push(beforeCreatedAt);
+          }
+          sql += ` ORDER BY datetime(m.created_at) DESC LIMIT ?`;
+          params.push(limit);
+          db.all(sql, params, (e2, rows) => {
+            if (e2) return res.status(500).json({ success: false, error: 'Database error' });
+            const messages = (rows || []).reverse().map((r) => dmCore.formatDmMessageRow(r));
+            res.json({ success: true, messages });
+          });
+        };
+
+        if (!before) return fetchMessages('');
+        db.get(
+          `SELECT created_at FROM dm_messages WHERE id = ? AND conversation_id = ?`,
+          [before, conversationId],
+          (cursorErr, cursorRow) => {
+            if (cursorErr) return res.status(500).json({ success: false, error: 'Database error' });
+            if (!cursorRow) return res.status(400).json({ success: false, error: 'Invalid before cursor' });
+            fetchMessages(cursorRow.created_at);
+          }
+        );
       }
     );
   });
@@ -176,7 +204,10 @@ module.exports = function (db, io) {
   /** POST /api/dms/conversations/:conversationId/messages */
   router.post('/conversations/:conversationId/messages', ...authCreate, (req, res) => {
     const uid = currentUserId(req);
-    const { conversationId } = req.params;
+    const conversationId = String(req.params?.conversationId || '').trim();
+    if (!isUuid(conversationId)) {
+      return res.status(400).json({ success: false, error: 'Invalid conversationId' });
+    }
     const { content, messageType, attachmentUrl, replyToMessageId } = req.body || {};
     dmCore.insertDmMessage(
       db,
@@ -200,7 +231,10 @@ module.exports = function (db, io) {
   /** POST /api/dms/conversations/:conversationId/read */
   router.post('/conversations/:conversationId/read', ...auth, (req, res) => {
     const uid = currentUserId(req);
-    const { conversationId } = req.params;
+    const conversationId = String(req.params?.conversationId || '').trim();
+    if (!isUuid(conversationId)) {
+      return res.status(400).json({ success: false, error: 'Invalid conversationId' });
+    }
     db.get(
       `SELECT id FROM dm_conversations WHERE id = ? AND (user_a = ? OR user_b = ?)`,
       [conversationId, uid, uid],
@@ -224,9 +258,12 @@ module.exports = function (db, io) {
   /** POST /api/dms/blocks { blockedId } */
   router.post('/blocks', ...auth, (req, res) => {
     const uid = currentUserId(req);
-    const { blockedId } = req.body || {};
+    const blockedId = typeof req.body?.blockedId === 'string' ? req.body.blockedId.trim() : '';
     if (!blockedId || blockedId === uid) {
       return res.status(400).json({ success: false, error: 'blockedId required' });
+    }
+    if (!isUuid(blockedId)) {
+      return res.status(400).json({ success: false, error: 'Invalid blockedId' });
     }
     db.get(`SELECT id FROM users WHERE id = ? AND deleted_at IS NULL`, [blockedId], (e1, u) => {
       if (e1) return res.status(500).json({ success: false, error: 'Database error' });
@@ -245,7 +282,10 @@ module.exports = function (db, io) {
   /** DELETE /api/dms/blocks/:blockedId */
   router.delete('/blocks/:blockedId', ...auth, (req, res) => {
     const uid = currentUserId(req);
-    const { blockedId } = req.params;
+    const blockedId = String(req.params?.blockedId || '').trim();
+    if (!isUuid(blockedId)) {
+      return res.status(400).json({ success: false, error: 'Invalid blockedId' });
+    }
     db.run(`DELETE FROM user_blocks WHERE blocker_id = ? AND blocked_id = ?`, [uid, blockedId], function (e) {
       if (e) return res.status(500).json({ success: false, error: 'Database error' });
       res.json({ success: true });
@@ -255,7 +295,10 @@ module.exports = function (db, io) {
   /** POST /api/dms/messages/:messageId/report */
   router.post('/messages/:messageId/report', ...auth, (req, res) => {
     const uid = currentUserId(req);
-    const { messageId } = req.params;
+    const messageId = String(req.params?.messageId || '').trim();
+    if (!isUuid(messageId)) {
+      return res.status(400).json({ success: false, error: 'Invalid messageId' });
+    }
     const reason = req.body?.reason ? String(req.body.reason).slice(0, 500) : '';
     db.get(
       `SELECT m.id, m.conversation_id, c.user_a, c.user_b

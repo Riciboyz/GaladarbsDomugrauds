@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { touchLastActive } = require('../helpers/audit');
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === 'production' ? undefined : 'dev-secret');
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET is required');
 }

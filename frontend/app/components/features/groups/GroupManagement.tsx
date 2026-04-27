@@ -460,7 +460,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <h5 className="heading-5 text-red-500 mb-2">Dzēst grupu</h5>
               <p className="body-regular text-ink mb-4">
-                Vai tiešām vēlies dzēst "{group.name}"? Šo darbību nevar atsaukt, un tā dzēsīs visus grupas datus, ieskaitot ziņas un dalībnieku informāciju.
+                Vai tiešām vēlies dzēst &quot;{group.name}&quot;? Šo darbību nevar atsaukt, un tā dzēsīs visus grupas datus, ieskaitot ziņas un dalībnieku informāciju.
               </p>
               <div className="flex items-center justify-end space-x-3">
                 <button

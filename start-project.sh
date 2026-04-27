@@ -1,5 +1,17 @@
 #!/bin/bash
 
+set -euo pipefail
+
+BACKEND_PID=""
+FRONTEND_PID=""
+
+cleanup() {
+  if [ -n "${BACKEND_PID:-}" ]; then kill "$BACKEND_PID" 2>/dev/null || true; fi
+  if [ -n "${FRONTEND_PID:-}" ]; then kill "$FRONTEND_PID" 2>/dev/null || true; fi
+}
+
+trap cleanup EXIT INT TERM
+
 echo "🚀 Starting DomuGrauds Project..."
 echo ""
 
@@ -15,16 +27,28 @@ cd backend
 npm run dev &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
-sleep 5
+
+wait_for_health() {
+  local url="$1"
+  local name="$2"
+  local max_attempts="$3"
+  local attempt=1
+
+  while [ "$attempt" -le "$max_attempts" ]; do
+    if curl -fsS "$url" > /dev/null 2>&1; then
+      echo "✅ $name is running on $url"
+      return 0
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+
+  echo "❌ $name failed to start ($url did not become healthy in ${max_attempts}s)"
+  return 1
+}
 
 # Check if backend is running
-if curl -s http://localhost:3001/health > /dev/null 2>&1; then
-    echo "✅ Backend is running on http://localhost:3001"
-else
-    echo "❌ Backend failed to start"
-    kill $BACKEND_PID 2>/dev/null
-    exit 1
-fi
+wait_for_health "http://localhost:3001/health" "Backend" 30
 
 # Start Frontend (polling on macOS avoids EMFILE → broken HMR / 500 on /_next chunks)
 echo "📦 Starting Frontend Server..."
@@ -35,6 +59,9 @@ fi
 npm run dev &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"
+
+# Basic check that frontend is reachable
+wait_for_health "http://localhost:3000" "Frontend" 45
 
 echo ""
 echo "✅ Both servers are starting!"
