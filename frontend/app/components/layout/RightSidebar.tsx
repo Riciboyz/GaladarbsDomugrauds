@@ -216,9 +216,6 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
                   <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unreadCount}</span>
                 </div>
                 <p className="mt-2 text-sm text-ink-muted">Tev ir {unreadCount} nelasīti paziņojumi</p>
-                <button className="mt-3 text-sm text-accent hover:text-accent-hover font-medium">
-                  Skatīt visus paziņojumus
-                </button>
               </div>
             </section>
           )}
