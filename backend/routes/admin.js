@@ -48,7 +48,7 @@ module.exports = function (db) {
     }
     sql += ' ORDER BY r.created_at DESC LIMIT 200';
     db.all(sql, params, (err, rows) => {
-      if (err) return res.status(500).json({ success: false, error: err.message });
+      if (err) return res.status(500).json({ success: false, error: 'Database error' });
       res.json({ success: true, reports: rows || [] });
     });
   });
@@ -64,7 +64,7 @@ module.exports = function (db) {
       `UPDATE dm_reports SET status = ?, reviewed_by = ?, reviewed_at = datetime('now') WHERE id = ?`,
       [status, actorId, id],
       function (err) {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!this.changes) return res.status(404).json({ success: false, error: 'Report not found' });
         logAudit(
           db,
@@ -103,7 +103,7 @@ module.exports = function (db) {
     sql += ' ORDER BY a.created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
     db.all(sql, params, (err, rows) => {
-      if (err) return res.status(500).json({ success: false, error: err.message });
+      if (err) return res.status(500).json({ success: false, error: 'Database error' });
       const logs = (rows || []).map((r) => ({
         id: r.id,
         actorId: r.actor_id,

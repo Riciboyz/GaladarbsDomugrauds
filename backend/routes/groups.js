@@ -1,7 +1,12 @@
 const { Router } = require('express');
 const crypto = require('crypto');
-const { optionalAuth, currentUserId, getTokenFromRequest } = require('../middleware/auth');
+const { authenticateToken, optionalAuth, currentUserId } = require('../middleware/auth');
 const { safeJsonParse, getMembersArray, toIsoUtc } = require('../helpers/utils');
+const {
+  INPUT_LIMITS,
+  validateRequiredTrimmed,
+  validateOptionalTrimmed,
+} = require('../helpers/inputValidation');
 
 module.exports = function (db, io) {
   const router = Router();
@@ -123,22 +128,27 @@ module.exports = function (db, io) {
     });
   }
 
-  router.post('/', optionalAuth, (req, res) => {
+  router.post('/', authenticateToken, (req, res) => {
     const rawAdd = req.body?.addUserIds;
     const addUserIds = Array.isArray(rawAdd) ? rawAdd.filter(Boolean) : [];
     const { name, description } = req.body || {};
     const userId = currentUserId(req);
-    if (!name) return res.status(400).json({ error: 'Group name is required' });
+    const validName = validateRequiredTrimmed(name, {
+      field: 'Group name',
+      maxLength: INPUT_LIMITS.GROUP_NAME,
+    });
+    if (!validName.ok) return res.status(400).json({ error: validName.error });
+    const validDesc = validateOptionalTrimmed(description, {
+      maxLength: INPUT_LIMITS.GROUP_DESCRIPTION,
+    });
+    if (!validDesc.ok) return res.status(400).json({ error: 'Description too long' });
     const visibility = normalizeVisibility(req.body?.visibility);
-    if (visibility === 'private' && !getTokenFromRequest(req)) {
-      return res.status(401).json({ error: 'Login required for private groups' });
-    }
     const groupId = crypto.randomUUID();
     const members = JSON.stringify([userId]);
     db.run(
       `INSERT INTO groups (id, name, description, avatar, created_by, members, visibility, created_at, updated_at)
        VALUES (?, ?, ?, NULL, ?, ?, ?, datetime('now'), datetime('now'))`,
-      [groupId, name, description || '', userId, members, visibility],
+      [groupId, validName.value, validDesc.value || '', userId, members, visibility],
       function (err) {
         if (err) return res.status(500).json({ error: 'Database error' });
         if (visibility === 'private' && addUserIds.length) {
@@ -149,7 +159,7 @@ module.exports = function (db, io) {
     );
   });
 
-  router.put('/', optionalAuth, (req, res) => {
+  router.put('/', authenticateToken, (req, res) => {
     const { groupId, name, description, avatar, visibility } = req.body || {};
     if (!groupId) return res.status(400).json({ error: 'groupId required' });
     const uid = currentUserId(req);
@@ -159,12 +169,26 @@ module.exports = function (db, io) {
       if (row.created_by !== uid && !members.includes(uid)) return res.status(403).json({ error: 'Forbidden' });
       const updates = [];
       const vals = [];
-      if (name !== undefined) { updates.push('name = ?'); vals.push(name); }
-      if (description !== undefined) { updates.push('description = ?'); vals.push(description); }
+      if (name !== undefined) {
+        const validName = validateRequiredTrimmed(name, {
+          field: 'Group name',
+          maxLength: INPUT_LIMITS.GROUP_NAME,
+        });
+        if (!validName.ok) return res.status(400).json({ error: validName.error });
+        updates.push('name = ?');
+        vals.push(validName.value);
+      }
+      if (description !== undefined) {
+        const validDesc = validateOptionalTrimmed(description, {
+          maxLength: INPUT_LIMITS.GROUP_DESCRIPTION,
+        });
+        if (!validDesc.ok) return res.status(400).json({ error: 'Description too long' });
+        updates.push('description = ?');
+        vals.push(validDesc.value);
+      }
       if (avatar !== undefined) { updates.push('avatar = ?'); vals.push(avatar); }
       if (visibility !== undefined) {
         if (row.created_by !== uid) return res.status(403).json({ error: 'Only the creator can change visibility' });
-        if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
         updates.push('visibility = ?');
         vals.push(normalizeVisibility(visibility));
       }
@@ -188,7 +212,7 @@ module.exports = function (db, io) {
     });
   });
 
-  router.delete('/', optionalAuth, (req, res) => {
+  router.delete('/', authenticateToken, (req, res) => {
     const groupId = req.query.groupId;
     if (!groupId) return res.status(400).json({ error: 'groupId required' });
     const uid = currentUserId(req);
@@ -235,23 +259,19 @@ module.exports = function (db, io) {
     });
   }
 
-  router.post('/join', optionalAuth, (req, res) => {
-    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+  router.post('/join', authenticateToken, (req, res) => {
     joinGroup(req.body?.groupId || req.body?.group_id, currentUserId(req), res);
   });
 
-  router.delete('/join', optionalAuth, (req, res) => {
-    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+  router.delete('/join', authenticateToken, (req, res) => {
     leaveGroup(req.query.groupId, currentUserId(req), res);
   });
 
-  router.post('/:id/join', optionalAuth, (req, res) => {
-    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+  router.post('/:id/join', authenticateToken, (req, res) => {
     joinGroup(req.params.id, currentUserId(req), res);
   });
 
-  router.post('/:id/leave', optionalAuth, (req, res) => {
-    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+  router.post('/:id/leave', authenticateToken, (req, res) => {
     leaveGroup(req.params.id, currentUserId(req), res);
   });
 
@@ -279,8 +299,7 @@ module.exports = function (db, io) {
     });
   });
 
-  router.post('/members', optionalAuth, (req, res) => {
-    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+  router.post('/members', authenticateToken, (req, res) => {
     const uid = currentUserId(req);
     const { groupId, userId: newMemberId } = req.body || {};
     if (!groupId || !newMemberId) return res.status(400).json({ error: 'groupId and userId required' });
@@ -323,8 +342,7 @@ module.exports = function (db, io) {
     });
   });
 
-  router.delete('/members', optionalAuth, (req, res) => {
-    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+  router.delete('/members', authenticateToken, (req, res) => {
     const uid = currentUserId(req);
     const { groupId, userId: removeId } = req.query;
     if (!groupId || !removeId) return res.status(400).json({ error: 'groupId and userId required' });
@@ -359,18 +377,23 @@ module.exports = function (db, io) {
        WHERE gp.group_id = ? ORDER BY gp.created_at DESC LIMIT ?`,
       [groupId, limit],
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         res.json({ success: true, messages: (rows || []).map(mapGroupPostRow) });
       }
     );
     });
   });
 
-  router.post('/chat', optionalAuth, (req, res) => {
-    if (!getTokenFromRequest(req)) return res.status(401).json({ error: 'Login required' });
+  router.post('/chat', authenticateToken, (req, res) => {
     const { groupId, content, messageType, attachmentUrl } = req.body || {};
     const uid = currentUserId(req);
-    if (!groupId || !content) return res.status(400).json({ error: 'groupId and content required' });
+    const validContent = validateRequiredTrimmed(content, {
+      field: 'Content',
+      maxLength: INPUT_LIMITS.THREAD_CONTENT,
+    });
+    if (!groupId || !validContent.ok) {
+      return res.status(400).json({ error: groupId ? validContent.error : 'groupId and content required' });
+    }
     db.get('SELECT * FROM groups WHERE id = ?', [groupId], (chkErr, grow) => {
       if (chkErr || !grow) return res.status(404).json({ error: 'Group not found' });
       if (!isGroupMember(grow, uid)) {
@@ -381,7 +404,7 @@ module.exports = function (db, io) {
       db.run(
         `INSERT INTO group_posts (id, group_id, author_id, content, attachments, likes, dislikes, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, '[]', '[]', datetime('now'), datetime('now'))`,
-        [id, groupId, uid, content, attachments],
+        [id, groupId, uid, validContent.value, attachments],
         (err) => {
           if (err) return res.status(500).json({ error: 'Database error' });
           db.get(

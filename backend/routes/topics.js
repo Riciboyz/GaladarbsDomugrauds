@@ -3,6 +3,10 @@ const crypto = require('crypto');
 const { optionalAuth, currentUserId, requireRole, assertUserCanCreateContent } = require('../middleware/auth');
 const { safeJsonParse, toIsoUtc } = require('../helpers/utils');
 const { logAudit, touchLastActive } = require('../helpers/audit');
+const {
+  INPUT_LIMITS,
+  validateOptionalTrimmed,
+} = require('../helpers/inputValidation');
 
 module.exports = function (db, io) {
   const router = Router();
@@ -126,7 +130,7 @@ module.exports = function (db, io) {
        WHERE COALESCE(dt.status, 'published') = 'published'
        ORDER BY dt.date DESC LIMIT 100`,
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         res.json({ success: true, topicDays: (rows || []).map(mapTopicDayRow) });
       }
     );
@@ -138,7 +142,7 @@ module.exports = function (db, io) {
        FROM daily_topics dt JOIN users u ON dt.created_by = u.id
        ORDER BY dt.date DESC LIMIT 500`,
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         res.json({ success: true, topicDays: (rows || []).map(mapTopicDayRow) });
       }
     );
@@ -158,7 +162,7 @@ module.exports = function (db, io) {
        ORDER BY dt.date ASC`,
       [start, nextMonth],
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         res.json({ success: true, topicDays: (rows || []).map(mapTopicDayRow) });
       }
     );
@@ -201,7 +205,7 @@ module.exports = function (db, io) {
     const created = [];
     let idx = 0;
     const runNext = (err) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) return res.status(500).json({ error: 'Database error' });
       if (idx >= 7) {
         return logAudit(
           db,
@@ -420,7 +424,7 @@ module.exports = function (db, io) {
        ORDER BY ts.created_at DESC`,
       [topicId],
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         let mySubmissionId = null;
         const submissions = (rows || []).map((r) => {
           if (r.user_id === uid) mySubmissionId = r.id;
@@ -439,7 +443,7 @@ module.exports = function (db, io) {
       'SELECT id FROM topic_submissions WHERE topic_id = ? AND user_id = ? LIMIT 1',
       [topicId, uid],
       (err, row) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         res.json({ success: true, hasSubmitted: !!row, submissionId: row ? row.id : null });
       }
     );
@@ -448,6 +452,10 @@ module.exports = function (db, io) {
   router.post('/topic-submissions', optionalAuth, assertUserCanCreateContent(db), (req, res) => {
     const { topicId, content, imageUrl } = req.body || {};
     if (!topicId || (!content && !imageUrl)) return res.status(400).json({ error: 'topicId and content or imageUrl required' });
+    const validContent = validateOptionalTrimmed(content, {
+      maxLength: INPUT_LIMITS.TOPIC_SUBMISSION_CONTENT,
+    });
+    if (!validContent.ok) return res.status(400).json({ error: 'Content too long' });
     const uid = currentUserId(req);
     db.get(
       'SELECT id FROM topic_submissions WHERE topic_id = ? AND user_id = ? LIMIT 1',
@@ -457,7 +465,9 @@ module.exports = function (db, io) {
         if (existing) return res.status(409).json({ error: 'You have already submitted for this topic today', alreadySubmitted: true });
 
         const id = crypto.randomUUID();
-        const stored = imageUrl ? JSON.stringify({ text: content || '', image_url: imageUrl }) : String(content);
+        const stored = imageUrl
+          ? JSON.stringify({ text: validContent.value || '', image_url: imageUrl })
+          : String(validContent.value);
         db.run(
           'INSERT INTO topic_submissions (id, topic_id, user_id, content, created_at) VALUES (?, ?, ?, ?, datetime("now"))',
           [id, topicId, uid, stored],

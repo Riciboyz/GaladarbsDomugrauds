@@ -48,17 +48,17 @@ export default class ErrorBoundary extends Component<Props, State> {
             </div>
             
             <h2 className="heading-3 text-ink mb-4">
-              Something went wrong
+              Notika kļūda
             </h2>
             
             <p className="body-regular text-ink-muted mb-6">
-              We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.
+              Radās neparedzēta kļūda. Mēģini pārlādēt lapu vai sazinies ar atbalstu, ja problēma turpinās.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mb-6 text-left">
                 <summary className="cursor-pointer text-sm font-medium text-ink-muted mb-2">
-                  Error Details
+                  Kļūdas detaļas
                 </summary>
                 <pre className="text-xs text-red-500 bg-red-500/10 p-3 rounded-lg overflow-auto">
                   {this.state.error.stack}
@@ -72,7 +72,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 leftIcon={<ArrowPathIcon className="w-4 h-4" />}
                 className="flex-1"
               >
-                Try Again
+                Mēģināt vēlreiz
               </Button>
               
               <Button
@@ -80,7 +80,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 variant="secondary"
                 className="flex-1"
               >
-                Refresh Page
+                Pārlādēt lapu
               </Button>
             </div>
           </div>

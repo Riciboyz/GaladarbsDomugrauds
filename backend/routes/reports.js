@@ -19,7 +19,7 @@ module.exports = function (db) {
          VALUES (?, ?, ?, ?, 'open', datetime('now'))`,
         [id, reporterId, threadId, reason ? String(reason).slice(0, 500) : ''],
         (e2) => {
-          if (e2) return res.status(500).json({ success: false, error: e2.message });
+          if (e2) return res.status(500).json({ success: false, error: 'Database error' });
           res.json({ success: true, id });
         }
       );
@@ -41,7 +41,7 @@ module.exports = function (db) {
     }
     sql += ' ORDER BY r.created_at DESC LIMIT 200';
     db.all(sql, params, (err, rows) => {
-      if (err) return res.status(500).json({ success: false, error: err.message });
+      if (err) return res.status(500).json({ success: false, error: 'Database error' });
       res.json({ success: true, reports: rows || [] });
     });
   });
@@ -58,7 +58,7 @@ module.exports = function (db) {
        WHERE id = ?`,
       [status, actorId, id],
       function (err) {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!this.changes) return res.status(404).json({ success: false, error: 'Report not found' });
         logAudit(
           db,

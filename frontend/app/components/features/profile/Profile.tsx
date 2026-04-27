@@ -186,13 +186,13 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file')
+        alert('Lūdzu izvēlies attēla failu')
         return
       }
       
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size must be less than 5MB')
+        alert('Attēlam jābūt mazākam par 5 MB')
         return
       }
       
@@ -226,11 +226,11 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
           setAvatarPreview(url)
           setEditData(prev => ({ ...prev, avatar: url }))
         } else {
-          alert(data.error || 'Failed to upload image')
+          alert(data.error || 'Neizdevās augšupielādēt attēlu')
         }
       } catch (error) {
         console.error('Error uploading image:', error)
-        alert('Failed to upload image')
+        alert('Neizdevās augšupielādēt attēlu')
       } finally {
         setIsUploading(false)
       }
@@ -354,7 +354,7 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
         : await followUser(profileUser.id)
 
       if (!success) {
-        alert('Failed to update follow status')
+        alert('Neizdevās atjaunināt sekošanas statusu')
         return
       }
 
@@ -366,7 +366,7 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
       }
     } catch (error) {
       console.error('Error following user:', error)
-      alert('Failed to follow user. Please try again.')
+      alert('Neizdevās sekot lietotājam. Lūdzu mēģini vēlreiz.')
     }
   }
 
@@ -375,8 +375,8 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
       <div className="max-w-2xl mx-auto">
         <div className="card p-12 text-center">
           <UserIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
-          <h3 className="heading-3 text-ink mb-2">User not found</h3>
-          <p className="body-regular text-ink-muted">This profile doesn't exist or has been removed.</p>
+          <h3 className="heading-3 text-ink mb-2">Lietotājs nav atrasts</h3>
+          <p className="body-regular text-ink-muted">Šis profils neeksistē vai ir dzēsts.</p>
         </div>
       </div>
     )
@@ -394,7 +394,7 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span>Back</span>
+            <span>Atpakaļ</span>
           </button>
         </div>
       )}
@@ -565,7 +565,7 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
                 <div className="relative group flex-shrink-0">
                   <img
                     src={avatarPreview || `https://ui-avatars.com/api/?name=${encodeURIComponent(editData.displayName || 'U')}&background=2d5a2d&color=fff&bold=true`}
-                    alt="Profile preview"
+                    alt="Profila priekšskatījums"
                     className="w-20 h-20 rounded-2xl object-cover ring-2 ring-surface-2 shadow-dg-sm cursor-pointer"
                     onClick={() => document.getElementById('avatar-upload')?.click()}
                   />
@@ -691,7 +691,7 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card-elevated w-full max-w-md max-h-96 overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-border-ui">
-              <h3 className="heading-3 text-ink">Followers</h3>
+              <h3 className="heading-3 text-ink">Sekotāji</h3>
               <button
                 onClick={() => setShowFollowers(false)}
                 className="btn-icon"
@@ -703,12 +703,12 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
               {loadingFollowers ? (
                 <div className="flex items-center justify-center p-8">
                   <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-                  <span className="ml-2 text-ink-muted">Loading followers...</span>
+                  <span className="ml-2 text-ink-muted">Ielādē sekotājus...</span>
                 </div>
               ) : followers.length === 0 ? (
                 <div className="p-8 text-center text-ink-muted">
                   <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-ink-muted/60" />
-                  <p>No followers yet</p>
+                  <p>Vēl nav sekotāju</p>
                 </div>
               ) : (
                 followers.map((follower) => {
@@ -754,7 +754,7 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
                               : 'bg-accent text-accent-fg hover:bg-accent-hover'
                           }`}
                         >
-                          {isFollowingFollower ? 'Following' : 'Follow'}
+                          {isFollowingFollower ? 'Seko' : 'Sekot'}
                         </button>
                       )}
                     </div>
@@ -771,7 +771,7 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card-elevated w-full max-w-md max-h-96 overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-border-ui">
-              <h3 className="heading-3 text-ink">Following</h3>
+              <h3 className="heading-3 text-ink">Seko</h3>
               <button
                 onClick={() => setShowFollowing(false)}
                 className="btn-icon"
@@ -783,12 +783,12 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
               {loadingFollowing ? (
                 <div className="flex items-center justify-center p-8">
                   <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-                  <span className="ml-2 text-ink-muted">Loading following...</span>
+                  <span className="ml-2 text-ink-muted">Ielādē sekošanas sarakstu...</span>
                 </div>
               ) : following.length === 0 ? (
                 <div className="p-8 text-center text-ink-muted">
                   <UserGroupIcon className="w-8 h-8 mx-auto mb-2 text-ink-muted/60" />
-                  <p>Not following anyone yet</p>
+                  <p>Pagaidām nevienam neseko</p>
                 </div>
               ) : (
                 following.map((followingUser) => (
@@ -823,9 +823,9 @@ export default function Profile({ userId, onBack, onUserClick, onStartDm }: Prof
         {userThreads.length === 0 ? (
           <div className="card p-12 text-center">
             <ChatBubbleLeftIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
-            <h3 className="heading-3 text-ink mb-2">No threads yet</h3>
+            <h3 className="heading-3 text-ink mb-2">Vēl nav ierakstu</h3>
             <p className="body-regular text-ink-muted">
-              {isOwnProfile ? "You haven't posted any threads yet." : `${profileUser.displayName} hasn't posted any threads yet.`}
+              {isOwnProfile ? "Tu vēl neesi publicējis nevienu ierakstu." : `${profileUser.displayName} vēl nav publicējis nevienu ierakstu.`}
             </p>
           </div>
         ) : (

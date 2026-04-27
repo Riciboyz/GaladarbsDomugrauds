@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const crypto = require('crypto');
-const { optionalAuth, currentUserId } = require('../middleware/auth');
+const { authenticateToken, currentUserId } = require('../middleware/auth');
 const { safeJsonParse, toIsoUtc } = require('../helpers/utils');
 
 module.exports = function (db, io) {
@@ -20,8 +20,8 @@ module.exports = function (db, io) {
     };
   }
 
-  router.get('/', optionalAuth, (req, res) => {
-    const userId = req.query.userId || currentUserId(req);
+  router.get('/', authenticateToken, (req, res) => {
+    const userId = currentUserId(req);
     db.all(
       'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC',
       [userId],
@@ -32,11 +32,14 @@ module.exports = function (db, io) {
     );
   });
 
-  router.post('/send', (req, res) => {
+  router.post('/send', authenticateToken, (req, res) => {
     const { type, fromUserId, toUserId, message, data } = req.body || {};
     if (!type || !toUserId || !message) return res.status(400).json({ error: 'Missing required fields' });
+    const senderId = currentUserId(req);
+    if (!senderId) return res.status(401).json({ error: 'Login required' });
+    if (fromUserId && fromUserId !== senderId) return res.status(403).json({ error: 'Forbidden' });
     const notificationId = crypto.randomUUID();
-    const dataJson = JSON.stringify({ ...(data || {}), fromUserId: fromUserId || null });
+    const dataJson = JSON.stringify({ ...(data || {}), fromUserId: senderId });
     const title = String(type);
     db.run(
       `INSERT INTO notifications (id, user_id, type, title, message, read, data, created_at)
@@ -63,26 +66,28 @@ module.exports = function (db, io) {
     );
   });
 
-  function markOneRead(notificationId, res) {
-    db.run('UPDATE notifications SET read = 1 WHERE id = ?', [notificationId], function (err) {
+  function markOneRead(notificationId, req, res) {
+    const userId = currentUserId(req);
+    db.run('UPDATE notifications SET read = 1 WHERE id = ? AND user_id = ?', [notificationId, userId], function (err) {
       if (err) return res.status(500).json({ error: 'Database error' });
+      if (!this.changes) return res.status(404).json({ error: 'Notification not found' });
       res.json({ success: true, message: 'Notification marked as read' });
     });
   }
 
-  router.post('/:id/read', (req, res) => markOneRead(req.params.id, res));
-  router.put('/:id/read', (req, res) => markOneRead(req.params.id, res));
+  router.post('/:id/read', authenticateToken, (req, res) => markOneRead(req.params.id, req, res));
+  router.put('/:id/read', authenticateToken, (req, res) => markOneRead(req.params.id, req, res));
 
   function markAllRead(req, res) {
-    const userId = req.body?.userId || currentUserId(req);
+    const userId = currentUserId(req);
     db.run('UPDATE notifications SET read = 1 WHERE user_id = ?', [userId], (err) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       res.json({ success: true, message: 'All notifications marked as read' });
     });
   }
 
-  router.post('/read-all', optionalAuth, markAllRead);
-  router.put('/read-all', optionalAuth, markAllRead);
+  router.post('/read-all', authenticateToken, markAllRead);
+  router.put('/read-all', authenticateToken, markAllRead);
 
   return router;
 };

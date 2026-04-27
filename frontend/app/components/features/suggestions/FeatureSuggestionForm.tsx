@@ -5,6 +5,7 @@ import { PhotoIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/out
 import { useUser } from '../../contexts/UserContext'
 import { useToast } from '../../contexts/ToastContext'
 import { FEATURE_CATEGORY_LABELS, type FeatureCategory } from './types'
+import { INPUT_LIMITS, remainingChars } from '../../constants/inputLimits'
 
 interface Props {
   onSubmitted?: () => void
@@ -23,8 +24,8 @@ export default function FeatureSuggestionForm({ onSubmitted }: Props) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 50 * 1024 * 1024) {
-      showError('Fails pārāk liels', 'Maksimālais izmērs 50MB')
+    if (file.size > INPUT_LIMITS.imageUploadMaxBytes) {
+      showError('Fails pārāk liels', 'Maksimālais izmērs 10MB')
       return
     }
     try {
@@ -36,7 +37,7 @@ export default function FeatureSuggestionForm({ onSubmitted }: Props) {
         body: formData,
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      if (!res.ok) throw new Error(data.error || 'Augšupielāde neizdevās')
       setImageUrl(data.url)
     } catch (err: any) {
       showError('Augšupielāde neizdevās', err.message || 'Mēģini vēlreiz')
@@ -103,19 +104,25 @@ export default function FeatureSuggestionForm({ onSubmitted }: Props) {
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        maxLength={120}
+        maxLength={INPUT_LIMITS.featureSuggestionTitle}
         placeholder="Ieteikuma virsraksts"
         className="w-full px-4 py-3 bg-surface text-ink placeholder-ink-muted/70 border border-border-ui rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
       />
+      <p className="text-xs text-ink-muted text-right -mt-1">
+        {remainingChars(INPUT_LIMITS.featureSuggestionTitle, title)} simboli atlikuši
+      </p>
 
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={4}
-        maxLength={4000}
+        maxLength={INPUT_LIMITS.featureSuggestionDescription}
         placeholder="Pastāsti detalizēti — kas, kāpēc, kāds labums lietotājiem"
         className="w-full px-4 py-3 bg-surface text-ink placeholder-ink-muted/70 border border-border-ui rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-none"
       />
+      <p className="text-xs text-ink-muted text-right -mt-1">
+        {remainingChars(INPUT_LIMITS.featureSuggestionDescription, description)} simboli atlikuši
+      </p>
 
       <div className="flex flex-wrap items-center gap-2">
         {(Object.keys(FEATURE_CATEGORY_LABELS) as FeatureCategory[]).map((cat) => (
@@ -135,11 +142,11 @@ export default function FeatureSuggestionForm({ onSubmitted }: Props) {
       </div>
 
       {imageUrl && (
-        <div className="relative inline-block">
+        <div className="relative inline-block max-w-full overflow-hidden rounded-xl border border-border-ui">
           <img
             src={imageUrl}
             alt="Pievienotā bilde"
-            className="max-h-56 rounded-xl border border-border-ui"
+            className="max-h-56 max-w-full object-cover"
           />
           <button
             type="button"

@@ -1,12 +1,16 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { initDatabase } = require('./config/database');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const dmCore = require('./helpers/dmCore');
+const { JWT_SECRET } = require('./middleware/auth');
 require('dotenv').config();
 
 const DEFAULT_ORIGINS = ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'];
@@ -28,9 +32,24 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
-app.set('trust proxy', 1);
+app.set('trust proxy', process.env.TRUST_PROXY === '1' ? 1 : 0);
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, try again later' }
+}));
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, try again later' }
+});
 
 let db;
 let dbPath;
@@ -99,17 +118,59 @@ function sanitizeThreadBlobAttachments() {
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+function getSocketToken(socket) {
+  const authToken = socket.handshake?.auth?.token;
+  if (authToken) return authToken;
+  const authHeader = socket.handshake?.headers?.authorization || '';
+  if (authHeader.startsWith('Bearer ')) return authHeader.slice(7);
+  const cookieHeader = socket.handshake?.headers?.cookie || '';
+  const cookieMatch = cookieHeader.match(/(?:^|;\s*)auth-token=([^;]+)/);
+  return cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+}
+
+io.use((socket, next) => {
+  const token = getSocketToken(socket);
+  if (!token) return next(new Error('unauthorized'));
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err || !user?.id) return next(new Error('unauthorized'));
+    socket.data.userId = user.id;
+    next();
+  });
+});
+
 io.on('connection', (socket) => {
-  socket.on('register', ({ userId } = {}) => {
+  function ensureGroupMember(groupId, userId, cb) {
+    if (!groupId || !userId) return cb(false);
+    db.get('SELECT members FROM groups WHERE id = ?', [groupId], (err, row) => {
+      if (err || !row) return cb(false);
+      let members = [];
+      try {
+        const parsed = JSON.parse(row.members || '[]');
+        members = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        members = [];
+      }
+      cb(members.includes(userId));
+    });
+  }
+
+  socket.on('register', () => {
+    const userId = socket.data.userId;
     if (!userId) return;
-    socket.data.userId = userId;
     socket.join(`user:${userId}`);
     socket.emit('registered', { userId });
   });
 
   socket.on('join_group', ({ groupId } = {}) => {
-    if (!groupId) return;
-    socket.join(`group:${groupId}`);
+    const userId = socket.data.userId;
+    if (!groupId || !userId) return;
+    ensureGroupMember(groupId, userId, (allowed) => {
+      if (!allowed) {
+        socket.emit('group_join_error', { groupId, error: 'forbidden' });
+        return;
+      }
+      socket.join(`group:${groupId}`);
+    });
   });
 
   socket.on('leave_group', ({ groupId } = {}) => {
@@ -182,14 +243,22 @@ io.on('connection', (socket) => {
     );
   });
 
-  socket.on('typing', ({ groupId, userId } = {}) => {
+  socket.on('typing', ({ groupId } = {}) => {
+    const userId = socket.data.userId;
     if (!groupId || !userId) return;
-    socket.to(`group:${groupId}`).emit('user_typing', { groupId, userId });
+    ensureGroupMember(groupId, userId, (allowed) => {
+      if (!allowed) return;
+      socket.to(`group:${groupId}`).emit('user_typing', { groupId, userId });
+    });
   });
 
-  socket.on('stop_typing', ({ groupId, userId } = {}) => {
+  socket.on('stop_typing', ({ groupId } = {}) => {
+    const userId = socket.data.userId;
     if (!groupId || !userId) return;
-    socket.to(`group:${groupId}`).emit('user_stopped_typing', { groupId, userId });
+    ensureGroupMember(groupId, userId, (allowed) => {
+      if (!allowed) return;
+      socket.to(`group:${groupId}`).emit('user_stopped_typing', { groupId, userId });
+    });
   });
 
   socket.on('disconnect', () => {});
@@ -214,7 +283,7 @@ async function start() {
   sanitizeLegacyAvatarUrls();
   sanitizeThreadBlobAttachments();
 
-  app.use('/api/auth', require('./routes/auth')(db));
+  app.use('/api/auth', authLimiter, require('./routes/auth')(db));
   app.use('/api/users', require('./routes/users')(db, io));
   app.use('/api/threads', require('./routes/threads')(db, io));
   app.use('/api/groups', require('./routes/groups')(db, io));
@@ -225,6 +294,11 @@ async function start() {
   app.use('/api/admin', require('./routes/admin')(db));
   app.use('/api/reports', require('./routes/reports')(db));
   app.use('/api', require('./routes/upload')());
+
+  app.use((err, _req, res, _next) => {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  });
 
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -47,7 +47,7 @@ export default function EmojiPicker({ onEmojiSelect, isOpen: externalIsOpen, onC
           }
         }}
         className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
-        title="Add emoji"
+        title="Pievienot emocijzīmi"
       >
         <FaceSmileIcon className="h-5 w-5 text-secondary-500" />
       </button>

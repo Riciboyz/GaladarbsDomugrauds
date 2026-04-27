@@ -79,17 +79,17 @@ export default function RealtimeNotificationsProvider() {
   const getNotificationMessage = (notification: any) => {
     switch (notification.type) {
       case 'like':
-        return `${notification.fromUser?.displayName || 'Someone'} liked your thread`
+        return `${notification.fromUser?.displayName || 'Kāds'} atzīmēja ar "patīk" tavu domu`
       case 'dislike':
-        return `${notification.fromUser?.displayName || 'Someone'} disliked your thread`
+        return `${notification.fromUser?.displayName || 'Kāds'} atzīmēja ar "nepatīk" tavu domu`
       case 'comment':
-        return `${notification.fromUser?.displayName || 'Someone'} commented on your thread`
+        return `${notification.fromUser?.displayName || 'Kāds'} komentēja tavu domu`
       case 'follow':
-        return `${notification.fromUser?.displayName || 'Someone'} started following you`
+        return `${notification.fromUser?.displayName || 'Kāds'} sāka tev sekot`
       case 'dm':
         return notification.message || 'Jauna privātā ziņa'
       default:
-        return notification.message || 'New notification'
+        return notification.message || 'Jauns paziņojums'
     }
   }
 
@@ -121,14 +121,14 @@ export default function RealtimeNotificationsProvider() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="heading-1 text-ink">Notifications</h1>
+            <h1 className="heading-1 text-ink">Paziņojumi</h1>
             <div className="flex items-center gap-2 mt-1">
               <p className="body-regular text-ink-muted">
-                {unreadCount > 0 ? `${unreadCount} unread notifications` : 'All caught up!'}
+                {unreadCount > 0 ? `${unreadCount} nelasīti paziņojumi` : 'Viss izlasīts!'}
               </p>
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
               <span className="text-xs text-ink-muted">
-                {isConnected ? 'Live updates' : 'Offline'}
+                {isConnected ? 'Tiešraides atjauninājumi' : 'Bezsaistē'}
               </span>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function RealtimeNotificationsProvider() {
               onClick={handleMarkAllAsRead}
               className="btn-secondary text-sm"
             >
-              Mark all as read
+              Atzīmēt visus kā izlasītus
             </button>
           )}
         </div>
@@ -149,10 +149,10 @@ export default function RealtimeNotificationsProvider() {
           <div className="card p-12 text-center">
             <BellIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
             <h3 className="heading-3 text-ink mb-2">
-              No notifications yet
+              Pagaidām nav paziņojumu
             </h3>
             <p className="body-regular text-ink-muted">
-              When you get notifications, they'll appear here automatically
+              Kad saņemsi paziņojumus, tie šeit parādīsies automātiski
             </p>
           </div>
         ) : (
@@ -177,7 +177,7 @@ export default function RealtimeNotificationsProvider() {
                       <div className="flex-1">
                         <p className={`body-regular ${
                           notification.read || (notification as any).is_read ? 'text-ink-muted' : 'text-ink'
-                        }`}>
+                        } break-words [overflow-wrap:anywhere] whitespace-pre-wrap`}>
                           {getNotificationMessage(notification)}
                         </p>
                         <p className={`text-sm mt-1 ${

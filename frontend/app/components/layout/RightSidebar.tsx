@@ -117,15 +117,15 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <img
-                    src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.displayName || 'User'}&background=22c55e&color=fff`}
-                    alt={user?.displayName || 'User'}
+                    src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.displayName || 'Lietotājs'}&background=22c55e&color=fff`}
+                    alt={user?.displayName || 'Lietotājs'}
                     className="w-12 h-12 rounded-2xl object-cover shadow-dg-sm"
                   />
                   <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-fg text-[10px] font-bold flex items-center justify-center shadow-dg-sm">✨</span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-ink-muted">Welcome back</p>
-                  <p className="font-semibold text-ink truncate">{user?.displayName || 'DomuGrauds user'}</p>
+                  <p className="text-sm text-ink-muted">Prieks tevi redzēt atpakaļ</p>
+                  <p className="font-semibold text-ink truncate">{user?.displayName || 'DomuGrauds lietotājs'}</p>
                 </div>
               </div>
               {/* Removed stats grid for a cleaner header */}
@@ -138,13 +138,13 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
               <div className="p-5">
                 <div className="flex items-center gap-2 text-accent">
                   <CalendarDaysIcon className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Today’s Topic</span>
+                  <span className="text-sm font-semibold">Šodienas tēma</span>
                 </div>
                 <h3
                   className="mt-2 font-playfair text-xl leading-snug text-ink cursor-pointer hover:text-accent transition-colors"
                   onClick={() => todayTopic && onOpenTopicSubmission?.(todayTopic.id)}
                 >
-                  {todayTopic.title || 'Daily Thoughts'}
+                  {todayTopic.title || 'Dienas domas'}
                 </h3>
                 {todayTopic.description && (
                   <p className="mt-1 text-sm text-ink-muted line-clamp-3">{todayTopic.description}</p>
@@ -153,15 +153,15 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
                   onClick={() => todayTopic && onOpenTopicSubmission?.(todayTopic.id)}
                   className="mt-4 inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-accent text-accent-fg text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
-                  Share your take
+                  Dalies ar savu viedokli
                   <ArrowTopRightOnSquareIcon className="h-4 w-4" />
                 </button>
                 {todaysTop.length > 0 && (
                   <div className="mt-4 space-y-2">
                     {todaysTop.map(item => (
                       <a key={item.id} href={`#thread-${item.id}`} className="block group">
-                        <p className="text-sm text-ink line-clamp-2 group-hover:underline">{item.title || 'Untitled'}</p>
-                        <p className="text-xs text-ink-muted">Score {item.score}</p>
+                        <p className="text-sm text-ink line-clamp-2 group-hover:underline">{item.title || 'Bez virsraksta'}</p>
+                        <p className="text-xs text-ink-muted">Punkti {item.score}</p>
                       </a>
                     ))}
                   </div>
@@ -175,11 +175,11 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
             <div className="p-5">
               <div className="flex items-center gap-2 text-ink">
                 <SparklesIcon className="h-5 w-5" />
-                <span className="text-sm font-semibold">Discover people</span>
+                <span className="text-sm font-semibold">Atklāj cilvēkus</span>
               </div>
               <div className="mt-3 space-y-3">
                 {suggestedUsers.length === 0 && (
-                  <p className="text-sm text-ink-muted">Fresh suggestions will appear here.</p>
+                  <p className="text-sm text-ink-muted">Šeit parādīsies jauni ieteikumi.</p>
                 )}
                 {suggestedUsers.map(suggestedUser => (
                   <div key={suggestedUser.id} className="flex items-center justify-between">
@@ -198,7 +198,7 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
                       onClick={() => followUser(suggestedUser.id)}
                       className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-accent-fg bg-accent hover:bg-accent-hover transition-colors"
                     >
-                      <UserPlusIcon className="h-4 w-4" /> Follow
+                      <UserPlusIcon className="h-4 w-4" /> Sekot
                     </button>
                   </div>
                 ))}
@@ -212,12 +212,12 @@ export default function RightSidebar({ onOpenTopicSubmission }: RightSidebarProp
               <div className="p-5">
                 <div className="flex items-center gap-2 text-ink">
                   <BellIcon className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Notifications</span>
+                  <span className="text-sm font-semibold">Paziņojumi</span>
                   <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{unreadCount}</span>
                 </div>
-                <p className="mt-2 text-sm text-ink-muted">You have {unreadCount} unread notifications</p>
+                <p className="mt-2 text-sm text-ink-muted">Tev ir {unreadCount} nelasīti paziņojumi</p>
                 <button className="mt-3 text-sm text-accent hover:text-accent-hover font-medium">
-                  View all notifications
+                  Skatīt visus paziņojumus
                 </button>
               </div>
             </section>

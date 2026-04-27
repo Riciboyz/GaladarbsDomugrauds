@@ -130,12 +130,12 @@ export default function KeyboardShortcuts({
 
 export function KeyboardShortcutsHelp() {
   const shortcuts = [
-    { keys: ['Ctrl', 'K'], description: 'Search' },
+    { keys: ['Ctrl', 'K'], description: 'Meklēšana' },
     { keys: ['Ctrl', 'N'], description: 'New Thread' },
     { keys: ['Ctrl', '1'], description: 'Home' },
     { keys: ['Ctrl', '2'], description: 'Profile' },
     { keys: ['Ctrl', '3'], description: 'Notifications' },
-    { keys: ['Ctrl', '4'], description: 'Search' },
+    { keys: ['Ctrl', '4'], description: 'Meklēšana' },
     { keys: ['Ctrl', '5'], description: 'Groups' },
     { keys: ['Ctrl', ','], description: 'Settings' },
     { keys: ['1-5'], description: 'Quick navigation' },

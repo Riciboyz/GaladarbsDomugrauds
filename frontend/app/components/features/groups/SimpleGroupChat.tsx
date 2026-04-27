@@ -10,6 +10,7 @@ import {
   PaperClipIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
+import { INPUT_LIMITS, remainingChars } from '../../constants/inputLimits'
 
 interface SimpleGroupChatProps {
   group: any
@@ -127,7 +128,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send message')
+        throw new Error(data.error || 'Neizdevās nosūtīt ziņu')
       }
       setNewMessage('')
       if (!isConnected) {
@@ -136,7 +137,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
       }
     } catch (error) {
       console.error('❌ SimpleGroupChat: Error sending message:', error)
-      showError('Send Message', 'Failed to send message')
+      showError('Ziņas sūtīšana', 'Neizdevās nosūtīt ziņu')
     }
   }
 
@@ -146,7 +147,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
 
     // Validate file size (50MB max)
     if (file.size > 50 * 1024 * 1024) {
-      showError('File Too Large', 'File must be less than 50MB')
+      showError('Fails pārāk liels', 'Failam jābūt mazākam par 50 MB')
       return
     }
 
@@ -185,7 +186,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
       const uploadData = await uploadResponse.json()
       
       if (!uploadResponse.ok) {
-        throw new Error(uploadData.error || 'Upload failed')
+        throw new Error(uploadData.error || 'Augšupielāde neizdevās')
       }
 
       // Send file message
@@ -193,7 +194,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
       if (isConnected) {
         const sent = sendGroupMessage(group.id, content, messageType, uploadData.url)
         if (sent) {
-          success('File Sent', 'File uploaded and sent successfully!')
+          success('Fails nosūtīts', 'Fails veiksmīgi augšupielādēts un nosūtīts!')
           return
         }
       }
@@ -213,17 +214,17 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
       const messageData = await messageResponse.json()
       
       if (!messageResponse.ok) {
-        throw new Error(messageData.error || 'Failed to send file')
+        throw new Error(messageData.error || 'Neizdevās nosūtīt failu')
       }
 
       if (!isConnected) {
         await loadMessages()
       }
-      success('File Sent', 'File uploaded and sent successfully!')
+      success('Fails nosūtīts', 'Fails veiksmīgi augšupielādēts un nosūtīts!')
       
     } catch (error) {
       console.error('❌ SimpleGroupChat: Error uploading file:', error)
-      showError('Upload Failed', 'Failed to upload file. Please try again.')
+      showError('Augšupielāde neizdevās', 'Neizdevās augšupielādēt failu. Mēģini vēlreiz.')
     } finally {
       setIsUploading(false)
       e.target.value = ''
@@ -236,9 +237,9 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
     const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
     
     if (diffInMinutes < 1) {
-      return 'just now'
+      return 'tikko'
     } else if (diffInMinutes < 60) {
-      return `${Math.floor(diffInMinutes)}m ago`
+      return `pirms ${Math.floor(diffInMinutes)} min`
     } else if (diffInMinutes < 1440) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     } else {
@@ -266,16 +267,18 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                   </span>
                 )}
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center space-x-2">
-                  <h3 className="heading-4 text-ink">{group?.name || 'Group Chat'}</h3>
+                  <h3 className="heading-4 text-ink truncate max-w-[50vw] lg:max-w-[26rem]">
+                    {group?.name || 'Grupas čats'}
+                  </h3>
                   <div className={`w-2 h-2 rounded-full ${
                     isConnected ? 'bg-green-500' : 'bg-red-500'
-                  }`} title={isConnected ? 'Connected' : 'Disconnected'}></div>
+                  }`} title={isConnected ? 'Savienots' : 'Atvienots'}></div>
                 </div>
                 <p className="text-sm text-ink-muted">
-                  {group?.memberCount || group?.members?.length || 0} members
-                  {isConnected && ' • Real-time enabled'}
+                  {group?.memberCount || group?.members?.length || 0} dalībnieki
+                  {isConnected && ' • Tiešraide ieslēgta'}
                 </p>
               </div>
             </div>
@@ -296,7 +299,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
               </div>
             ) : messages.length === 0 ? (
               <div className="flex items-center justify-center h-32">
-                <p className="text-ink-muted">No messages yet. Start the conversation!</p>
+                <p className="text-ink-muted">Vēl nav ziņu. Sāc sarunu!</p>
               </div>
             ) : (
               <>
@@ -328,12 +331,14 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                             @{message.username}
                           </p>
                         )}
-                        <p className="text-sm">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                          {message.content}
+                        </p>
                         {message.message_type === 'image' && message.attachment_url && (
                           <div className="mt-2">
                             <img 
                               src={message.attachment_url} 
-                              alt="Chat image"
+                              alt="Čata attēls"
                               className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => setSelectedImage(message.attachment_url || '')}
                             />
@@ -349,9 +354,11 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                             >
                               <PaperClipIcon className="w-4 h-4 text-ink-muted" />
                               <span className="text-sm font-medium text-ink">
-                                {message.content.replace(/^[^\s]+ /, '')}
+                                <span className="break-words [overflow-wrap:anywhere]">
+                                  {message.content.replace(/^[^\s]+ /, '')}
+                                </span>
                               </span>
-                              <span className="text-xs text-ink-muted">Download</span>
+                              <span className="text-xs text-ink-muted">Lejupielādēt</span>
                             </a>
                           </div>
                         )}
@@ -377,17 +384,21 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder="Raksti ziņu..."
                   className="input pr-12"
                   disabled={!user}
+                  maxLength={INPUT_LIMITS.threadContent}
                 />
+                <p className="mt-1 text-right text-xs text-ink-muted">
+                  {remainingChars(INPUT_LIMITS.threadContent, newMessage)} atlikuši
+                </p>
                 
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="btn-icon text-ink-muted/60 hover:text-ink"
-                    title="Attach files"
+                    title="Pievienot failus"
                   >
                     <PaperClipIcon className="w-4 h-4" />
                   </button>
@@ -401,7 +412,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
                         ? 'text-ink-muted/40 cursor-not-allowed' 
                         : 'text-ink-muted/60 hover:text-ink'
                     }`}
-                    title={isUploading ? 'Uploading...' : 'Attach image'}
+                    title={isUploading ? 'Augšupielādē...' : 'Pievienot attēlu'}
                   >
                     {isUploading ? (
                       <div className="w-4 h-4 border-2 border-border-ui border-t-ink rounded-full animate-spin"></div>
@@ -447,7 +458,7 @@ export default function SimpleGroupChat({ group, onClose }: SimpleGroupChatProps
             </button>
             <img 
               src={selectedImage} 
-              alt="Enlarged chat image"
+              alt="Palielināts čata attēls"
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />

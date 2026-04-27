@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext'
 import Button from '../../ui/Button'
 import Input from '../../ui/Input'
 import EmojiPicker from '../../ui/EmojiPicker'
+import { INPUT_LIMITS, remainingChars } from '../../constants/inputLimits'
 import { 
   XMarkIcon, 
   PhotoIcon, 
@@ -47,12 +48,12 @@ export default function SimpleCreateThread({
     e.preventDefault()
     
     if (!content.trim()) {
-      showError('Error', 'Please enter some content for your thread')
+      showError('Kļūda', 'Lūdzu ievadi tekstu savai domai')
       return
     }
     
     if (!user) {
-      showError('Error', 'Please log in to create a thread')
+      showError('Kļūda', 'Lūdzu pieslēdzies, lai izveidotu domu')
       return
     }
 
@@ -77,7 +78,7 @@ export default function SimpleCreateThread({
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create thread')
+        throw new Error(errorData.error || 'Neizdevās izveidot domu')
       }
 
       const data = await response.json()
@@ -114,7 +115,7 @@ export default function SimpleCreateThread({
         
         // Do not send WS here; API already broadcasts to WS server to avoid duplicates
         
-        success('Success', 'Thread posted successfully!')
+        success('Veiksmīgi', 'Doma veiksmīgi publicēta!')
         
         // Force refresh threads as fallback
         setTimeout(() => {
@@ -129,11 +130,11 @@ export default function SimpleCreateThread({
         onThreadCreated?.()
         onClose()
       } else {
-        throw new Error(data.error || 'Failed to create thread')
+        throw new Error(data.error || 'Neizdevās izveidot domu')
       }
     } catch (error) {
       console.error('Error creating thread:', error)
-      showError('Error', `Failed to create thread: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      showError('Kļūda', `Neizdevās izveidot domu: ${error instanceof Error ? error.message : 'Nezināma kļūda'}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -156,11 +157,11 @@ export default function SimpleCreateThread({
       const uploaded: string[] = []
       for (const file of Array.from(files)) {
         if (!file.type.startsWith('image/')) {
-          showError('Error', 'Only image files are allowed')
+          showError('Kļūda', 'Atļauti tikai attēlu faili')
           continue
         }
         if (file.size > 5 * 1024 * 1024) {
-          showError('Error', `${file.name}: image must be under 5MB`)
+          showError('Kļūda', `${file.name}: attēlam jābūt mazākam par 5 MB`)
           continue
         }
 
@@ -181,7 +182,7 @@ export default function SimpleCreateThread({
         }
 
         if (!response.ok || !data?.success || !data.url) {
-          showError('Upload failed', data?.error || `Could not upload ${file.name}`)
+          showError('Augšupielāde neizdevās', data?.error || `Neizdevās augšupielādēt ${file.name}`)
           continue
         }
 
@@ -203,7 +204,7 @@ export default function SimpleCreateThread({
       }
     } catch (err) {
       console.error('Error uploading image(s):', err)
-      showError('Upload failed', 'Network error while uploading image')
+      showError('Augšupielāde neizdevās', 'Tīkla kļūda attēla augšupielādes laikā')
     } finally {
       setIsUploading(false)
       // Clear the input so selecting the same file again re-triggers onChange.
@@ -286,13 +287,16 @@ export default function SimpleCreateThread({
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder={parentId ? "Write your reply..." : "What's happening?"}
+                placeholder={parentId ? "Raksti atbildi..." : "Kas notiek?"}
                 className="w-full h-32 px-4 py-3 border border-border-ui bg-surface rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none text-ink placeholder-ink-muted text-sm"
                 disabled={isSubmitting}
-                maxLength={500}
+                maxLength={INPUT_LIMITS.threadContent}
               />
               <div className="flex justify-between items-center mt-2">
-                <span className="text-xs text-ink-muted">{content.length}/500</span>
+                <span className="text-xs text-ink-muted">{content.length}/{INPUT_LIMITS.threadContent}</span>
+                <span className="text-xs text-ink-muted">
+                  {remainingChars(INPUT_LIMITS.threadContent, content)} atlikuši
+                </span>
               </div>
             </div>
 
@@ -324,9 +328,11 @@ export default function SimpleCreateThread({
             {/* Content Preview */}
             {content && (
               <div className="mb-6 p-4 bg-surface rounded-lg border border-border-ui">
-                <p className="text-sm text-ink-muted mb-2">Preview:</p>
+                <p className="text-sm text-ink-muted mb-2">Priekšskatījums:</p>
                 <div className="text-sm text-ink">
-                  {renderContent(content)}
+                  <span className="break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
+                    {renderContent(content)}
+                  </span>
                 </div>
               </div>
             )}
@@ -375,7 +381,7 @@ export default function SimpleCreateThread({
                   onClick={onClose}
                   variant="ghost"
                 >
-                  Cancel
+                  Atcelt
                 </Button>
                 <Button
                   type="submit"
@@ -383,7 +389,7 @@ export default function SimpleCreateThread({
                   loading={isSubmitting}
                   leftIcon={<PaperAirplaneIcon className="w-4 h-4" />}
                 >
-                  {isSubmitting ? 'Posting...' : parentId ? 'Reply' : 'Post'}
+                  {isSubmitting ? 'Publicē...' : parentId ? 'Atbildēt' : 'Publicēt'}
                 </Button>
               </div>
             </div>

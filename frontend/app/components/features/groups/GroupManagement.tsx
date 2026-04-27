@@ -74,7 +74,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       if (data.groupId === group.id) {
         console.log('📨 GroupManagement: Member added:', data)
         loadGroupMembers() // Reload members
-        success('Member Added', 'New member added to group!')
+        success('Dalībnieks pievienots', 'Grupai pievienots jauns dalībnieks!')
       }
     }
 
@@ -83,7 +83,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       if (data.groupId === group.id) {
         console.log('📨 GroupManagement: Member removed:', data)
         loadGroupMembers() // Reload members
-        success('Member Removed', 'Member removed from group!')
+        success('Dalībnieks noņemts', 'Dalībnieks noņemts no grupas!')
       }
     }
 
@@ -134,15 +134,15 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       const data = await response.json()
       
       if (response.ok) {
-        success('Success', 'Group updated successfully!')
+        success('Veiksmīgi', 'Grupa veiksmīgi atjaunināta!')
         setIsEditing(false)
         onUpdate()
       } else {
-        throw new Error(data.error || 'Failed to update group')
+        throw new Error(data.error || 'Neizdevās atjaunināt grupu')
       }
     } catch (error) {
       console.error('Error updating group:', error)
-      showError('Error', 'Failed to update group. Please try again.')
+      showError('Kļūda', 'Neizdevās atjaunināt grupu. Mēģini vēlreiz.')
     }
   }
 
@@ -160,15 +160,15 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       console.log('📡 Delete response:', response.status, data)
       
       if (response.ok) {
-        success('Success', 'Group deleted successfully!')
+        success('Veiksmīgi', 'Grupa veiksmīgi izdzēsta!')
         onUpdate()
         onClose()
       } else {
-        throw new Error(data.error || 'Failed to delete group')
+        throw new Error(data.error || 'Neizdevās dzēst grupu')
       }
     } catch (error) {
       console.error('❌ Error deleting group:', error)
-      showError('Error', 'Failed to delete group. Please try again.')
+      showError('Kļūda', 'Neizdevās dzēst grupu. Mēģini vēlreiz.')
     }
   }
 
@@ -185,14 +185,14 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       const data = await response.json()
       
       if (response.ok) {
-        success('Member Removed', 'Member removed successfully!')
+        success('Dalībnieks noņemts', 'Dalībnieks veiksmīgi noņemts!')
         loadGroupMembers()
       } else {
-        throw new Error(data.error || 'Failed to remove member')
+        throw new Error(data.error || 'Neizdevās noņemt dalībnieku')
       }
     } catch (error) {
       console.error('Error removing member:', error)
-      showError('Remove Member', 'Failed to remove member. Please try again.')
+      showError('Dalībnieka noņemšana', 'Neizdevās noņemt dalībnieku. Mēģini vēlreiz.')
     }
   }
 
@@ -215,7 +215,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
       })
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to add member')
+        throw new Error(data.error || 'Neizdevās pievienot dalībnieku')
       }
       success('Pievienots', 'Lietotājs pievienots grupai.')
       loadGroupMembers()
@@ -236,7 +236,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="card-elevated w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-border-ui">
-          <h3 className="heading-3 text-ink">Group Management</h3>
+          <h3 className="heading-3 text-ink">Grupas pārvaldība</h3>
           <button
             onClick={onClose}
             className="btn-icon"
@@ -262,7 +262,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                 <div className="flex items-center space-x-4 mt-2 text-sm text-ink-muted">
                   <div className="flex items-center space-x-1">
                     <UsersIcon className="w-4 h-4" />
-                    <span>{group.memberCount || group.members?.length || 0} members</span>
+                    <span>{group.memberCount || group.members?.length || 0} dalībnieki</span>
                   </div>
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -285,7 +285,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
               className="btn-secondary flex items-center space-x-2"
             >
               <PencilIcon className="w-4 h-4" />
-              <span>{isEditing ? 'Cancel Edit' : 'Edit Group'}</span>
+              <span>{isEditing ? 'Atcelt rediģēšanu' : 'Rediģēt grupu'}</span>
             </button>
             
             <button
@@ -293,7 +293,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
               className="btn-secondary flex items-center space-x-2"
             >
               <UsersIcon className="w-4 h-4" />
-              <span>{showMemberManagement ? 'Hide Members' : 'Manage Members'}</span>
+              <span>{showMemberManagement ? 'Paslēpt dalībniekus' : 'Pārvaldīt dalībniekus'}</span>
             </button>
             
             <button
@@ -301,39 +301,39 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
               className="btn-secondary text-red-500 hover:text-red-400 flex items-center space-x-2"
             >
               <TrashIcon className="w-4 h-4" />
-              <span>Delete Group</span>
+              <span>Dzēst grupu</span>
             </button>
           </div>
 
           {/* Edit Form */}
           {isEditing && (
             <form onSubmit={handleUpdateGroup} className="space-y-4 p-4 bg-surface rounded-lg">
-              <h5 className="heading-5 text-ink">Edit Group Details</h5>
+              <h5 className="heading-5 text-ink">Rediģēt grupas detaļas</h5>
               
               <div>
-                <label className="block text-sm font-medium text-ink-muted mb-2">Group Name</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Grupas nosaukums</label>
                 <input
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                   className="input"
-                  placeholder="Enter group name"
+                  placeholder="Ievadi grupas nosaukumu"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-ink-muted mb-2">Description</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Apraksts</label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                   className="input-textarea h-24"
-                  placeholder="Describe what this group is about..."
+                  placeholder="Apraksti, par ko ir šī grupa..."
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-ink-muted mb-2">Avatar URL</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Avatara URL</label>
                 <input
                   type="url"
                   value={editForm.avatar}
@@ -355,7 +355,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                   type="submit"
                   className="btn-primary"
                 >
-                  Save Changes
+                  Saglabāt izmaiņas
                 </button>
               </div>
             </form>
@@ -365,8 +365,8 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
           {showMemberManagement && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h5 className="heading-5 text-ink">Group Members</h5>
-                <span className="text-sm text-ink-muted">{members.length} members</span>
+                <h5 className="heading-5 text-ink">Grupas dalībnieki</h5>
+                <span className="text-sm text-ink-muted">{members.length} dalībnieki</span>
               </div>
 
               {group.visibility === 'private' && (
@@ -412,7 +412,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                 {members.length === 0 ? (
                   <div className="text-center py-8 text-ink-muted">
                     <UsersIcon className="w-12 h-12 mx-auto mb-2 text-ink-muted/50" />
-                    <p>No members found</p>
+                    <p>Dalībnieki nav atrasti</p>
                   </div>
                 ) : (
                   members.map((member) => (
@@ -432,7 +432,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                           <p className="text-xs text-ink-muted">@{member.username}</p>
                           {member.id === group.createdBy && (
                             <span className="inline-block px-2 py-1 text-xs font-medium text-accent bg-accent/15 rounded-full mt-1">
-                              Creator
+                              Izveidotājs
                             </span>
                           )}
                         </div>
@@ -442,7 +442,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                         <button
                           onClick={() => handleRemoveMember(member.id)}
                           className="p-2 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Remove member"
+                          title="Noņemt dalībnieku"
                         >
                           <UserMinusIcon className="w-4 h-4" />
                         </button>
@@ -458,9 +458,9 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
           {/* Delete Confirmation */}
           {showDeleteConfirm && (
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <h5 className="heading-5 text-red-500 mb-2">Delete Group</h5>
+              <h5 className="heading-5 text-red-500 mb-2">Dzēst grupu</h5>
               <p className="body-regular text-ink mb-4">
-                Are you sure you want to delete "{group.name}"? This action cannot be undone and will remove all group data including messages and member information.
+                Vai tiešām vēlies dzēst "{group.name}"? Šo darbību nevar atsaukt, un tā dzēsīs visus grupas datus, ieskaitot ziņas un dalībnieku informāciju.
               </p>
               <div className="flex items-center justify-end space-x-3">
                 <button
@@ -474,7 +474,7 @@ export default function GroupManagement({ group, onClose, onUpdate }: GroupManag
                   className="btn-secondary text-red-500 hover:text-red-400 flex items-center space-x-2"
                 >
                   <TrashIcon className="w-4 h-4" />
-                  <span>Delete Group</span>
+                  <span>Dzēst grupu</span>
                 </button>
               </div>
             </div>

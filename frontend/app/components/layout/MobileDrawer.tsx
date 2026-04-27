@@ -74,7 +74,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
       <aside
         role="dialog"
         aria-modal="true"
-        aria-label="Navigation"
+        aria-label="Navigācija"
         className={`lg:hidden fixed left-0 top-0 h-full w-[86%] max-w-[340px] bg-surface-2 z-50 shadow-2xl transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -106,7 +106,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             <div className="flex items-center gap-3.5">
               <img
                 src={avatarUrl}
-                alt={user?.displayName || 'User'}
+                alt={user?.displayName || 'Lietotājs'}
                 className="w-14 h-14 rounded-2xl object-cover ring-2 ring-surface-2 shadow-md"
               />
               <div className="flex-1 min-w-0">

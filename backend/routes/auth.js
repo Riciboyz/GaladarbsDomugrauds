@@ -54,7 +54,6 @@ module.exports = function (db) {
           res.cookie('auth-token', token, authCookieOptions());
           res.json({
             success: true,
-            token,
             user: { id: userId, username, email, displayName: display_name || username, role: 'user' }
           });
         }
@@ -71,12 +70,11 @@ module.exports = function (db) {
       if (err) return res.status(500).json({ error: 'Database error' });
       if (!row) return res.status(401).json({ error: 'Invalid credentials' });
 
-      let ok = false;
-      if (row.password_hash && String(row.password_hash).startsWith('$2')) {
-        ok = bcrypt.compareSync(password, row.password_hash);
-      } else {
-        ok = password === row.password_hash;
+      const hash = String(row.password_hash || '');
+      if (!hash.startsWith('$2')) {
+        return res.status(401).json({ error: 'Invalid credentials' });
       }
+      const ok = bcrypt.compareSync(password, hash);
       if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
       if (row.deleted_at) return res.status(403).json({ error: 'Account deleted' });
@@ -88,7 +86,6 @@ module.exports = function (db) {
       res.cookie('auth-token', token, authCookieOptions());
       res.json({
         success: true,
-        token,
         user: {
           id: row.id,
           username: row.username,

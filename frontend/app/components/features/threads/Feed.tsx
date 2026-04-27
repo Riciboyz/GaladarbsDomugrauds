@@ -33,7 +33,7 @@ export default function Feed({ onUserClick }: FeedProps) {
   const [filter, setFilter] = useState<Filter>('all')
   const [showCreateThread, setShowCreateThread] = useState(false)
   const { loading, error, execute } = useLoading({
-    onError: (error) => showError('Error', `Failed to load threads: ${error.message}`)
+    onError: (error) => showError('Kļūda', `Neizdevās ielādēt domas: ${error.message}`)
   })
   
 
@@ -125,7 +125,7 @@ export default function Feed({ onUserClick }: FeedProps) {
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span className="text-xs text-ink-muted">
-                {isConnected ? 'Live' : 'Offline'}
+                {isConnected ? 'Tiešraide' : 'Bezsaistē'}
               </span>
             </div>
           </div>

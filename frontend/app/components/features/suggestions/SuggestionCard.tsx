@@ -88,7 +88,9 @@ export default function SuggestionCard(props: TopicProps | FeatureProps) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-ink break-words">{suggestion.title}</h3>
+            <h3 className="text-lg font-semibold text-ink break-words [overflow-wrap:anywhere]">
+              {suggestion.title}
+            </h3>
             <div className="flex items-center gap-2 shrink-0">
               {kind === 'feature' && (
                 <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface text-ink-muted border border-border-ui">
@@ -101,7 +103,7 @@ export default function SuggestionCard(props: TopicProps | FeatureProps) {
           </div>
 
           {suggestion.description && (
-            <p className="text-ink-muted text-sm whitespace-pre-wrap mb-3">
+            <p className="text-ink-muted text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] mb-3">
               {suggestion.description}
             </p>
           )}
@@ -115,7 +117,7 @@ export default function SuggestionCard(props: TopicProps | FeatureProps) {
           )}
 
           {suggestion.admin_note && (
-            <div className="mb-3 text-xs bg-surface border border-border-ui rounded-lg p-2.5 text-ink-muted">
+            <div className="mb-3 text-xs bg-surface border border-border-ui rounded-lg p-2.5 text-ink-muted break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
               <span className="font-semibold text-ink">Admin piezīme:</span>{' '}
               {suggestion.admin_note}
             </div>

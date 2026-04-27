@@ -41,7 +41,7 @@ export default function MobileBottomNav({
 }: MobileBottomNavProps) {
   return (
     <nav
-      aria-label="Primary"
+      aria-label="Galvenā navigācija"
       className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface-2/85 backdrop-blur-xl border-t border-border-ui/70 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >

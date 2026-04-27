@@ -89,20 +89,20 @@ export default function DailyTopicBanner({ onTopicClick }: DailyTopicBannerProps
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <CalendarIcon className="w-6 h-6 text-accent" />
-            <h2 className="text-xl font-semibold text-ink">Daily Topic</h2>
+            <h2 className="text-xl font-semibold text-ink">Dienas tēma</h2>
           </div>
           <h3 className="text-xl font-semibold text-ink mb-1">{topic.title}</h3>
           {topic.description && (
             <p className="text-ink-muted text-sm mb-2 leading-relaxed">{topic.description}</p>
           )}
           <div className="flex items-center gap-4 text-ink-muted text-sm">
-            <span>Created by {topic.created_by_display_name}</span>
+            <span>Izveidoja {topic.created_by_display_name}</span>
             <span>•</span>
             <span>{new Date(topic.created_at).toLocaleDateString()}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 text-accent">
-          <span className="text-sm font-medium">Participate</span>
+          <span className="text-sm font-medium">Piedalīties</span>
           <ArrowRightIcon className="w-5 h-5" />
         </div>
       </div>

@@ -76,15 +76,15 @@ export default function Search({ onUserClick, onStartDm }: SearchProps) {
   }
 
   const tabs = [
-    { id: 'users', name: 'Users', count: userSearchResults.length }
+    { id: 'users', name: 'Lietotāji', count: userSearchResults.length }
   ]
 
   return (
     <div className="max-w-2xl mx-auto">
       {/* Ultra-Minimal Header */}
       <div className="mb-6">
-        <h1 className="heading-1 text-ink">Search</h1>
-        <p className="body-regular text-ink-muted mt-1">Find people and connect with users</p>
+        <h1 className="heading-1 text-ink">Meklēšana</h1>
+        <p className="body-regular text-ink-muted mt-1">Atrodi cilvēkus un sazinies ar lietotājiem</p>
       </div>
 
       {/* Search Input */}
@@ -92,7 +92,7 @@ export default function Search({ onUserClick, onStartDm }: SearchProps) {
         <MagnifyingGlassIcon className="w-5 h-5 text-ink-muted/60 absolute left-3 top-1/2 transform -translate-y-1/2" />
         <input
           type="text"
-          placeholder="Search for users..."
+          placeholder="Meklēt lietotājus..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="input pl-10 pr-10"
@@ -135,7 +135,7 @@ export default function Search({ onUserClick, onStartDm }: SearchProps) {
           {isSearching ? (
             <div className="card p-12 text-center">
               <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="body-regular text-ink-muted">Searching...</p>
+              <p className="body-regular text-ink-muted">Meklē...</p>
             </div>
           ) : (
             <div>
@@ -145,9 +145,9 @@ export default function Search({ onUserClick, onStartDm }: SearchProps) {
                   {filteredUsers.length === 0 ? (
                     <div className="card p-12 text-center">
                       <UserIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
-                      <h3 className="heading-3 text-ink mb-2">No users found</h3>
+                      <h3 className="heading-3 text-ink mb-2">Lietotāji netika atrasti</h3>
                       <p className="body-regular text-ink-muted">
-                        Try searching with a different username or name
+                        Pamēģini meklēt ar citu lietotājvārdu vai vārdu
                       </p>
                     </div>
                   ) : (
@@ -198,12 +198,12 @@ export default function Search({ onUserClick, onStartDm }: SearchProps) {
                                 {followLoading === u.id ? (
                                   <div className="flex items-center space-x-1">
                                     <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
-                                    <span>Loading...</span>
+                                    <span>Ielādē...</span>
                                   </div>
                                 ) : isFollowing(u.id) ? (
-                                  'Unfollow'
+                                  'Atsekot'
                                 ) : (
-                                  'Follow'
+                                  'Sekot'
                                 )}
                               </button>
                             </div>
@@ -222,9 +222,9 @@ export default function Search({ onUserClick, onStartDm }: SearchProps) {
         /* Empty State */
         <div className="card p-12 text-center">
           <UserIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
-          <h3 className="heading-3 text-ink mb-2">Start searching for users</h3>
+          <h3 className="heading-3 text-ink mb-2">Sāc meklēt lietotājus</h3>
           <p className="body-regular text-ink-muted">
-            Enter a name or username to find people to connect with
+            Ievadi vārdu vai lietotājvārdu, lai atrastu cilvēkus saziņai
           </p>
         </div>
       )}

@@ -39,20 +39,20 @@ export default function AuthPage() {
     setLoading(true)
 
     if (!formData.email || !formData.password) {
-      setErrorMessage('Email and password are required')
+      setErrorMessage('E-pasts un parole ir obligāti')
       setLoading(false)
       return
     }
 
     if (!isLogin && (!formData.username || !formData.displayName)) {
-      setErrorMessage('Username and display name are required')
+      setErrorMessage('Lietotājvārds un redzamais vārds ir obligāti')
       setLoading(false)
       return
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
-      setErrorMessage('Please enter a valid email address')
+      setErrorMessage('Ievadi derīgu e-pasta adresi')
       setLoading(false)
       return
     }
@@ -73,7 +73,7 @@ export default function AuthPage() {
         return
       }
     } else if (formData.password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long')
+      setErrorMessage('Parolei jābūt vismaz 6 rakstzīmes garai')
       setLoading(false)
       return
     }
@@ -106,15 +106,15 @@ export default function AuthPage() {
       if (response.ok) {
         setUser(data.user)
         await loadThreadsFromAPI()
-        success('Welcome!', 'You have successfully logged in.')
+        success('Laipni lūgts!', 'Tu esi veiksmīgi pieslēdzies.')
       } else {
-        setErrorMessage(data.error || 'An error occurred')
-        showError('Login Failed', data.error || 'An error occurred')
+        setErrorMessage(data.error || 'Radās kļūda')
+        showError('Pieslēgšanās neizdevās', data.error || 'Radās kļūda')
       }
     } catch (error) {
       console.error('Auth error:', error)
-      setErrorMessage('Network error. Please try again.')
-      showError('Network Error', 'Please check your connection and try again.')
+      setErrorMessage('Tīkla kļūda. Mēģini vēlreiz.')
+      showError('Tīkla kļūda', 'Pārbaudi savienojumu un mēģini vēlreiz.')
     } finally {
       setLoading(false)
     }
@@ -137,57 +137,14 @@ export default function AuthPage() {
         await loadThreadsFromAPI()
         setTwoFactorRequired(false)
         setTwoFactorCode('')
-        success('Welcome!', 'You have successfully logged in.')
+        success('Laipni lūgts!', 'Tu esi veiksmīgi pieslēdzies.')
       } else {
-        setErrorMessage(data.error || 'Invalid code')
-        showError('2FA Failed', data.error || 'Invalid code')
+        setErrorMessage(data.error || 'Nederīgs kods')
+        showError('2FA neizdevās', data.error || 'Nederīgs kods')
       }
     } catch (err) {
-      setErrorMessage('Network error. Please try again.')
-      showError('Network Error', 'Please check your connection and try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleQuickLogin = async () => {
-    setFormData({
-      email: 'testuser1@example.com',
-      password: 'password123',
-      username: '',
-      displayName: '',
-      bio: ''
-    })
-    setLoading(true)
-    setErrorMessage('')
-
-    try {
-      const response = await fetch(`/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: 'testuser1@example.com',
-          password: 'password123'
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setUser(data.user)
-        await loadThreadsFromAPI()
-        success('Welcome!', 'Quick login successful.')
-      } else {
-        setErrorMessage(data.error || 'Quick login failed')
-        showError('Quick Login Failed', data.error || 'Quick login failed')
-      }
-    } catch (error) {
-      console.error('Quick login error:', error)
-      setErrorMessage('Quick login failed')
-      showError('Quick Login Failed', 'Please try again.')
+      setErrorMessage('Tīkla kļūda. Mēģini vēlreiz.')
+      showError('Tīkla kļūda', 'Pārbaudi savienojumu un mēģini vēlreiz.')
     } finally {
       setLoading(false)
     }
@@ -222,7 +179,7 @@ export default function AuthPage() {
                       : 'text-ink-muted hover:text-ink'
                   }`}
                 >
-                  Login
+                  Pieslēgties
                 </button>
                 <button
                   onClick={() => setIsLogin(false)}
@@ -232,7 +189,7 @@ export default function AuthPage() {
                       : 'text-ink-muted hover:text-ink'
                   }`}
                 >
-                  Sign Up
+                  Reģistrēties
                 </button>
               </div>
 
@@ -242,7 +199,7 @@ export default function AuthPage() {
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-ink mb-2">
-                    Email Address
+                    E-pasta adrese
                   </label>
                   <div className="relative">
                     <EnvelopeIcon
@@ -254,7 +211,7 @@ export default function AuthPage() {
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       className="w-full pl-10 pr-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
-                      placeholder="Enter your email"
+                      placeholder="Ievadi e-pastu"
                       required
                     />
                   </div>
@@ -263,7 +220,7 @@ export default function AuthPage() {
                 {/* Password */}
                 <div>
                   <label className="block text-sm font-medium text-ink mb-2">
-                    Password
+                    Parole
                   </label>
                   <div className="relative">
                     <LockClosedIcon
@@ -275,7 +232,7 @@ export default function AuthPage() {
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       className="w-full pl-10 pr-10 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
-                      placeholder="Enter your password"
+                      placeholder="Ievadi paroli"
                       required
                     />
                     <button
@@ -318,7 +275,7 @@ export default function AuthPage() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-ink mb-2">
-                        Username
+                        Lietotājvārds
                       </label>
                       <div className="relative">
                         <UserIcon
@@ -330,7 +287,7 @@ export default function AuthPage() {
                           value={formData.username}
                           onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                           className="w-full pl-10 pr-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
-                          placeholder="Choose a username"
+                          placeholder="Izvēlies lietotājvārdu"
                           required
                         />
                       </div>
@@ -338,27 +295,27 @@ export default function AuthPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-ink mb-2">
-                        Display Name
+                        Redzamais vārds
                       </label>
                       <input
                         type="text"
                         value={formData.displayName}
                         onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
                         className="w-full px-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm"
-                        placeholder="Your display name"
+                        placeholder="Tavs redzamais vārds"
                         required
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-ink mb-2">
-                        Bio (Optional)
+                        Bio (neobligāti)
                       </label>
                       <textarea
                         value={formData.bio}
                         onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                         className="w-full px-4 py-3 bg-surface-2 border border-border-ui rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-ink placeholder-ink-muted/70 text-sm resize-none h-20"
-                        placeholder="Tell us about yourself..."
+                        placeholder="Pastāsti nedaudz par sevi..."
                       />
                     </div>
                   </>
@@ -377,7 +334,7 @@ export default function AuthPage() {
                   disabled={loading}
                   className="w-full bg-accent text-accent-fg py-3 px-4 rounded-lg font-medium hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
-                  {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                  {loading ? 'Lūdzu uzgaidi...' : (isLogin ? 'Pieslēgties' : 'Izveidot kontu')}
                 </button>
               </form>
               ) : (
@@ -409,21 +366,11 @@ export default function AuthPage() {
                   disabled={loading}
                   className="w-full bg-accent text-accent-fg py-3 px-4 rounded-lg font-medium hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 >
-                  {loading ? 'Please wait...' : 'Verify Code'}
+                  {loading ? 'Lūdzu uzgaidi...' : 'Apstiprināt kodu'}
                 </button>
               </form>
               )}
 
-              {/* Ultra-Minimal Quick Login */}
-              <div className="mt-6 text-center">
-                <button
-                  onClick={handleQuickLogin}
-                  disabled={loading}
-                  className="text-sm text-ink-muted hover:text-accent font-medium transition-colors duration-200"
-                >
-                  Quick Test Login (testuser1@example.com)
-                </button>
-              </div>
             </div>
           </div>
         </div>

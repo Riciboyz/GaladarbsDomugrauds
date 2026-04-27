@@ -6,7 +6,6 @@ const {
   currentUserId,
   requireRole,
   assertUserCanCreateContent,
-  DEMO_USER_ID,
 } = require('../middleware/auth');
 const { toIsoUtc } = require('../helpers/utils');
 const { logAudit, touchLastActive } = require('../helpers/audit');
@@ -123,7 +122,7 @@ module.exports = function (db, io) {
   }
 
   function fetchMyVote(suggestionId, userId, cb) {
-    if (!userId || userId === DEMO_USER_ID) return cb(0);
+    if (!userId) return cb(0);
     db.get(
       'SELECT value FROM suggestion_votes WHERE suggestion_id = ? AND user_id = ?',
       [suggestionId, userId],
@@ -192,11 +191,11 @@ module.exports = function (db, io) {
        LIMIT 200`,
       params,
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!rows || rows.length === 0) {
           return res.json({ success: true, suggestions: [] });
         }
-        if (!uid || uid === DEMO_USER_ID) {
+        if (!uid) {
           return res.json({ success: true, suggestions: rows.map((r) => mapTopicSuggestionRow(r, 0)) });
         }
         const ids = rows.map((r) => r.id);
@@ -219,7 +218,7 @@ module.exports = function (db, io) {
 
   router.post('/topic-suggestions', authenticateToken, assertUserCanCreateContent(db), (req, res) => {
     const uid = currentUserId(req);
-    if (!uid || uid === DEMO_USER_ID) {
+    if (!uid) {
       return res.status(401).json({ success: false, error: 'Login required' });
     }
     const { title, description, imageUrl } = req.body || {};
@@ -234,7 +233,7 @@ module.exports = function (db, io) {
        VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))`,
       [id, uid, t, desc, img],
       (err) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         touchLastActive(db, uid, () => {});
         logAudit(
           db,
@@ -258,14 +257,14 @@ module.exports = function (db, io) {
 
   router.post('/topic-suggestions/:id/vote', authenticateToken, (req, res) => {
     const uid = currentUserId(req);
-    if (!uid || uid === DEMO_USER_ID) {
+    if (!uid) {
       return res.status(401).json({ success: false, error: 'Login required' });
     }
     const { id } = req.params;
     const raw = req.body && req.body.value;
     const value = raw === 1 || raw === '1' ? 1 : raw === -1 || raw === '-1' ? -1 : 0;
     db.get('SELECT id FROM topic_suggestions WHERE id = ?', [id], (err, row) => {
-      if (err) return res.status(500).json({ success: false, error: err.message });
+      if (err) return res.status(500).json({ success: false, error: 'Database error' });
       if (!row) return res.status(404).json({ success: false, error: 'Suggestion not found' });
 
       const after = () => {
@@ -286,7 +285,7 @@ module.exports = function (db, io) {
           'DELETE FROM suggestion_votes WHERE suggestion_id = ? AND user_id = ?',
           [id, uid],
           (e2) => {
-            if (e2) return res.status(500).json({ success: false, error: e2.message });
+            if (e2) return res.status(500).json({ success: false, error: 'Database error' });
             after();
           }
         );
@@ -297,7 +296,7 @@ module.exports = function (db, io) {
            ON CONFLICT(suggestion_id, user_id) DO UPDATE SET value = excluded.value, created_at = datetime('now')`,
           [id, uid, value],
           (e2) => {
-            if (e2) return res.status(500).json({ success: false, error: e2.message });
+            if (e2) return res.status(500).json({ success: false, error: 'Database error' });
             after();
           }
         );
@@ -320,7 +319,7 @@ module.exports = function (db, io) {
       'SELECT * FROM topic_suggestions WHERE id = ?',
       [id],
       (err, suggestion) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!suggestion) return res.status(404).json({ success: false, error: 'Suggestion not found' });
         if (suggestion.status === 'approved') {
           return res.status(409).json({ success: false, error: 'Already approved' });
@@ -339,7 +338,7 @@ module.exports = function (db, io) {
            VALUES (?, ?, ?, ?, ?, '[]', ?, datetime('now'), datetime('now'))`,
           [topicId, suggestion.title, suggestion.description || '', targetDate, actorId, st],
           (e2) => {
-            if (e2) return res.status(500).json({ success: false, error: e2.message });
+            if (e2) return res.status(500).json({ success: false, error: 'Database error' });
             db.run(
               `UPDATE topic_suggestions
                SET status = 'approved', approved_topic_id = ?, reviewed_by = ?, reviewed_at = datetime('now')
@@ -393,7 +392,7 @@ module.exports = function (db, io) {
        WHERE id = ?`,
       [reason, actorId, id],
       function (err) {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!this.changes) return res.status(404).json({ success: false, error: 'Suggestion not found' });
         logAudit(
           db,
@@ -422,7 +421,7 @@ module.exports = function (db, io) {
       'SELECT user_id, status FROM topic_suggestions WHERE id = ?',
       [id],
       (err, row) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!row) return res.status(404).json({ success: false, error: 'Suggestion not found' });
         db.get('SELECT role FROM users WHERE id = ?', [uid], (e2, ur) => {
           const isAdmin = ur && ur.role === 'admin';
@@ -489,11 +488,11 @@ module.exports = function (db, io) {
        LIMIT 200`,
       params,
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!rows || rows.length === 0) {
           return res.json({ success: true, suggestions: [] });
         }
-        if (!uid || uid === DEMO_USER_ID) {
+        if (!uid) {
           return res.json({ success: true, suggestions: rows.map((r) => mapFeatureSuggestionRow(r, 0)) });
         }
         const ids = rows.map((r) => r.id);
@@ -516,7 +515,7 @@ module.exports = function (db, io) {
 
   router.post('/feature-suggestions', authenticateToken, assertUserCanCreateContent(db), (req, res) => {
     const uid = currentUserId(req);
-    if (!uid || uid === DEMO_USER_ID) {
+    if (!uid) {
       return res.status(401).json({ success: false, error: 'Login required' });
     }
     const { title, description, imageUrl, category } = req.body || {};
@@ -532,7 +531,7 @@ module.exports = function (db, io) {
        VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))`,
       [id, uid, t, desc, img, cat],
       (err) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         touchLastActive(db, uid, () => {});
         logAudit(
           db,
@@ -556,14 +555,14 @@ module.exports = function (db, io) {
 
   router.post('/feature-suggestions/:id/vote', authenticateToken, (req, res) => {
     const uid = currentUserId(req);
-    if (!uid || uid === DEMO_USER_ID) {
+    if (!uid) {
       return res.status(401).json({ success: false, error: 'Login required' });
     }
     const { id } = req.params;
     const raw = req.body && req.body.value;
     const value = raw === 1 || raw === '1' ? 1 : raw === -1 || raw === '-1' ? -1 : 0;
     db.get('SELECT id FROM feature_suggestions WHERE id = ?', [id], (err, row) => {
-      if (err) return res.status(500).json({ success: false, error: err.message });
+      if (err) return res.status(500).json({ success: false, error: 'Database error' });
       if (!row) return res.status(404).json({ success: false, error: 'Suggestion not found' });
 
       const after = () => {
@@ -584,7 +583,7 @@ module.exports = function (db, io) {
           'DELETE FROM suggestion_votes WHERE suggestion_id = ? AND user_id = ?',
           [id, uid],
           (e2) => {
-            if (e2) return res.status(500).json({ success: false, error: e2.message });
+            if (e2) return res.status(500).json({ success: false, error: 'Database error' });
             after();
           }
         );
@@ -595,7 +594,7 @@ module.exports = function (db, io) {
            ON CONFLICT(suggestion_id, user_id) DO UPDATE SET value = excluded.value, created_at = datetime('now')`,
           [id, uid, value],
           (e2) => {
-            if (e2) return res.status(500).json({ success: false, error: e2.message });
+            if (e2) return res.status(500).json({ success: false, error: 'Database error' });
             after();
           }
         );
@@ -634,7 +633,7 @@ module.exports = function (db, io) {
       `UPDATE feature_suggestions SET ${updates.join(', ')} WHERE id = ?`,
       values,
       function (err) {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!this.changes) return res.status(404).json({ success: false, error: 'Suggestion not found' });
         logAudit(
           db,
@@ -663,7 +662,7 @@ module.exports = function (db, io) {
       'SELECT user_id FROM feature_suggestions WHERE id = ?',
       [id],
       (err, row) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!row) return res.status(404).json({ success: false, error: 'Suggestion not found' });
         db.get('SELECT role FROM users WHERE id = ?', [uid], (_e2, ur) => {
           const isAdmin = ur && ur.role === 'admin';

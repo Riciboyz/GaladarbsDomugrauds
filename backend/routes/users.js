@@ -12,7 +12,7 @@ module.exports = function (db, io) {
       `SELECT id, username, display_name, email, avatar, bio, created_at FROM users
        WHERE deleted_at IS NULL ORDER BY username`,
       (err, rows) => {
-        if (err) return res.status(500).json({ error: 'Database error', details: err.message });
+        if (err) return res.status(500).json({ error: 'Database error' });
         res.json({ success: true, users: rows.map(mapUserPublic) });
       }
     );
@@ -40,7 +40,7 @@ module.exports = function (db, io) {
     }
     sql += ' ORDER BY created_at DESC LIMIT 500';
     db.all(sql, params, (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Database error', details: err.message });
+      if (err) return res.status(500).json({ error: 'Database error' });
       res.json({ success: true, users: (rows || []).map(mapUserAdmin) });
     });
   });
@@ -56,7 +56,7 @@ module.exports = function (db, io) {
        LIMIT ?`,
       [like, like, like, limit],
       (err, rows) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         res.json({ success: true, users: rows.map(mapUserPublic) });
       }
     );

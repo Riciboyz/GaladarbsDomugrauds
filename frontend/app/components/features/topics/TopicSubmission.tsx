@@ -11,6 +11,7 @@ import {
   ArrowLeftIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline'
+import { INPUT_LIMITS, remainingChars } from '../../constants/inputLimits'
 
 interface DailyTopic {
   id: string
@@ -67,7 +68,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       if (data.topicId === topicId) {
         // Reload submissions to show the new one
         loadSubmissions()
-        success('New Submission', 'Someone just shared their take on this topic!')
+        success('Jauns ieraksts', 'Kāds tikko dalījās ar savu viedokli par šo tēmu!')
       }
     }
 
@@ -76,7 +77,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       console.log('📬 TopicSubmission: Notification received:', data)
       
       if (data.topicId === topicId) {
-        success('New Submission', `${data.createdBy} shared their take on this topic!`)
+        success('Jauns ieraksts', `${data.createdBy} dalījās ar savu viedokli par šo tēmu!`)
       }
     }
 
@@ -124,12 +125,12 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       if (data.success && data.topic && data.topic.id === topicId) {
         setTopic(data.topic)
       } else {
-        showError('Error', 'Topic not found or not active')
+        showError('Kļūda', 'Tēma nav atrasta vai vairs nav aktīva')
         onBack()
       }
     } catch (error) {
       console.error('Error loading topic:', error)
-      showError('Error', 'Failed to load topic')
+      showError('Kļūda', 'Neizdevās ielādēt tēmu')
     }
   }
 
@@ -175,9 +176,9 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
     const file = e.target.files?.[0]
     if (!file || !user) return
 
-    // Validate file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-      showError('File Too Large', 'File must be less than 50MB')
+    // Keep client-side file size checks aligned with backend upload limit.
+    if (file.size > INPUT_LIMITS.imageUploadMaxBytes) {
+      showError('Fails pārāk liels', 'Failam jābūt mazākam par 10 MB')
       return
     }
 
@@ -194,14 +195,14 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       const uploadData = await uploadResponse.json()
       
       if (!uploadResponse.ok) {
-        throw new Error(uploadData.error || 'Upload failed')
+        throw new Error(uploadData.error || 'Augšupielāde neizdevās')
       }
 
       setImageUrl(uploadData.url)
-      success('Success', 'Image uploaded successfully!')
+      success('Veiksmīgi', 'Attēls veiksmīgi augšupielādēts!')
     } catch (error) {
       console.error('Error uploading image:', error)
-      showError('Upload Failed', 'Failed to upload image. Please try again.')
+      showError('Augšupielāde neizdevās', 'Neizdevās augšupielādēt attēlu. Mēģini vēlreiz.')
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -235,7 +236,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       }
 
       if (data.success) {
-        success('Success', 'Your submission has been posted!')
+        success('Veiksmīgi', 'Tavs ieraksts ir publicēts!')
         setContent('')
         setImageUrl('')
         setHasSubmitted(true)
@@ -245,7 +246,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       }
     } catch (error) {
       console.error('Error submitting:', error)
-      showError('Error', 'Failed to submit. Please try again.')
+      showError('Kļūda', 'Neizdevās iesniegt. Mēģini vēlreiz.')
     } finally {
       setIsSubmitting(false)
     }
@@ -256,7 +257,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center py-12">
           <div className="w-8 h-8 border-4 border-border-ui border-t-accent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-2 text-ink-muted">Loading topic...</p>
+          <p className="mt-2 text-ink-muted">Ielādē tēmu...</p>
         </div>
       </div>
     )
@@ -267,13 +268,13 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center py-12">
           <CalendarIcon className="w-16 h-16 text-ink-muted/60 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-ink mb-2">Topic Not Found</h2>
-          <p className="text-ink-muted mb-6">This topic doesn't exist or is no longer active.</p>
+          <h2 className="text-2xl font-bold text-ink mb-2">Tēma nav atrasta</h2>
+          <p className="text-ink-muted mb-6">Šī tēma neeksistē vai vairs nav aktīva.</p>
           <button
             onClick={onBack}
             className="bg-accent text-accent-fg px-6 py-3 rounded-lg hover:bg-accent-hover transition-colors"
           >
-            Go Back
+            Atpakaļ
           </button>
         </div>
       </div>
@@ -289,13 +290,13 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
           className="flex items-center space-x-2 text-ink-muted hover:text-ink mb-4 transition-colors"
         >
           <ArrowLeftIcon className="w-5 h-5" />
-          <span>Back to Home</span>
+          <span>Atpakaļ uz sākumu</span>
         </button>
         
         <div className="bg-gradient-to-br from-accent via-accent/80 to-accent-hover rounded-2xl p-6 text-accent-fg border border-accent/30 shadow-lg">
           <div className="flex items-center space-x-3 mb-3">
             <CalendarIcon className="w-6 h-6" />
-            <h1 className="text-2xl font-bold">Daily Topic</h1>
+            <h1 className="text-2xl font-bold">Dienas tēma</h1>
           </div>
           <h2 className="text-xl font-semibold mb-2">{topic.title}</h2>
           {topic.description && (
@@ -307,7 +308,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       {/* Submission Form */}
       {user && hasCheckedSubmission && !hasSubmitted && (
         <div className="bg-surface-2 border border-border-ui rounded-2xl p-6 mb-8">
-          <h3 className="text-lg font-semibold text-ink mb-4">Share Your Response</h3>
+          <h3 className="text-lg font-semibold text-ink mb-4">Dalies ar savu atbildi</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -315,17 +316,21 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 className="w-full px-4 py-3 bg-surface text-ink placeholder-ink-muted/70 border border-border-ui rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-none"
-                placeholder="Write your response to the daily topic..."
+                placeholder="Raksti savu atbildi uz dienas tēmu..."
                 rows={4}
+                maxLength={INPUT_LIMITS.topicSubmissionContent}
               />
+              <p className="mt-1 text-xs text-ink-muted text-right">
+                {remainingChars(INPUT_LIMITS.topicSubmissionContent, content)} simboli atlikuši
+              </p>
             </div>
 
             {imageUrl && (
-              <div className="relative">
-                <img 
-                  src={imageUrl} 
-                  alt="Uploaded image"
-                  className="w-full max-w-md h-auto rounded-lg"
+              <div className="relative overflow-hidden rounded-lg border border-border-ui w-full max-w-md">
+                <img
+                  src={imageUrl}
+                  alt="Augšupielādēts attēls"
+                  className="w-full max-h-80 object-cover"
                 />
                 <button
                   type="button"
@@ -345,7 +350,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
                   className="flex items-center space-x-2 px-4 py-2 text-ink-muted hover:text-ink hover:bg-surface rounded-lg transition-colors"
                 >
                   <PhotoIcon className="w-5 h-5" />
-                  <span>Add Image</span>
+                  <span>Pievienot attēlu</span>
                 </button>
                 
                 <input
@@ -365,12 +370,12 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-accent-fg/30 border-t-accent-fg rounded-full animate-spin"></div>
-                    <span>Posting...</span>
+                    <span>Publicē...</span>
                   </>
                 ) : (
                   <>
                     <PaperClipIcon className="w-4 h-4" />
-                    <span>Post Response</span>
+                    <span>Publicēt atbildi</span>
                   </>
                 )}
               </button>
@@ -386,7 +391,7 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
             <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
               <span className="text-white text-xs">✓</span>
             </div>
-            <p className="text-emerald-500 font-medium">Your response has been posted!</p>
+            <p className="text-emerald-500 font-medium">Tava atbilde ir publicēta!</p>
           </div>
         </div>
       )}
@@ -394,14 +399,14 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
       {/* Submissions */}
       <div>
         <h3 className="text-lg font-semibold text-ink mb-4">
-          Community Responses ({submissions.length})
+          Kopienas atbildes ({submissions.length})
         </h3>
 
         {submissions.length === 0 ? (
           <div className="text-center py-12 bg-surface rounded-xl">
             <CalendarIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-ink mb-2">No responses yet</h4>
-            <p className="text-ink-muted">Be the first to share your response to this topic!</p>
+            <h4 className="text-lg font-medium text-ink mb-2">Vēl nav atbilžu</h4>
+            <p className="text-ink-muted">Esi pirmais, kas dalās ar savu atbildi par šo tēmu!</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -433,15 +438,19 @@ export default function TopicSubmission({ topicId, onBack }: TopicSubmissionProp
                     </div>
                     
                     {submission.content && (
-                      <p className="text-ink mb-3">{submission.content}</p>
+                      <p className="text-ink mb-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                        {submission.content}
+                      </p>
                     )}
                     
                     {submission.image_url && (
-                      <img 
-                        src={submission.image_url} 
-                        alt="Submission"
-                        className="max-w-full h-auto rounded-lg"
-                      />
+                      <div className="overflow-hidden rounded-lg border border-border-ui">
+                        <img
+                          src={submission.image_url}
+                          alt="Ieraksts"
+                          className="w-full max-h-96 object-cover"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>

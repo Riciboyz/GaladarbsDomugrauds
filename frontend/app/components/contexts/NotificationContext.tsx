@@ -66,7 +66,7 @@ const mockNotifications: Notification[] = [
     id: '4',
     userId: '1',
     type: 'topic_day',
-    message: 'New topic day: "Show your pet" is now live!',
+    message: 'Jauna dienas tēma: "Parādi savu mīluli" tagad ir aktīva!',
     read: false,
     createdAt: new Date('2023-12-01T09:00:00'),
     relatedId: '1'

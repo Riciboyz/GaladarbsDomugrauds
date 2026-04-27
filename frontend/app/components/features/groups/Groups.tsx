@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline'
 import GroupManagement from './GroupManagement'
 import SimpleGroupChat from './SimpleGroupChat'
+import { INPUT_LIMITS, remainingChars } from '../../constants/inputLimits'
 
 type MutualUser = { id: string; username: string; displayName: string; avatar?: string }
 
@@ -184,7 +185,7 @@ export default function Groups() {
       const data = await response.json()
       
       if (response.ok) {
-        success('Success', 'Successfully joined group!')
+        success('Veiksmīgi', 'Veiksmīgi pievienojies grupai!')
         // Join real-time group
         joinGroupRealtime(group.id)
         // Refresh groups and jump into chat of the joined group
@@ -194,11 +195,11 @@ export default function Groups() {
         setShowChat(true)
         setActiveTab('joined')
       } else {
-        throw new Error(data.error || 'Failed to join group')
+        throw new Error(data.error || 'Neizdevās pievienoties grupai')
       }
     } catch (error) {
       console.error('Error joining group:', error)
-      showError('Error', 'Failed to join group. Please try again.')
+      showError('Kļūda', 'Neizdevās pievienoties grupai. Mēģini vēlreiz.')
     }
   }
 
@@ -221,7 +222,7 @@ export default function Groups() {
       const data = await response.json()
       
       if (response.ok) {
-        success('Success', 'Successfully left group!')
+        success('Veiksmīgi', 'Veiksmīgi pameti grupu!')
         // Leave real-time group
         leaveGroupRealtime(groupToLeave.id)
         setShowLeaveModal(false)
@@ -229,11 +230,11 @@ export default function Groups() {
         // Refresh groups
         loadGroups()
       } else {
-        throw new Error(data.error || 'Failed to leave group')
+        throw new Error(data.error || 'Neizdevās pamest grupu')
       }
     } catch (error) {
       console.error('Error leaving group:', error)
-      showError('Error', 'Failed to leave group. Please try again.')
+      showError('Kļūda', 'Neizdevās pamest grupu. Mēģini vēlreiz.')
     } finally {
       setLeaveLoading(false)
     }
@@ -258,17 +259,17 @@ export default function Groups() {
       const data = await response.json()
       
       if (response.ok) {
-        success('Success', 'Group deleted successfully!')
+        success('Veiksmīgi', 'Grupa veiksmīgi izdzēsta!')
         setShowDeleteModal(false)
         setGroupToDelete(null)
         // Refresh groups by reloading from API
         loadGroups()
       } else {
-        throw new Error(data.error || 'Failed to delete group')
+        throw new Error(data.error || 'Neizdevās dzēst grupu')
       }
     } catch (error) {
       console.error('Error deleting group:', error)
-      showError('Error', 'Failed to delete group. Please try again.')
+      showError('Kļūda', 'Neizdevās dzēst grupu. Mēģini vēlreiz.')
     } finally {
       setDeleteLoading(false)
     }
@@ -297,15 +298,15 @@ export default function Groups() {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ink mb-1 sm:mb-2">Groups</h1>
-            <p className="text-sm sm:text-base text-ink-muted">Discover and join communities that interest you</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-ink mb-1 sm:mb-2">Grupas</h1>
+            <p className="text-sm sm:text-base text-ink-muted">Atklāj un pievienojies kopienām, kas tevi interesē</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-accent text-accent-fg px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl font-semibold hover:bg-accent-hover transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center space-x-2 shadow-lg self-start sm:self-auto"
           >
             <PlusIcon className="w-5 h-5" />
-            <span>Create Group</span>
+            <span>Izveidot grupu</span>
           </button>
         </div>
 
@@ -318,7 +319,7 @@ export default function Groups() {
                 activeTab === 'all' ? 'bg-accent text-accent-fg' : 'text-ink-muted hover:bg-surface'
               }`}
             >
-              All ({allCount})
+              Visas ({allCount})
             </button>
             <button
               onClick={() => setActiveTab('joined')}
@@ -326,7 +327,7 @@ export default function Groups() {
                 activeTab === 'joined' ? 'bg-accent text-accent-fg' : 'text-ink-muted hover:bg-surface'
               }`}
             >
-              Joined ({joinedCount})
+              Pievienotās ({joinedCount})
             </button>
             <button
               onClick={() => setActiveTab('created')}
@@ -335,7 +336,7 @@ export default function Groups() {
               } ${!user ? 'opacity-60 cursor-not-allowed' : ''}`}
               disabled={!user}
             >
-              Created by You ({createdCount})
+              Tavas izveidotās ({createdCount})
             </button>
           </div>
         </div>
@@ -345,7 +346,7 @@ export default function Groups() {
           <MagnifyingGlassIcon className="w-5 h-5 text-ink-muted/60 absolute left-4 top-1/2 transform -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search groups..."
+            placeholder="Meklēt grupas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-surface-2 text-ink placeholder-ink-muted/70 border border-border-ui rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
@@ -384,11 +385,11 @@ export default function Groups() {
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="flex items-center space-x-2 text-white/90">
                     <UsersIcon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{group.members?.length || 0} members</span>
+                    <span className="text-sm font-medium">{group.members?.length || 0} dalībnieki</span>
                     {group.onlineMembers && group.onlineMembers.length > 0 && (
                       <div className="flex items-center space-x-1">
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-green-300">{group.onlineMembers.length} online</span>
+                        <span className="text-xs text-green-300">{group.onlineMembers.length} tiešsaistē</span>
                       </div>
                     )}
                   </div>
@@ -401,8 +402,12 @@ export default function Groups() {
               {/* Group Info */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="font-bold text-ink text-xl mb-1">{group.name}</h3>
-                  <p className="text-ink-muted text-sm line-clamp-2">{group.description}</p>
+                  <h3 className="font-bold text-ink text-xl mb-1 break-words [overflow-wrap:anywhere] line-clamp-2">
+                    {group.name}
+                  </h3>
+                  <p className="text-ink-muted text-sm line-clamp-2 break-words [overflow-wrap:anywhere]">
+                    {group.description}
+                  </p>
                   {group.typingUsers && group.typingUsers.length > 0 && (
                     <div className="flex items-center space-x-1 mt-1">
                       <div className="flex space-x-1">
@@ -411,7 +416,7 @@ export default function Groups() {
                         <div className="w-1 h-1 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
                       <span className="text-xs text-accent">
-                        {group.typingUsers.length === 1 ? 'Someone is typing...' : `${group.typingUsers.length} people typing...`}
+                        {group.typingUsers.length === 1 ? 'Kāds raksta...' : `${group.typingUsers.length} cilvēki raksta...`}
                       </span>
                     </div>
                   )}
@@ -429,7 +434,7 @@ export default function Groups() {
                           ? 'bg-surface text-ink' 
                           : 'text-ink-muted/70 hover:text-ink hover:bg-surface'
                       }`}
-                      aria-label="More options"
+                      aria-label="Vairāk opciju"
                     >
                       <EllipsisHorizontalIcon className="w-5 h-5" />
                     </button>
@@ -445,7 +450,7 @@ export default function Groups() {
                             className="w-full text-left px-4 py-3 text-sm text-ink hover:bg-surface rounded-xl flex items-center space-x-3 transition-colors"
                           >
                             <Cog6ToothIcon className="w-4 h-4 text-ink-muted" />
-                            <span>Manage Group</span>
+                            <span>Pārvaldīt grupu</span>
                           </button>
                         </div>
                       </div>
@@ -458,7 +463,7 @@ export default function Groups() {
               {/* Last Activity */}
               {group.lastActivity && (
                 <div className="text-xs text-ink-muted mb-2">
-                  Last activity: {new Date(group.lastActivity).toLocaleString()}
+                  Pēdējā aktivitāte: {new Date(group.lastActivity).toLocaleString()}
                 </div>
               )}
 
@@ -469,7 +474,7 @@ export default function Groups() {
                     onClick={() => handleJoinGroup(group)}
                     className="w-full bg-accent text-accent-fg px-6 py-3 rounded-xl text-sm font-semibold hover:bg-accent-hover transition-all duration-200 transform hover:scale-[1.02]"
                   >
-                    Join Group
+                    Pievienoties grupai
                   </button>
                 )}
                 {user && group.members?.includes(user.id) && (
@@ -479,16 +484,16 @@ export default function Groups() {
                       className="w-full bg-accent text-accent-fg px-6 py-3 rounded-xl text-sm font-semibold hover:bg-accent-hover transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center space-x-2"
                     >
                       <ChatBubbleLeftIcon className="w-4 h-4" />
-                      <span>Open Chat</span>
+                      <span>Atvērt čatu</span>
                     </button>
-                    {/* Show Leave Group button for members who didn't create the group */}
+                    {/* Show Pamest grupu button for members who didn't create the group */}
                     {group.createdBy !== user.id && (
                       <button
                         onClick={() => handleLeaveGroup(group)}
                         className="w-full bg-surface text-ink border border-border-ui px-6 py-2 rounded-xl text-sm font-medium hover:bg-surface-2 transition-all duration-200 flex items-center justify-center space-x-2"
                       >
                         <XMarkIcon className="w-4 h-4" />
-                        <span>Leave Group</span>
+                        <span>Pamest grupu</span>
                       </button>
                     )}
                   </div>
@@ -496,7 +501,7 @@ export default function Groups() {
                 {!user && (
                   <div className="text-center">
                     <span className="text-sm text-ink-muted bg-surface px-4 py-2 rounded-xl inline-block">
-                      Please log in to join
+                      Lūdzu pieslēdzies, lai pievienotos
                     </span>
                   </div>
                 )}
@@ -511,16 +516,16 @@ export default function Groups() {
         <div className="card p-12 text-center">
           <UserGroupIcon className="w-12 h-12 text-ink-muted/60 mx-auto mb-4" />
           <h3 className="heading-3 text-ink mb-2">
-            {searchQuery ? 'No groups found' : 'No groups to show'}
+            {searchQuery ? 'Grupas netika atrastas' : 'Nav grupu, ko rādīt'}
           </h3>
           <p className="body-regular text-ink-muted mb-6">
             {searchQuery 
-              ? 'Try adjusting your search terms'
+              ? 'Pamēģini citus meklēšanas vārdus'
               : activeTab === 'joined'
-                ? 'Join a group to start chatting in real time'
+                ? 'Pievienojies grupai, lai sāktu čatot tiešraidē'
                 : activeTab === 'created'
                   ? 'You have not created any groups yet'
-                  : 'No groups available right now'
+                  : 'Pašlaik nav pieejamu grupu'
             }
           </p>
           {!searchQuery && (
@@ -528,18 +533,18 @@ export default function Groups() {
               onClick={() => setShowCreateModal(true)}
               className="btn-primary"
             >
-              Create First Group
+              Izveidot pirmo grupu
             </button>
           )}
         </div>
       )}
 
-      {/* Create Group Modal */}
+      {/* Izveidot grupu Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card-elevated w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-border-ui">
-              <h3 className="heading-3 text-ink">Create Group</h3>
+              <h3 className="heading-3 text-ink">Izveidot grupu</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="btn-icon"
@@ -554,25 +559,33 @@ export default function Groups() {
               id="create-group-form"
             >
               <div>
-                <label className="block text-sm font-medium text-ink-muted mb-2">Group Name</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Grupas nosaukums</label>
                 <input
                   type="text"
                   value={newGroup.name}
                   onChange={(e) => setNewGroup(prev => ({ ...prev, name: e.target.value }))}
                   className="input"
-                  placeholder="Enter group name"
+                  placeholder="Ievadi grupas nosaukumu"
+                  maxLength={INPUT_LIMITS.groupName}
                   required
                 />
+                <p className="mt-1 text-xs text-ink-muted text-right">
+                  {remainingChars(INPUT_LIMITS.groupName, newGroup.name)} simboli atlikuši
+                </p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-ink-muted mb-2">Description</label>
+                <label className="block text-sm font-medium text-ink-muted mb-2">Apraksts</label>
                 <textarea
                   value={newGroup.description}
                   onChange={(e) => setNewGroup(prev => ({ ...prev, description: e.target.value }))}
                   className="input-textarea h-24"
-                  placeholder="Describe what this group is about..."
+                  placeholder="Apraksti, par ko ir šī grupa..."
+                  maxLength={INPUT_LIMITS.groupDescription}
                 />
+                <p className="mt-1 text-xs text-ink-muted text-right">
+                  {remainingChars(INPUT_LIMITS.groupDescription, newGroup.description)} simboli atlikuši
+                </p>
               </div>
 
               <label className="flex items-start gap-3 cursor-pointer">
@@ -645,14 +658,14 @@ export default function Groups() {
                 onClick={() => setShowCreateModal(false)}
                 className="px-4 py-2 text-ink-muted hover:text-ink transition-colors duration-200 font-medium text-sm"
               >
-                Cancel
+                Atcelt
               </button>
               <button
                 type="submit"
                 form="create-group-form"
                 className="btn-primary"
               >
-                Create Group
+                Izveidot grupu
               </button>
             </div>
           </div>
@@ -682,7 +695,7 @@ export default function Groups() {
         />
       )}
 
-      {/* Beautiful Delete Group Modal */}
+      {/* Beautiful Dzēst grupu Modal */}
       {showDeleteModal && groupToDelete && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface-2 rounded-2xl shadow-2xl max-w-md w-full animate-in slide-in-from-bottom-4 duration-300">
@@ -693,8 +706,8 @@ export default function Groups() {
                   <XMarkIcon className="w-6 h-6 text-red-500" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-ink">Delete Group</h3>
-                  <p className="text-sm text-ink-muted">This action cannot be undone</p>
+                  <h3 className="text-lg font-semibold text-ink">Dzēst grupu</h3>
+                  <p className="text-sm text-ink-muted">Šo darbību nevar atsaukt</p>
                 </div>
               </div>
             </div>
@@ -702,8 +715,8 @@ export default function Groups() {
             {/* Content */}
             <div className="p-6">
               <p className="text-ink mb-4">
-                Are you sure you want to delete <span className="font-semibold">"{groupToDelete.name}"</span>? 
-                This will permanently remove the group and all its content.
+                Vai tiešām vēlies dzēst <span className="font-semibold">"{groupToDelete.name}"</span>? 
+                Tas neatgriezeniski dzēsīs grupu un visu tās saturu.
               </p>
               
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
@@ -714,9 +727,9 @@ export default function Groups() {
                     </svg>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-red-500">Warning</h4>
+                    <h4 className="text-sm font-medium text-red-500">Brīdinājums</h4>
                     <p className="text-sm text-ink mt-1">
-                      All messages, members, and group data will be permanently deleted.
+                      Visas ziņas, dalībnieki un grupas dati tiks neatgriezeniski dzēsti.
                     </p>
                   </div>
                 </div>
@@ -733,7 +746,7 @@ export default function Groups() {
                 disabled={deleteLoading}
                 className="px-4 py-2 text-sm font-medium text-ink bg-surface-2 border border-border-ui rounded-xl hover:bg-surface transition-colors disabled:opacity-50"
               >
-                Cancel
+                Atcelt
               </button>
               <button
                 onClick={confirmDeleteGroup}
@@ -743,12 +756,12 @@ export default function Groups() {
                 {deleteLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Deleting...</span>
+                    <span>Dzēš...</span>
                   </>
                 ) : (
                   <>
                     <XMarkIcon className="w-4 h-4" />
-                    <span>Delete Group</span>
+                    <span>Dzēst grupu</span>
                   </>
                 )}
               </button>
@@ -757,7 +770,7 @@ export default function Groups() {
         </div>
       )}
 
-      {/* Leave Group Modal */}
+      {/* Pamest grupu Modal */}
       {showLeaveModal && groupToLeave && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-surface-2 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
@@ -768,8 +781,8 @@ export default function Groups() {
                   <XMarkIcon className="w-6 h-6 text-orange-500" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-ink">Leave Group</h3>
-                  <p className="text-sm text-ink-muted">This action cannot be undone</p>
+                  <h3 className="text-lg font-semibold text-ink">Pamest grupu</h3>
+                  <p className="text-sm text-ink-muted">Šo darbību nevar atsaukt</p>
                 </div>
               </div>
             </div>
@@ -778,10 +791,10 @@ export default function Groups() {
             <div className="p-6">
               <div className="mb-6">
                 <p className="text-ink mb-2">
-                  Are you sure you want to leave <span className="font-semibold text-ink">"{groupToLeave.name}"</span>?
+                  Vai tiešām vēlies pamest <span className="font-semibold text-ink">"{groupToLeave.name}"</span>?
                 </p>
                 <p className="text-sm text-ink-muted">
-                  You'll no longer receive notifications from this group and won't be able to participate in group discussions.
+                  Tu vairs nesaņemsi paziņojumus no šīs grupas un nevarēsi piedalīties grupas diskusijās.
                 </p>
               </div>
 
@@ -801,10 +814,10 @@ export default function Groups() {
                     <div className="flex items-center space-x-4 mt-1">
                       <div className="flex items-center space-x-1 text-xs text-ink-muted">
                         <UsersIcon className="w-3 h-3" />
-                        <span>{groupToLeave.memberCount || groupToLeave.members?.length || 0} members</span>
+                        <span>{groupToLeave.memberCount || groupToLeave.members?.length || 0} dalībnieki</span>
                       </div>
                       <span className="px-2 py-1 text-xs font-medium rounded-full text-emerald-500 bg-emerald-500/15">
-                        Public
+                        Publiska
                       </span>
                     </div>
                   </div>
@@ -821,7 +834,7 @@ export default function Groups() {
                   disabled={leaveLoading}
                   className="flex-1 px-4 py-3 text-sm font-medium text-ink bg-surface border border-border-ui rounded-xl hover:bg-surface-2 transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  Atcelt
                 </button>
                 <button
                   onClick={confirmLeaveGroup}
@@ -831,12 +844,12 @@ export default function Groups() {
                   {leaveLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Leaving...</span>
+                      <span>Pamet...</span>
                     </>
                   ) : (
                     <>
                       <XMarkIcon className="w-4 h-4" />
-                      <span>Leave Group</span>
+                      <span>Pamest grupu</span>
                     </>
                   )}
                 </button>

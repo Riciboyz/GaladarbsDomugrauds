@@ -141,11 +141,11 @@ export default function AdminPage() {
       )
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load calendar')
+        throw new Error(data.error || 'Neizdevās ielādēt kalendāru')
       }
       setTopicDays(data.topicDays || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load calendar')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt kalendāru')
     } finally {
       setLoadingTopicDays(false)
     }
@@ -162,11 +162,11 @@ export default function AdminPage() {
       const response = await fetch(`/api/users/admin/all?${qs}`, { credentials: 'include' })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load users')
+        throw new Error(data.error || 'Neizdevās ielādēt lietotājus')
       }
       setUsers(data.users || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load users')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt lietotājus')
     } finally {
       setLoadingUsers(false)
     }
@@ -179,11 +179,11 @@ export default function AdminPage() {
       const response = await fetch(`/api/admin/stats?date=${statsDate}`, { credentials: 'include' })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load stats')
+        throw new Error(data.error || 'Neizdevās ielādēt statistiku')
       }
       setStats(data.stats)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load stats')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt statistiku')
     } finally {
       setLoadingStats(false)
     }
@@ -196,11 +196,11 @@ export default function AdminPage() {
       const response = await fetch('/api/admin/audit-logs?limit=80', { credentials: 'include' })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load audit log')
+        throw new Error(data.error || 'Neizdevās ielādēt audita žurnālu')
       }
       setAuditLogs(data.logs || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load audit log')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt audita žurnālu')
     } finally {
       setLoadingAudit(false)
     }
@@ -213,11 +213,11 @@ export default function AdminPage() {
       const response = await fetch('/api/reports', { credentials: 'include' })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load reports')
+        throw new Error(data.error || 'Neizdevās ielādēt ziņojumus')
       }
       setReports(data.reports || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load reports')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt ziņojumus')
     } finally {
       setLoadingReports(false)
     }
@@ -230,11 +230,11 @@ export default function AdminPage() {
       const response = await fetch('/api/admin/dm-reports', { credentials: 'include' })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load DM reports')
+        throw new Error(data.error || 'Neizdevās ielādēt DM ziņojumus')
       }
       setDmReports(data.reports || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load DM reports')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt DM ziņojumus')
     } finally {
       setLoadingDmReports(false)
     }
@@ -250,11 +250,11 @@ export default function AdminPage() {
       )
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load topic suggestions')
+        throw new Error(data.error || 'Neizdevās ielādēt tēmu ieteikumus')
       }
       setTopicSuggestions(data.suggestions || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load topic suggestions')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt tēmu ieteikumus')
     } finally {
       setLoadingSuggestions(false)
     }
@@ -270,11 +270,11 @@ export default function AdminPage() {
       )
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load feature suggestions')
+        throw new Error(data.error || 'Neizdevās ielādēt funkciju ieteikumus')
       }
       setFeatureSuggestions(data.suggestions || [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load feature suggestions')
+      setError(e instanceof Error ? e.message : 'Neizdevās ielādēt funkciju ieteikumus')
     } finally {
       setLoadingSuggestions(false)
     }
@@ -303,12 +303,12 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Approve failed')
+        throw new Error(data.error || 'Apstiprināšana neizdevās')
       }
       setSuccess(`Ieteikums publicēts kā dienas tēma (${d}).`)
       await loadTopicSuggestions()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Approve failed')
+      setError(e instanceof Error ? e.message : 'Apstiprināšana neizdevās')
     } finally {
       setSuggestionActionId(null)
     }
@@ -329,12 +329,12 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Reject failed')
+        throw new Error(data.error || 'Noraidīšana neizdevās')
       }
       setSuccess('Ieteikums noraidīts.')
       await loadTopicSuggestions()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Reject failed')
+      setError(e instanceof Error ? e.message : 'Noraidīšana neizdevās')
     } finally {
       setSuggestionActionId(null)
     }
@@ -351,11 +351,11 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Delete failed')
+        throw new Error(data.error || 'Dzēšana neizdevās')
       }
       await loadTopicSuggestions()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Delete failed')
+      setError(e instanceof Error ? e.message : 'Dzēšana neizdevās')
     } finally {
       setSuggestionActionId(null)
     }
@@ -377,14 +377,14 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Update failed')
+        throw new Error(data.error || 'Atjaunināšana neizdevās')
       }
       setFeatureSuggestions((prev) =>
         prev.map((s) => (s.id === id ? { ...s, ...(data.suggestion || {}) } : s))
       )
       setSuccess('Atjaunināts.')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Update failed')
+      setError(e instanceof Error ? e.message : 'Atjaunināšana neizdevās')
     } finally {
       setSuggestionActionId(null)
     }
@@ -401,11 +401,11 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Delete failed')
+        throw new Error(data.error || 'Dzēšana neizdevās')
       }
       await loadFeatureSuggestions()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Delete failed')
+      setError(e instanceof Error ? e.message : 'Dzēšana neizdevās')
     } finally {
       setSuggestionActionId(null)
     }
@@ -449,7 +449,7 @@ export default function AdminPage() {
     setError('')
     setSuccess('')
     if (form.date < today) {
-      setError('Topic nevar veidot ar pagājušu datumu.')
+      setError('Tēmu nevar veidot ar pagājušu datumu.')
       setSubmitting(false)
       return
     }
@@ -462,13 +462,13 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create topic day')
+        throw new Error(data.error || 'Neizdevās izveidot dienas tēmu')
       }
-      setSuccess('Daily Topic izveidots veiksmīgi.')
+      setSuccess('Dienas tēma izveidota veiksmīgi.')
       setForm((prev) => ({ ...prev, title: '', description: '', date: today }))
       await loadCalendarMonth()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create topic day')
+      setError(e instanceof Error ? e.message : 'Neizdevās izveidot dienas tēmu')
     } finally {
       setSubmitting(false)
     }
@@ -503,13 +503,13 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to update topic')
+        throw new Error(data.error || 'Neizdevās atjaunināt tēmu')
       }
-      setSuccess('Topic atjaunināts veiksmīgi.')
+      setSuccess('Tēma atjaunināta veiksmīgi.')
       cancelEditTopic()
       await loadCalendarMonth()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update topic')
+      setError(e instanceof Error ? e.message : 'Neizdevās atjaunināt tēmu')
     } finally {
       setTopicActionLoadingId(null)
     }
@@ -527,18 +527,18 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to update status')
+        throw new Error(data.error || 'Neizdevās atjaunināt statusu')
       }
       await loadCalendarMonth()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update status')
+      setError(e instanceof Error ? e.message : 'Neizdevās atjaunināt statusu')
     } finally {
       setTopicActionLoadingId(null)
     }
   }
 
   const deleteTopic = async (id: string) => {
-    if (!window.confirm('Dzēst šo topic?')) return
+    if (!window.confirm('Dzēst šo tēmu?')) return
     setTopicActionLoadingId(id)
     setError('')
     setSuccess('')
@@ -549,12 +549,12 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to delete topic')
+        throw new Error(data.error || 'Neizdevās dzēst tēmu')
       }
-      setSuccess('Topic izdzēsts.')
+      setSuccess('Tēma izdzēsta.')
       await loadCalendarMonth()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete topic')
+      setError(e instanceof Error ? e.message : 'Neizdevās dzēst tēmu')
     } finally {
       setTopicActionLoadingId(null)
     }
@@ -572,12 +572,12 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Bulk create failed')
+        throw new Error(data.error || 'Masveida izveide neizdevās')
       }
       setSuccess(`Izveidoti ${data.topicDays?.length || 0} melnraksti (draft).`)
       await loadCalendarMonth()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Bulk create failed')
+      setError(e instanceof Error ? e.message : 'Masveida izveide neizdevās')
     } finally {
       setSubmitting(false)
     }
@@ -595,11 +595,11 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Update failed')
+        throw new Error(data.error || 'Atjaunināšana neizdevās')
       }
       await loadUsers()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Update failed')
+      setError(e instanceof Error ? e.message : 'Atjaunināšana neizdevās')
     } finally {
       setUserActionLoadingId(null)
     }
@@ -616,12 +616,12 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to delete user')
+        throw new Error(data.error || 'Neizdevās dzēst lietotāju')
       }
       setSuccess(`Konts @${target.username} atzīmēts kā dzēsts.`)
       await loadUsers()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete user')
+      setError(e instanceof Error ? e.message : 'Neizdevās dzēst lietotāju')
     } finally {
       setUserActionLoadingId(null)
     }
@@ -637,11 +637,11 @@ export default function AdminPage() {
       })
       const data = await response.json()
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Restore failed')
+        throw new Error(data.error || 'Atjaunošana neizdevās')
       }
       await loadUsers()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Restore failed')
+      setError(e instanceof Error ? e.message : 'Atjaunošana neizdevās')
     } finally {
       setUserActionLoadingId(null)
     }
@@ -662,12 +662,12 @@ export default function AdminPage() {
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        throw new Error((data as { error?: string }).error || 'Request failed')
+        throw new Error((data as { error?: string }).error || 'Pieprasījums neizdevās')
       }
       await loadReports()
       await loadDmReports()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Request failed')
+      setError(e instanceof Error ? e.message : 'Pieprasījums neizdevās')
     }
   }
 
@@ -699,18 +699,18 @@ export default function AdminPage() {
   }
 
   if (isLoading) {
-    return <main className="p-8 text-ink-muted">Loading...</main>
+    return <main className="p-8 text-ink-muted">Ielādē...</main>
   }
 
   if (!user) {
-    return <main className="p-8 text-ink-muted">Please login first.</main>
+    return <main className="p-8 text-ink-muted">Lūdzu vispirms pieslēdzies.</main>
   }
 
   if (!canAccessPanel) {
     return (
       <main className="min-h-screen bg-surface p-8">
         <div className="mx-auto max-w-4xl rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
-          <h1 className="text-2xl font-bold text-red-500">Forbidden</h1>
+          <h1 className="text-2xl font-bold text-red-500">Aizliegts</h1>
           <p className="mt-2 text-ink">Administratora piekļuve nepieciešama.</p>
         </div>
       </main>
@@ -720,7 +720,7 @@ export default function AdminPage() {
   const tabs: { id: TabId; label: string; adminOnly?: boolean }[] = [
     { id: 'overview', label: 'Pārskats', adminOnly: true },
     { id: 'users', label: 'Lietotāji', adminOnly: true },
-    { id: 'calendar', label: 'Daily Topic kalendārs', adminOnly: true },
+    { id: 'calendar', label: 'Dienas tēmas kalendārs', adminOnly: true },
     { id: 'suggestions', label: 'Ieteikumi', adminOnly: true },
     { id: 'moderation', label: 'Moderācija', adminOnly: true },
     { id: 'audit', label: 'Audit žurnāls', adminOnly: true },
@@ -734,7 +734,7 @@ export default function AdminPage() {
             <div>
               <h1 className="text-3xl font-bold text-ink">Admin panelis</h1>
               <p className="text-ink-muted mt-2">
-                Metrikas, lietotāji, daily topics, moderācija un audits.
+                Metrikas, lietotāji, dienas tēmas, moderācija un audits.
               </p>
             </div>
             <div className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-fg">
@@ -793,7 +793,7 @@ export default function AdminPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   ['Jauni lietotāji', stats.newUsers],
-                  ['Topic submissions', stats.topicSubmissions],
+                  ['Tēmas iesniegumi', stats.topicSubmissions],
                 ].map(([label, val]) => (
                   <div key={String(label)} className="rounded-xl border border-border-ui bg-surface p-4">
                     <p className="text-sm text-ink-muted">{label}</p>
@@ -1016,7 +1016,7 @@ export default function AdminPage() {
                 <input
                   value={form.title}
                   onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="Topic title"
+                  placeholder="Tēmas virsraksts"
                   required
                   className="w-full rounded-xl border border-border-ui bg-surface p-3 text-ink placeholder-ink-muted/70 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
@@ -1040,7 +1040,7 @@ export default function AdminPage() {
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Description"
+                  placeholder="Apraksts"
                   rows={4}
                   className="md:col-span-2 w-full rounded-xl border border-border-ui bg-surface p-3 text-ink placeholder-ink-muted/70 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
@@ -1050,7 +1050,7 @@ export default function AdminPage() {
                     disabled={submitting}
                     className="rounded-xl bg-accent px-5 py-2.5 font-medium text-accent-fg transition hover:bg-accent-hover disabled:opacity-60"
                   >
-                    {submitting ? 'Saving...' : 'Create Daily Topic'}
+                    {submitting ? 'Saglabā...' : 'Izveidot dienas tēmu'}
                   </button>
                 </div>
               </form>
@@ -1059,7 +1059,7 @@ export default function AdminPage() {
             <section className="rounded-2xl border border-border-ui bg-surface-2 p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-4 text-ink">Topic days (mēnesis)</h2>
               {loadingTopicDays ? (
-                <p className="text-ink-muted">Loading...</p>
+                <p className="text-ink-muted">Ielādē...</p>
               ) : topicDays.length === 0 ? (
                 <p className="text-ink-muted">Nav ierakstu šajā mēnesī.</p>
               ) : (
@@ -1068,10 +1068,10 @@ export default function AdminPage() {
                     <article key={topicDay.id} className="rounded-xl border border-border-ui bg-surface p-4">
                       <div className="flex flex-wrap gap-2 items-center justify-between">
                         <h3 className="font-semibold text-ink">
-                          {editingTopicId === topicDay.id ? 'Edit Topic' : topicDay.title}
+                          {editingTopicId === topicDay.id ? 'Rediģēt tēmu' : topicDay.title}
                         </h3>
                         <span className={`rounded-lg px-2 py-1 text-xs border ${statusColor(topicDay.status)}`}>
-                          {topicDay.status || 'published'}
+                          {topicDay.status || 'publicēta'}
                         </span>
                         <span className="rounded-lg bg-surface-2 px-2 py-1 text-sm text-ink-muted border border-border-ui">
                           {editingTopicId === topicDay.id ? editingForm.date : topicDay.date}
@@ -1103,7 +1103,7 @@ export default function AdminPage() {
                               disabled={topicActionLoadingId === topicDay.id}
                               className="rounded-lg bg-accent px-3 py-1.5 text-accent-fg transition hover:bg-accent-hover disabled:opacity-60"
                             >
-                              {topicActionLoadingId === topicDay.id ? 'Saving...' : 'Save'}
+                              {topicActionLoadingId === topicDay.id ? 'Saglabā...' : 'Saglabāt'}
                             </button>
                             <button
                               type="button"
@@ -1142,13 +1142,13 @@ export default function AdminPage() {
                               disabled={topicActionLoadingId === topicDay.id}
                               className="rounded-lg bg-red-600 px-3 py-1.5 text-white transition hover:bg-red-500 disabled:opacity-60"
                             >
-                              Delete
+                              Dzēst
                             </button>
                           </div>
                         </>
                       )}
                       <p className="text-xs text-ink-muted mt-2">
-                        Created by {topicDay.created_by_display_name || topicDay.created_by_username || 'unknown'}
+                        Izveidoja {topicDay.created_by_display_name || topicDay.created_by_username || 'nezināms'}
                       </p>
                     </article>
                   ))}

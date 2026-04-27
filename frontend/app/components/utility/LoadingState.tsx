@@ -18,7 +18,7 @@ interface LoadingStateProps {
 
 export default function LoadingState({ 
   type = 'page', 
-  message = 'Loading...', 
+  message = 'Ielādē...', 
   size = 'md',
   className = '' 
 }: LoadingStateProps) {
@@ -107,7 +107,7 @@ export default function LoadingState({
           <Spinner />
         </div>
         <h2 className="heading-3 text-ink mb-2">{message}</h2>
-        <p className="body-regular text-ink-muted">Please wait while we load your content...</p>
+        <p className="body-regular text-ink-muted">Lūdzu uzgaidi, kamēr ielādējam saturu...</p>
       </div>
     </div>
   )

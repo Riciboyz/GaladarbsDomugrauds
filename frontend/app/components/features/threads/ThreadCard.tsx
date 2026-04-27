@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartFilledIcon, HandThumbDownIcon as HandThumbDownFilledIcon } from '@heroicons/react/24/solid'
 import SimpleCreateThread from './SimpleCreateThread'
+import { INPUT_LIMITS, remainingChars } from '../../constants/inputLimits'
 
 interface ThreadCardProps {
   thread: any
@@ -119,11 +120,11 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
           }
         }
       } else {
-        throw new Error(data.error || 'Failed to like thread')
+        throw new Error(data.error || 'Neizdevās atzīmēt patīk')
       }
     } catch (error) {
       console.error('Error liking thread:', error)
-      alert('Failed to like thread. Please try again.')
+      alert('Neizdevās atzīmēt patīk. Lūdzu mēģini vēlreiz.')
     } finally {
       setIsLiking(false)
     }
@@ -170,11 +171,11 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
           }
         }
       } else {
-        throw new Error(data.error || 'Failed to dislike thread')
+        throw new Error(data.error || 'Neizdevās atzīmēt nepatīk')
       }
     } catch (error) {
       console.error('Error disliking thread:', error)
-      alert('Failed to dislike thread. Please try again.')
+      alert('Neizdevās atzīmēt nepatīk. Lūdzu mēģini vēlreiz.')
     } finally {
       setIsLiking(false)
     }
@@ -232,11 +233,11 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         )
         updateUser(updatedUser, updatedUsers)
       } else {
-        throw new Error(data.error || 'Failed to follow user')
+        throw new Error(data.error || 'Neizdevās sekot lietotājam')
       }
     } catch (error) {
       console.error('Error following user:', error)
-      alert('Failed to follow user. Please try again.')
+      alert('Neizdevās sekot lietotājam. Lūdzu mēģini vēlreiz.')
     } finally {
       setIsFollowingUser(false)
     }
@@ -246,7 +247,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
     if (!isOwnThread) return
 
     // Ask for confirmation before deleting
-    if (!confirm('Are you sure you want to delete this thread?')) {
+    if (!confirm('Vai tiešām vēlies dzēst šo domu?')) {
       return
     }
 
@@ -260,11 +261,11 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
         setShowOptions(false) // Close the menu after deletion
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to delete thread')
+        alert(data.error || 'Neizdevās dzēst domu')
       }
     } catch (error) {
       console.error('Error deleting thread:', error)
-      alert('Failed to delete thread. Please try again.')
+      alert('Neizdevās dzēst domu. Lūdzu mēģini vēlreiz.')
     }
   }
 
@@ -356,7 +357,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
     author = {
       id: thread.authorId,
       username: 'unknown',
-      displayName: 'Unknown User',
+      displayName: 'Nezināms lietotājs',
       email: 'unknown@example.com',
       avatar: `https://ui-avatars.com/api/?name=Unknown&background=gray&color=fff`,
       bio: '',
@@ -568,6 +569,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
               placeholder="Īss iemesls (neobligāti)"
               className="w-full rounded-lg border border-amber-500/30 p-2 text-sm bg-surface-2 text-ink placeholder-ink-muted/70"
               rows={2}
+              maxLength={500}
             />
             {reportStatus === 'ok' && (
               <p className="text-sm text-emerald-500">Ziņojums nosūtīts moderācijai.</p>
@@ -641,7 +643,7 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                     />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-medium text-ink text-sm">{commentAuthor?.displayName || 'Unknown User'}</span>
+                        <span className="font-medium text-ink text-sm">{commentAuthor?.displayName || 'Nezināms lietotājs'}</span>
                         <span className="text-xs text-ink-muted">@{commentAuthor?.username || 'unknown'}</span>
                         <span className="text-xs text-ink-muted/60">·</span>
                         <span className="text-xs text-ink-muted">
@@ -649,16 +651,18 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                             try {
                               const date = new Date(comment.createdAt)
                               if (isNaN(date.getTime())) {
-                                return 'Just now'
+                                return 'tikko'
                               }
                               return formatDistanceToNow(date, { addSuffix: true })
                             } catch (error) {
-                              return 'Just now'
+                              return 'tikko'
                             }
                           })()}
                         </span>
                       </div>
-                      <p className="text-ink/90 text-sm leading-relaxed">{comment.content}</p>
+                      <p className="text-ink/90 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                        {comment.content}
+                      </p>
                     </div>
                   </div>
                 )
@@ -676,23 +680,27 @@ export default function ThreadCard({ thread, isReply = false, onUserClick }: Thr
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Write a comment..."
+                      placeholder="Raksti komentāru..."
                       className="w-full p-3 bg-surface-2 text-ink border border-border-ui rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-sm resize-none"
                       rows={2}
+                      maxLength={INPUT_LIMITS.commentContent}
                     />
+                    <div className="mt-1 text-right text-xs text-ink-muted">
+                      {remainingChars(INPUT_LIMITS.commentContent, commentText)} atlikuši
+                    </div>
                     <div className="flex justify-end space-x-2 mt-2">
                       <button
                         onClick={() => setShowComments(false)}
                         className="px-3 py-1 text-ink-muted hover:text-ink text-sm"
                       >
-                        Cancel
+                        Atcelt
                       </button>
                       <button
                         onClick={handleComment}
                         disabled={!commentText.trim() || isSubmittingComment}
                         className="px-4 py-1 bg-accent text-accent-fg rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
-                        {isSubmittingComment ? 'Posting...' : 'Reply'}
+                        {isSubmittingComment ? 'Publicē...' : 'Atbildēt'}
                       </button>
                     </div>
                   </div>

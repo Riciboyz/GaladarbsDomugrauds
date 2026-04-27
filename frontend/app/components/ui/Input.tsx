@@ -111,7 +111,7 @@ export default Input
 
 // Specialized input components
 export function SearchInput({
-  placeholder = 'Search...',
+  placeholder = 'Meklēt...',
   ...props
 }: Omit<InputProps, 'leftIcon'>) {
   return (

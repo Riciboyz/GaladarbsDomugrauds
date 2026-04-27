@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const crypto = require('crypto');
 const {
+  authenticateToken,
   optionalAuth,
   currentUserId,
   requireAdmin,
@@ -8,6 +9,7 @@ const {
 } = require('../middleware/auth');
 const { rowToThread, safeJsonParse } = require('../helpers/utils');
 const { logAudit, touchLastActive } = require('../helpers/audit');
+const { INPUT_LIMITS, validateRequiredTrimmed } = require('../helpers/inputValidation');
 
 const THREAD_SELECT = `SELECT t.*, u.id as user_id, u.username, u.display_name, u.avatar as avatar_url
      FROM threads t JOIN users u ON t.author_id = u.id`;
@@ -34,7 +36,7 @@ module.exports = function (db, io) {
     params.push(limit, offset);
 
     db.all(sql, params, (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Database error', details: err.message });
+      if (err) return res.status(500).json({ error: 'Database error' });
       const parents = rows.map(rowToThread);
       const parentIds = parents.map((t) => t.id).filter(Boolean);
 
@@ -95,7 +97,11 @@ module.exports = function (db, io) {
     const attachments = body.attachments;
     const userId = currentUserId(req);
 
-    if (!content) return res.status(400).json({ error: 'Content is required' });
+    const validContent = validateRequiredTrimmed(content, {
+      field: 'Content',
+      maxLength: INPUT_LIMITS.THREAD_CONTENT,
+    });
+    if (!validContent.ok) return res.status(400).json({ error: validContent.error });
 
     const threadId = crypto.randomUUID();
     const attachmentsJson = attachments ? JSON.stringify(attachments) : '[]';
@@ -103,7 +109,7 @@ module.exports = function (db, io) {
     db.run(
       `INSERT INTO threads (id, author_id, content, parent_id, group_id, topic_day_id, visibility, attachments, likes, dislikes, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', datetime('now'), datetime('now'))`,
-      [threadId, userId, content, parent_id, group_id, topic_day_id, visibility, attachmentsJson],
+      [threadId, userId, validContent.value, parent_id, group_id, topic_day_id, visibility, attachmentsJson],
       function (err) {
         if (err) return res.status(500).json({ error: 'Database error' });
         touchLastActive(db, userId, () => {});
@@ -129,7 +135,7 @@ module.exports = function (db, io) {
       'UPDATE threads SET visibility = ?, updated_at = datetime("now") WHERE id = ?',
       [visibility, threadId],
       function (err) {
-        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (err) return res.status(500).json({ success: false, error: 'Database error' });
         if (!this.changes) return res.status(404).json({ success: false, error: 'Thread not found' });
         logAudit(
           db,
@@ -180,8 +186,9 @@ module.exports = function (db, io) {
     });
   });
 
-  router.put('/', (req, res) => {
-    const { threadId, userId, action } = req.body;
+  router.put('/', authenticateToken, (req, res) => {
+    const { threadId, action } = req.body;
+    const userId = currentUserId(req);
     if (!threadId || !userId || !action) return res.status(400).json({ error: 'Missing required fields' });
 
     db.get('SELECT * FROM threads WHERE id = ?', [threadId], (err, row) => {

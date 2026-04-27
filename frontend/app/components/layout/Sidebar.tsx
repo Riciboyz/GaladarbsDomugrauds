@@ -138,7 +138,7 @@ export default function Sidebar({ activeTab, onTabChange, tabs }: SidebarProps) 
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-ink-muted hover:bg-surface hover:text-ink transition-colors"
             >
               <ArrowRightOnRectangleIcon className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
+              <span className="font-medium">Izrakstīties</span>
             </button>
           </div>
         </div>

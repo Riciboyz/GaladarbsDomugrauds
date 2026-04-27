@@ -1,8 +1,10 @@
 const jwt = require('jsonwebtoken');
 const { touchLastActive } = require('../helpers/audit');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-change-this';
-const DEMO_USER_ID = '550e8400-e29b-41d4-a716-446655440000';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is required');
+}
 
 function getTokenFromRequest(req) {
   const authHeader = req.headers['authorization'];
@@ -36,17 +38,17 @@ function authenticateToken(req, res, next) {
 function optionalAuth(req, _res, next) {
   const token = getTokenFromRequest(req);
   if (!token) {
-    req.user = { id: DEMO_USER_ID };
+    req.user = null;
     return next();
   }
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    req.user = err ? { id: DEMO_USER_ID } : user;
+    req.user = err ? null : user;
     next();
   });
 }
 
 function currentUserId(req) {
-  return req.user?.id || DEMO_USER_ID;
+  return req.user?.id || null;
 }
 
 /** Loads full user row; rejects deleted/banned. Sets req.authUser. */
@@ -110,7 +112,7 @@ function requireModOrAdmin(db) {
 function assertUserCanCreateContent(db) {
   return (req, res, next) => {
     const userId = currentUserId(req);
-    if (!userId || userId === DEMO_USER_ID) return next();
+    if (!userId) return res.status(401).json({ error: 'Login required' });
     db.get(
       'SELECT deleted_at, banned_until, muted_until FROM users WHERE id = ?',
       [userId],
@@ -136,7 +138,6 @@ module.exports = {
   loadAuthUser,
   assertUserCanCreateContent,
   JWT_SECRET,
-  DEMO_USER_ID,
   getTokenFromRequest,
   isBanned,
   isMuted,
